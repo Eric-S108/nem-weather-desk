@@ -253,8 +253,46 @@ def _fit_predict_ph(tr: pd.DataFrame, te: pd.DataFrame, cols: list[str],
     return out
 
 
+NESTED_NAME = "B3 选特征"
+NESTED_VAL_DAYS = 28        # 训练窗最后 28 天当验证段
+NESTED_TOL = 0.005          # 验证 MAE 在最好的 0.5% 以内就取更少的特征
+
+
+def _subsets(cols: list[str]) -> list[list[str]]:
+    out = [[]]
+    for c in cols:
+        out += [x + [c] for x in out]
+    return sorted(out, key=len)
+
+
+def select_features(tr: pd.DataFrame, base: list[str], fp, embargo_days: int = 3,
+                    val_days: int = NESTED_VAL_DAYS, tol: float = NESTED_TOL) -> list[str]:
+    """**只用训练窗**挑天气特征：训练窗前段拟合、最后 val_days 天验证，
+    在 base 之上枚举天气变量的全部子集（含空集），取验证 MAE 最小的；
+    几个子集差距在 tol 以内时取变量更少的那个（多一个变量要用看得见的改善换）。
+
+    这是在修"特征取舍"那张表的毛病：那张表是在测试集上比出来的，
+    拿它去决定留哪几个变量，等于偷看了答案。这里每个滚动窗口各自挑一次，
+    挑的时候测试段完全不可见。
+    """
+    t = tr["t"]
+    cut = t.max() - pd.Timedelta(days=val_days)
+    fit_m = (t < cut - pd.Timedelta(days=embargo_days)).to_numpy()
+    val_m = (t >= cut).to_numpy()
+    if fit_m.sum() < 200 or val_m.sum() < 48:
+        return list(WX_COLS)
+    yv = tr["rrp"].to_numpy(float)[val_m]
+    scores = []
+    for sub in _subsets(list(WX_COLS)):
+        pv = fp(tr[fit_m], tr[val_m], base + sub)
+        scores.append((float(np.mean(np.abs(pv - yv))), sub))
+    best = min(sc for sc, _ in scores)
+    ok = [(len(sub), sc, sub) for sc, sub in scores if sc <= best * (1 + tol)]
+    return min(ok, key=lambda x: (x[0], x[1]))[2]
+
+
 def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
-        variants=True, per_hour=True) -> dict:
+        variants=True, per_hour=True, nested=True) -> dict:
     """滚动重拟合跑完四层，每层都在**同一批**测试行上评估。
 
     variants=True 时额外跑"只留一个天气变量"的几组，用来回答
@@ -302,6 +340,9 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
     allm = {**{k: v for k, v in tiers.items()}, **var_cols}
     pred = {k: np.full(len(d), np.nan) for k in allm}
     pred["B0 naive"] = d["naive"].to_numpy(float)
+    if nested:
+        pred[NESTED_NAME] = np.full(len(d), np.nan)
+    picks: list[list[str]] = []
     n_fit = 0
     for d0 in range(train_days + embargo_days, span, step_days):
         tr_m = (day >= d0 - embargo_days - train_days) & (day < d0 - embargo_days)
@@ -314,12 +355,19 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
                 continue
             fp = _fit_predict_ph if per_hour else _fit_predict
             pred[name][te_m] = fp(d[tr_m], d[te_m], cols)
+        if nested:
+            fp = _fit_predict_ph if per_hour else _fit_predict
+            sub = select_features(d[tr_m], base, fp, embargo_days)
+            picks.append(sub)
+            pred[NESTED_NAME][te_m] = fp(d[tr_m], d[te_m], base + sub)
 
     # 只在**每一层都有预测**的行上比较，否则比的不是同一批样本
     ok = np.ones(len(d), bool)
     for name, cols in allm.items():
         if cols is not None or name == "B0 naive":
             ok &= np.isfinite(pred[name])
+    if nested:
+        ok &= np.isfinite(pred[NESTED_NAME])
     y = d["rrp"].to_numpy(float)[ok]
     if ok.sum() < 200:
         return {"status": "too_few_test", "n": int(ok.sum())}
@@ -371,9 +419,28 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
                 "gw_p": None if gw is None else round(gw, 4)})
         out["variants"].sort(key=lambda r: -r["gain_rmae"])
 
+    # ---- 嵌套选特征：和 B3 用同一个对照（B2，没有官方数据时 B1）----
+    if nested and NESTED_NAME in err and ref in err:
+        e = err[NESTED_NAME]
+        gw = giacomini_white(err[ref], e)
+        nw = max(len(picks), 1)
+        freq = {c: round(sum(c in p_ for p_ in picks) / nw, 3) for c in WX_COLS}
+        combos: dict[str, int] = {}
+        for p_ in picks:
+            k = "+".join(p_) if p_ else "不用天气"
+            combos[k] = combos.get(k, 0) + 1
+        out["nested"] = {
+            "name": NESTED_NAME, "vs": ref, "val_days": NESTED_VAL_DAYS, "tol": NESTED_TOL,
+            "rmae": round(float(np.mean(e)) / mae0, 4),
+            "gain_rmae": round(float(np.mean(err[ref]) - np.mean(e)) / mae0, 4),
+            "gw_p": None if gw is None else round(gw, 4),
+            "windows": len(picks), "freq": freq,
+            "combos": dict(sorted(combos.items(), key=lambda kv: -kv[1]))}
+
     out["_pred"] = {k: v[ok] for k, v in pred.items()}
     out["_y"] = y
     out["_t"] = d["t"].to_numpy()[ok]
+    out["_aemo"] = d["aemo"].to_numpy(float)[ok] if have_off else None
     return out
 
 
@@ -509,8 +576,10 @@ def economics(res: dict, eta: float = BATT_ETA, hours: int = BATT_HOURS,
     day = (pd.Series(t) + pd.Timedelta(hours=NEM_OFFSET_H)).dt.floor("D").to_numpy()
     udays, inv = np.unique(day, return_inverse=True)
     order = np.argsort(np.asarray(t), kind="stable")
-    groups = [order[inv[order] == i] for i in range(len(udays))]
-    groups = [g for g in groups if len(g) >= 2 * hours]
+    groups = [(udays[i], order[inv[order] == i]) for i in range(len(udays))]
+    groups = [(dd, g) for dd, g in groups if len(g) >= 2 * hours]
+    gdays = [str(pd.Timestamp(dd).date()) for dd, _ in groups]
+    groups = [g for _, g in groups]
     if len(groups) < 30:
         return {"status": "too_few_days", "days": len(groups)}
 
@@ -564,6 +633,7 @@ def economics(res: dict, eta: float = BATT_ETA, hours: int = BATT_HOURS,
                      "spread": None if not np.isfinite(sp) else round(sp, 3),
                      "trade_days": round(float((g != 0).mean()), 3),
                      "win_days": round(float((g > 0).mean()), 3)})
+    base = rows[0]["tier"] if rows else None
     for i, r_ in enumerate(rows):
         if i == 0:
             continue
@@ -572,10 +642,143 @@ def economics(res: dict, eta: float = BATT_ETA, hours: int = BATT_HOURS,
         r_["vs_prev"] = prev
         r_["gain"] = round(float(dg.mean()), 2)
         r_["gain_ci"] = [round(v, 2) for v in (_block_boot(dg) or [float("nan")] * 2)]
-    return {"status": "ok", "days": len(groups), "eta": eta,
+        # 相对"一周前同期"（naive）——交易台用它挑"该用哪个模型"
+        dn = series[r_["tier"]] - series[base]
+        r_["vs_naive"] = round(float(dn.mean()), 2)
+        r_["vs_naive_ci"] = [round(v, 2) for v in (_block_boot(dn) or [float("nan")] * 2)]
+    # 该用哪个模型排电池：**不显著差于最好那个的、最简单的那个**。
+    # 只挑均值最高的会把运气当本事；多一层特征必须用显著更高的收益换来。
+    rec = None
+    if rows:
+        best = max(rows, key=lambda r_: r_["daily"])["tier"]
+        for r_ in rows:
+            dv = series[r_["tier"]] - series[best]
+            ci = _block_boot(dv) if r_["tier"] != best else [0.0, 0.0]
+            r_["vs_best_ci"] = None if ci is None else [round(v, 2) for v in ci]
+            if rec is None and (r_["tier"] == best or (ci is not None and ci[1] >= 0)):
+                rec = r_["tier"]
+    # 嵌套选特征那一版：和 B3 同一个对照，单独记，不进"该用哪个模型"的挑选
+    nest = None
+    pn = res["_pred"].get(NESTED_NAME)
+    if pn is not None and np.isfinite(pn).all():
+        ref = "B2 +官方" if "B2 +官方" in series else "B1 自回归"
+        g = realised(pn)
+        series[NESTED_NAME] = g
+        if ref in series:
+            dg = g - series[ref]
+            nest = {"tier": NESTED_NAME, "vs": ref,
+                    "daily": round(float(g.mean()), 2),
+                    "ci": [round(v, 2) for v in (_block_boot(g) or [float("nan")] * 2)],
+                    "capture": round(float(g.mean()) / pf, 3) if pf > 0 else None,
+                    "gain": round(float(dg.mean()), 2),
+                    "gain_ci": [round(v, 2) for v in (_block_boot(dg) or [float("nan")] * 2)]}
+    # 逐日收益序列：交易台画累计收益用
+    daily = {"dates": gdays, "perfect": [round(float(v), 2) for v in perfect]}
+    for k, v in series.items():
+        daily[k] = [round(float(x), 2) for x in v]
+    return {"status": "ok", "days": len(groups), "eta": eta, "daily": daily,
+            "recommended": rec, "nested": nest,
             "battery": {"mw": BATT_POWER_MW, "hours": hours, "cost": cost},
             "hours_per_day": int(np.median([len(g) for g in groups])),
             "perfect_daily": round(pf, 2), "rows": rows}
+
+
+BIAS_SHORT = "做空 AEMO"
+
+
+def bias_trade(res: dict) -> dict:
+    """第二种用法：**赌 AEMO 预调度的偏差**，按实际价结算。
+
+    每个小时，决策时刻已经看得到 AEMO 对那个小时的预调度价 a。
+    我们的预测 p 比 a 高就做多 1 MW、比 a 低就做空 1 MW，结算 = 方向 × (实际 − a)。
+    也就是问：**我们的模型对 AEMO 的修正，方向对不对、值多少钱**。
+
+    这不是一张能直接下的单——NEM 没有日前市场，AEMO 预调度不是成交价。
+    现实里对应的是：拿这个方向去调整对冲头寸 / 报价，或者在 ASX 期货、
+    场外互换上表达对次日均价的看法。所以它衡量的是**信号**值多少钱，
+    和电池套利（只吃日内排序）互补：天气主要移动的是整天的水平，
+    电池用不上，这里用得上。
+
+    电价重尾：一个尖峰小时就能决定一整季的盈亏。所以除了均值和块自助区间，
+    还报"方向命中率"（|实际 − a| < $1 的小时不计），它不受尖峰支配。
+    """
+    a = res.get("_aemo")
+    if res.get("status") != "ok" or a is None or "_pred" not in res:
+        return {"status": "unavailable"}
+    y, t = res["_y"], pd.to_datetime(res["_t"])
+    day = (pd.Series(t) + pd.Timedelta(hours=NEM_OFFSET_H)).dt.floor("D").to_numpy()
+    udays, inv = np.unique(day, return_inverse=True)
+    if len(udays) < 30:
+        return {"status": "too_few_days", "days": int(len(udays))}
+    move = y - a
+    real = np.abs(move) >= 1.0
+    names = [n for n in ("B1 自回归", "B2 +官方", "B3 +天气", NESTED_NAME)
+             if n in res["_pred"] and np.isfinite(res["_pred"][n]).all()]
+    rows, series = [], {}
+    # 基线：不看任何模型，每个小时都做空预调度。预调度本身系统性偏高
+    # （它按报价排序、不含之后的重新报价，尖峰常常不兑现），光这一条就能"赚"很多——
+    # 那是预调度的口径偏差，不是我们的信息。模型的价值要和这条基线比。
+    for n in [BIAS_SHORT] + names:
+        sgn = (np.full(len(y), -1.0) if n == BIAS_SHORT
+               else np.sign(res["_pred"][n] - a))
+        pnl = sgn * move
+        g = np.bincount(inv, weights=pnl, minlength=len(udays))
+        series[n] = g
+        hit = float((np.sign(move) == sgn)[real & (sgn != 0)].mean()) if (real & (sgn != 0)).any() else None
+        rows.append({"tier": n, "daily": round(float(g.mean()), 2),
+                     "ci": [round(v, 2) for v in (_block_boot(g) or [float("nan")] * 2)],
+                     "per_mwh": round(float(pnl.mean()), 2),
+                     "median_day": round(float(np.median(g)), 2),
+                     "hit": None if hit is None else round(hit, 4),
+                     "win_days": round(float((g > 0).mean()), 3)})
+    ref = "B2 +官方" if "B2 +官方" in series else "B1 自回归"
+    for r_ in rows:
+        if r_["tier"] != BIAS_SHORT:
+            ds = series[r_["tier"]] - series[BIAS_SHORT]
+            r_["vs_short"] = round(float(ds.mean()), 2)
+            r_["vs_short_ci"] = [round(v, 2) for v in (_block_boot(ds) or [float("nan")] * 2)]
+        if r_["tier"] in ("B3 +天气", NESTED_NAME) and ref in series:
+            dg = series[r_["tier"]] - series[ref]
+            r_["vs"] = ref
+            r_["gain"] = round(float(dg.mean()), 2)
+            r_["gain_ci"] = [round(v, 2) for v in (_block_boot(dg) or [float("nan")] * 2)]
+            # 去掉尖峰日再看一次：最好和最差各 2% 的日子拿掉，结论还在不在
+            k = max(1, int(0.02 * len(dg)))
+            core = np.sort(dg)[k:-k]
+            r_["gain_trim"] = round(float(core.mean()), 2)
+    gdays = [str(pd.Timestamp(x).date()) for x in udays]
+    daily = {"dates": gdays}
+    for k_, v in series.items():
+        daily[k_] = [round(float(x), 2) for x in v]
+    return {"status": "ok", "days": int(len(udays)), "hours": int(len(y)),
+            "ref": ref, "mw": BATT_POWER_MW, "rows": rows, "daily": daily}
+
+
+def _meta(a) -> dict:
+    return {"generated_at": pd.Timestamp.now("UTC").isoformat(),
+            "hours": a.hours, "decide_at": a.decide_at,
+            "is_fixture": "fixture" in os.environ.get("WQ_DATA_DIR", "").lower(),
+            "train_days": a.train_days, "step_days": a.step_days,
+            "embargo_days": a.embargo_days, "per_hour": not a.shared,
+            "battery": {"mw": BATT_POWER_MW, "hours": BATT_HOURS,
+                        "eta": BATT_ETA, "cost": BATT_COST},
+            "regions": {}}
+
+
+def _merge(a) -> int:
+    out = _meta(a)
+    order = [s_[1] for s_ in SITES]
+    got = {}
+    for f in a.merge:
+        with open(f) as fh:
+            r = json.load(fh)
+        got[r.get("region") or os.path.basename(f).split(".")[0]] = r
+    for k in sorted(got, key=lambda k: order.index(k) if k in order else 99):
+        out["regions"][k] = got[k]
+    with open(a.out or "ladder.json", "w") as f:
+        json.dump(out, f, ensure_ascii=False, indent=1, default=str)
+    print(f"→ {a.out or 'ladder.json'}（{'、'.join(out['regions'])}）")
+    return 0
 
 
 def _all_regions(a) -> int:
@@ -585,14 +788,7 @@ def _all_regions(a) -> int:
     比整个流程停在第一个错误上有用。
     """
     hrs = None if a.hours == "all" else tuple(int(x) for x in a.hours.split("-"))
-    out = {"generated_at": pd.Timestamp.now("UTC").isoformat(),
-           "hours": a.hours, "decide_at": a.decide_at,
-           "is_fixture": "fixture" in os.environ.get("WQ_DATA_DIR", "").lower(),
-           "train_days": a.train_days, "step_days": a.step_days,
-           "embargo_days": a.embargo_days, "per_hour": not a.shared,
-           "battery": {"mw": BATT_POWER_MW, "hours": BATT_HOURS,
-                       "eta": BATT_ETA, "cost": BATT_COST},
-           "regions": {}}
+    out = _meta(a)
     con = store.connect()
     try:
         for site_id, region, *_ in SITES:
@@ -604,7 +800,8 @@ def _all_regions(a) -> int:
                 ec = economics(res) if res.get("status") == "ok" else {"status": "skip"}
                 dg = diagnose(res) if res.get("status") == "ok" else {"status": "skip"}
                 pub = {k: v for k, v in res.items() if not k.startswith("_")}
-                out["regions"][region] = {**pub, "economics": ec, "diag": dg}
+                bt = bias_trade(res) if res.get("status") == "ok" else {"status": "skip"}
+                out["regions"][region] = {**pub, "economics": ec, "diag": dg, "bias": bt}
                 if res.get("status") == "ok":
                     sp = res.get("official_span")
                     if sp:
@@ -646,11 +843,16 @@ def main(argv=None) -> int:
     ap.add_argument("--step-days", type=int, default=7)
     ap.add_argument("--embargo-days", type=int, default=3)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--merge", nargs="+", default=None, metavar="REGION.json",
+                    help="把几次单区运行的 JSON 合成交易台用的一个文件（配合 --out）。"
+                         "单区分开跑时用，比如机器有单次运行时长限制。")
     ap.add_argument("--shared", action="store_true",
                     help="改用一个跨 24 小时的共享模型。默认是分小时拟合（综述的标准做法）；"
                          "共享模型会把日内曲线压平，只留作对照。")
     a = ap.parse_args(argv)
 
+    if a.merge:
+        return _merge(a)
     if a.region.lower() == "all":
         return _all_regions(a)
 
@@ -775,6 +977,32 @@ def main(argv=None) -> int:
     else:
         print(f"\n  经济评估：{ec.get('status')}")
 
+    nd = res.get("nested")
+    if nd:
+        fq = "  ".join(f"{k} {v:.0%}" for k, v in nd["freq"].items())
+        p_ = "—" if nd["gw_p"] is None else f"{nd['gw_p']:.4f}"
+        print(f"\n  嵌套选特征（每个窗口只用训练段挑，最后 {nd['val_days']} 天验证）"
+              f"：{nd['windows']} 个窗口")
+        print(f"    被选中的比例：{fq}")
+        print(f"    相对 {nd['vs']}：rMAE 增量 {nd['gain_rmae']:+.4f}   GW p {p_}")
+        en = (ec or {}).get("nested") if ec.get("status") == "ok" else None
+        if en:
+            print(f"    电池日收益增量 {en['gain']:+.2f} $/天 "
+                  f"[{en['gain_ci'][0]:.2f}, {en['gain_ci'][1]:.2f}]")
+
+    bt_ = bias_trade(res)
+    if bt_.get("status") == "ok":
+        print(f"\n  赌 AEMO 预调度偏差（1 MW，方向 = sign(预测 − AEMO)，按实际价结算）"
+              f"：{bt_['days']} 天")
+        print(f"  {'层':<12s}{'日均 $/天':>12s}{'95% 区间':>22s}{'命中率':>8s}"
+              f"{'相对' + bt_['ref']:>16s}")
+        for r_ in bt_["rows"]:
+            ci = f"[{r_['ci'][0]:.0f}, {r_['ci'][1]:.0f}]"
+            hit = "—" if r_["hit"] is None else f"{r_['hit']:.1%}"
+            g = ("" if "gain" not in r_ else
+                 f"{r_['gain']:+.1f} [{r_['gain_ci'][0]:.0f}, {r_['gain_ci'][1]:.0f}]")
+            print(f"  {r_['tier']:<12s}{r_['daily']:>12.1f}{ci:>22s}{hit:>8s}  {g}")
+
     dg = diagnose(res)
     if dg.get("status") == "ok":
         print("\n  误差解剖（MAE 是均值，会把'整体偏'和'几天炸'混成一个数）")
@@ -813,7 +1041,8 @@ def main(argv=None) -> int:
         with open(a.out, "w") as f:
             json.dump({"region": a.region, "hours": a.hours,
                        "generated_at": pd.Timestamp.now("UTC").isoformat(),
-                       **pub, "economics": ec, "diag": dg}, f,
+                       **pub, "economics": ec, "diag": dg,
+                       "bias": bias_trade(res)}, f,
                       ensure_ascii=False, indent=1, default=str)
         print(f"→ {a.out}")
     return 0

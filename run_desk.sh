@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 重跑交易台：回归测试 → 基准阶梯（五个区）→ 渲染 docs/index.html
+# 重跑交易台：回归测试 → 基准阶梯（五个区）→ 渲染 docs/index.html（交易台）和 docs/method.html（方法与证据）
 #
 #   bash run_desk.sh
 #
@@ -34,5 +34,5 @@ echo "== 3/3 交易台 =="
 python l1/desk.py --in docs/ladder.json --out docs/index.html
 
 echo
-echo "完成：docs/index.html（本地用浏览器打开即可）"
+echo "完成：docs/index.html 交易台、docs/method.html 方法与证据（本地用浏览器打开即可）"
 echo "发布：bash publish.sh"

@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEM 天气交易台 · 方法与证据</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Serif+4:ital@1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f3;--fg:#16181c;--dim:#6b7280;--line:#e2e0da;--card:#fff;
+ --ac:#0f5d70;--ok:#0f7a4f;--no:#9a3412;--none:#6b7280;--hl:#eef6f8}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+ --bg:#0e1113;--fg:#e8e6e1;--dim:#9aa1a9;--line:#242a2e;--card:#161a1d;
+ --ac:#4fb3c9;--ok:#3fbf87;--no:#e08a5a;--none:#8b939b;--hl:#12262c}}
+:root[data-theme=dark]{--bg:#0e1113;--fg:#e8e6e1;--dim:#9aa1a9;--line:#242a2e;
+ --card:#161a1d;--ac:#4fb3c9;--ok:#3fbf87;--no:#e08a5a;--none:#8b939b;--hl:#12262c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:15px/1.6 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 24px 80px}
+.pnav{display:flex;gap:18px;align-items:center;font-size:14px;margin-bottom:22px;
+ padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pnav a{color:var(--ac);text-decoration:none}.pnav a:hover{text-decoration:underline}
+.pnav .on{color:var(--fg);font-weight:600}
+@media(max-width:640px){.wrap{padding:16px 16px 60px}}
+header{border-bottom:2px solid var(--fg);padding-bottom:18px;margin-bottom:28px}
+h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em;font-weight:700}
+.tagline{color:var(--dim);margin:0;font-size:14px}
+.stamp{margin-top:14px;font:12px/1.5 "IBM Plex Mono",ui-monospace,Menlo,monospace;
+ color:var(--dim)}
+.fixture{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:4px;
+ background:#7c2d12;color:#fff;font-weight:700;font-size:13px}
+.q{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ac);
+ padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0}
+.q p{margin:0;font:italic 16px/1.6 "Source Serif 4",Georgia,serif}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+ margin:26px 0 36px}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:8px;
+ padding:16px;text-decoration:none;color:inherit;border-top:3px solid var(--none);
+ transition:transform .12s ease,box-shadow .12s ease}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.09)}
+.card.yes{border-top-color:var(--ok)}.card.no{border-top-color:var(--no)}
+.card h3{margin:6px 0 10px;font-size:17px;letter-spacing:.02em}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
+ background:var(--none);color:#fff;letter-spacing:.04em}
+.card.yes .chip,.chip.yes{background:var(--ok)}
+.card.no .chip,.chip.no{background:var(--no)}
+.chip.none{background:var(--none)}
+.big{font:700 30px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:-.02em}
+.card.no .big,.card.none .big{color:var(--dim)}
+.card.yes .big{color:var(--ok)}
+.sub{color:var(--dim);font-size:12px;margin-top:3px}
+.mini{margin-top:8px;font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--dim)}
+.why{font-size:12.5px;color:var(--dim);margin:10px 0 0;line-height:1.5}
+.reg{margin:44px 0;padding-top:22px;border-top:1px solid var(--line)}
+.reg h2{font-size:23px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
+.reg h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);
+ margin:28px 0 10px;font-weight:700}
+.lede{margin:0 0 12px;font-size:15px}
+.meta{font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--dim);margin-bottom:6px}
+.warn ul{margin:8px 0 0;padding-left:20px}
+.warn li{margin:3px 0}
+.warn{background:#fef3c7;color:#5b3a00;border-radius:6px;padding:14px 16px;
+ font-size:13.5px;line-height:1.6;margin:12px 0}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .warn{
+ background:#3a2d0a;color:#f6dfa0}}
+:root[data-theme=dark] .warn{background:#3a2d0a;color:#f6dfa0}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tblwrap table{min-width:560px}
+.tblwrap table.wide{min-width:700px}
+@media(max-width:560px){td.tier .note{max-width:200px}}
+table.lad{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 4px}
+table.lad th{text-align:right;font-size:11.5px;letter-spacing:.03em;
+ color:var(--dim);border-bottom:1px solid var(--line);padding:6px 8px;font-weight:700}
+table.lad th:first-child,table.lad th:nth-child(2){text-align:left}
+table.lad td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.lad td.num{text-align:right;font:13px "IBM Plex Mono",ui-monospace,monospace;
+ white-space:nowrap}
+td.dim{color:var(--dim)}
+td.warnnum{color:var(--no);font-weight:700}
+td.tier{font-weight:600;min-width:130px}
+td.tier .note{display:block;font-weight:400;font-size:11.5px;color:var(--dim);
+ margin-top:2px;max-width:330px}
+tr.hl td{background:var(--hl)}
+tr.skip td{color:var(--dim);font-style:italic}
+tr.perfect td{color:var(--dim);border-top:1px solid var(--line)}
+td.rm{position:relative}
+td.rm i{display:block;height:3px;background:var(--ac);margin-top:4px;border-radius:2px;
+ opacity:.75}
+tr.keep td:first-child{color:var(--ok);font-weight:700}
+tr.drop td:first-child{color:var(--dim)}
+.cap{font-size:12.5px;color:var(--dim);line-height:1.6;margin:4px 0 10px}
+.card.none .chip,.chip.none{background:var(--none)}
+.empty{color:var(--dim);font-style:italic}
+footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--dim);line-height:1.7}
+footer h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg);
+ margin:22px 0 8px}
+footer ul{margin:6px 0;padding-left:20px}
+footer a{color:var(--ac)}
+code{font:12.5px "IBM Plex Mono",ui-monospace,monospace;background:var(--hl);
+ padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="pnav"><a href="index.html">← 交易台</a><span class="on">方法与证据</span><a href="https://github.com/Eric-S108/nem-weather-desk">代码</a></nav>
+<header>
+  <h1>方法与证据</h1>
+  <p class="tagline">天气预报在价格自回归与 AEMO 官方预调度之上，还剩多少可交易的增量</p>
+  
+  <div class="stamp">生成于 2026-10-24 12:17 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</div>
+</header>
+<div class="q"><p>“Statistical error measures … may not necessarily reflect
+the economic value of reducing prediction errors.”<br>
+—— Lago &amp; Weron, EPF 综述。所以这一页每个区都配一块电池实际能多赚多少钱，
+不只是误差。</p></div>
+<p class="lede">跑通 5 个区，<b>没有一个</b>通过全部四道门槛。按现在的数据，天气预报还不能作为独立的交易优势。</p>
+<div class="grid">
+    <a class="card no" href="#r-NSW1">
+      <div class="chip">不可用</div>
+      <h3>NSW1</h3>
+      <div class="big">−$0.19</div>
+      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
+      <div class="mini">rMAE 增量 -0.0081</div>
+      <p class="why">rMAE 没改善（-0.0081）；GW p=0.297 不显著；日收益增量区间 [-5.3, 4.6] 跨 0。</p>
+    </a>
+    <a class="card no" href="#r-QLD1">
+      <div class="chip">不可用</div>
+      <h3>QLD1</h3>
+      <div class="big">−$0.08</div>
+      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
+      <div class="mini">rMAE 增量 +0.0014</div>
+      <p class="why">GW p=0.807 不显著；日收益增量区间 [-2.0, 2.0] 跨 0。</p>
+    </a>
+    <a class="card no" href="#r-VIC1">
+      <div class="chip">不可用</div>
+      <h3>VIC1</h3>
+      <div class="big">−$4.36</div>
+      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
+      <div class="mini">rMAE 增量 +0.0177</div>
+      <p class="why">日收益增量区间 [-8.9, -0.4] 整体在 0 以下——显著亏钱。</p>
+    </a>
+    <a class="card no" href="#r-SA1">
+      <div class="chip">不可用</div>
+      <h3>SA1</h3>
+      <div class="big">−$35.20</div>
+      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
+      <div class="mini">rMAE 增量 +0.0213</div>
+      <p class="why">日收益增量区间 [-92.1, 4.2] 跨 0。</p>
+    </a>
+    <a class="card no" href="#r-TAS1">
+      <div class="chip">不可用</div>
+      <h3>TAS1</h3>
+      <div class="big">−$3.47</div>
+      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
+      <div class="mini">rMAE 增量 +0.0120</div>
+      <p class="why">日收益增量区间 [-7.2, 0.1] 跨 0。</p>
+    </a></div>
+<section id="r-NSW1" class="reg">
+      <h2>NSW1 <span class="chip no">不可用</span></h2>
+      <p class="lede">rMAE 没改善（-0.0081）；GW p=0.297 不显著；日收益增量区间 [-5.3, 4.6] 跨 0。</p>
+      
+      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
+        · 24 次滚动重拟合 ·
+        预调度 2025-10-26 起，区间内覆盖 100% ·
+        分小时拟合（24 个模型）</div>
+      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
+      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
+      <th>相对上层</th><th>GW p</th></tr></thead>
+      <tbody><tr>
+          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
+          <td class="num">34.75</td>
+          <td class="num rm">1.000<i style="width:0%"></i></td>
+          <td class="num dim">1.000</td>
+          <td class="num">57.1</td>
+          <td class="num">0.357</td>
+          <td class="num">—</td><td class="num">—</td></tr><tr>
+          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
+          <td class="num">25.06</td>
+          <td class="num rm">0.721<i style="width:70%"></i></td>
+          <td class="num dim">0.694</td>
+          <td class="num">49.5</td>
+          <td class="num">0.617</td>
+          <td class="num">+0.2787</td><td class="num">0.0000</td></tr><tr>
+          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
+          <td class="num">20.95</td>
+          <td class="num rm">0.603<i style="width:99%"></i></td>
+          <td class="num dim">0.516</td>
+          <td class="num">48.6</td>
+          <td class="num">0.774</td>
+          <td class="num">+0.1185</td><td class="num">0.0000</td></tr><tr class="hl">
+          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
+          <td class="num">21.23</td>
+          <td class="num rm">0.611<i style="width:97%"></i></td>
+          <td class="num dim">0.527</td>
+          <td class="num">47.0</td>
+          <td class="num">0.764</td>
+          <td class="num">-0.0081</td><td class="num">0.2968</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
+  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
+  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
+  多半是几个时刻炸了，不是模型整体不行。</p>
+      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
+      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
+      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
+      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
+      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
+      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
+      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
+      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
+      <tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">48.91</td><td class="num dim">[28.9, 69.9]</td>
+          <td class="num">39.3%</td><td class="num">0.588</td>
+          <td class="num">1.04</td>
+          <td class="num">—</td>
+          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">56.39</td><td class="num dim">[35.8, 79.8]</td>
+          <td class="num">45.3%</td><td class="num">0.686</td>
+          <td class="num">0.94</td>
+          <td class="num">+7.48</td>
+          <td class="num dim">[2.4, 14.9]</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">60.07</td><td class="num dim">[40.1, 81.9]</td>
+          <td class="num">48.3%</td><td class="num">0.714</td>
+          <td class="num">1.05</td>
+          <td class="num">+3.68</td>
+          <td class="num dim">[-4.2, 11.7]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">59.89</td><td class="num dim">[39.3, 82.2]</td>
+          <td class="num">48.1%</td><td class="num">0.702</td>
+          <td class="num">1.06</td>
+          <td class="num">-0.19</td>
+          <td class="num dim">[-5.3, 4.6]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
+      <td class="num">124.46</td><td class="num dim">收益上限</td>
+      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
+      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
+      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
+      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
+      这两个数才是它的直接驱动，MAE 不是。</p>
+      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
+      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
+      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
+      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
+      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
+      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">34.75</td><td class="num">26.25</td>
+          <td class="num">71.02</td><td class="num">163.44</td>
+          <td class="num">-3.47</td>
+          <td class="num">7.2%</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">25.06</td><td class="num">18.22</td>
+          <td class="num">49.81</td><td class="num">129.44</td>
+          <td class="num">-9.90</td>
+          <td class="num">9.4%</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">20.95</td><td class="num">13.54</td>
+          <td class="num">43.60</td><td class="num">121.41</td>
+          <td class="num">-6.36</td>
+          <td class="num">11.7%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">21.23</td><td class="num">13.84</td>
+          <td class="num">44.59</td><td class="num">120.52</td>
+          <td class="num">-7.57</td>
+          <td class="num">10.7%</td></tr></tbody></table></div>
+      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
+      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
+      而且会在样本内制造好看的假象。</p>
+      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
+      <th>特征组</th><th>rMAE</th>
+      <th>相对基准</th><th>GW p</th></tr></thead>
+      <tbody><tr class="drop">
+          <td>删</td><td class="tier">+ghi 单独</td>
+          <td class="num">0.597</td>
+          <td class="num">+0.0055</td>
+          <td class="num">0.402</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 temp</td>
+          <td class="num">0.604</td>
+          <td class="num">-0.0007</td>
+          <td class="num">0.933</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+wind 单独</td>
+          <td class="num">0.610</td>
+          <td class="num">-0.0070</td>
+          <td class="num">0.133</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 wind</td>
+          <td class="num">0.610</td>
+          <td class="num">-0.0071</td>
+          <td class="num">0.283</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+temp 单独</td>
+          <td class="num">0.610</td>
+          <td class="num">-0.0073</td>
+          <td class="num">0.017</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 ghi</td>
+          <td class="num">0.614</td>
+          <td class="num">-0.0115</td>
+          <td class="num">0.034</td></tr></tbody></table></div><p class="cap"><b>上面那张表是在测试集上比出来的，只能当诊断，不能拿来决定留哪个变量</b>——
+      那等于偷看了答案。真正的取舍在这里：每个滚动窗口<b>只用训练段</b>挑一次——
+      训练窗前段拟合、最后 28 天验证，枚举天气变量的全部组合（含"不用"），
+      验证误差在最好的 0.5% 以内时取变量更少的那个。挑完用整段训练窗重拟合，再预测测试段。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>相对 B2 +官方</th>
+      <th>rMAE</th><th>增量</th><th>GW p</th><th>电池日收益增量</th></tr></thead>
+      <tbody><tr class="hl"><td class="tier">B3 选特征</td>
+      <td class="num">0.598</td><td class="num">+0.0050</td>
+      <td class="num">0.416</td><td class="num">+0.89 $/天，95% 区间 [-1.4, 3.1]</td></tr></tbody></table></div>
+      <p class="cap">24 个窗口里各变量被选中的比例：</p>
+      <div class="tblwrap"><table class="lad var"><tbody><tr><td>ghi</td><td class='num'>42%</td></tr><tr><td>wind</td><td class='num'>29%</td></tr><tr><td>temp</td><td class='num'>29%</td></tr></tbody></table></div>
+      <p class="cap">最常见的组合：不用天气 ×8、ghi+temp ×3、ghi ×3、ghi+wind ×3。</p>
+      <h4>五、赌 AEMO 预调度的偏差</h4><p class="cap">电池只吃<b>日内排序</b>，而天气（尤其风）主要移动的是<b>整天的水平</b>。
+      这一项量水平信号：每个小时，预测高于 AEMO 预调度就做多 1 MW、低于就做空，
+      按 (实际 − 预调度) 结算。它回答"我们对 AEMO 的修正，方向对不对、值多少钱"。
+      NEM 没有日前市场，预调度不是成交价，所以这是<b>信号价值</b>，
+      现实里对应调整对冲头寸 / 报价或在期货、互换上表达看法。
+      电价重尾，均值会被几个尖峰日支配，所以另给日中位数、方向命中率（|实际 − 预调度| &lt; $1 的小时不计），
+      以及去掉最好、最差各 2% 日子后的增量。
+      第一行"做空 AEMO"是基线：不看任何模型、每小时都做空预调度。前一天的预调度系统性偏高，
+      光这一条就"赚"很多，那是口径偏差，不是信息；模型要和它比。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>日均 $</th><th>95% 区间</th>
+      <th>日中位 $</th><th>命中率</th><th>相对一直做空</th><th>相对 B2 +官方</th><th>去尖峰后</th></tr></thead>
+      <tbody><tr><td class="tier">做空 AEMO</td>
+          <td class="num">6195.8</td>
+          <td class="num">[2580, 9541]</td>
+          <td class="num">173.7</td>
+          <td class="num">47.2%</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">6537.5</td>
+          <td class="num">[2909, 9926]</td>
+          <td class="num">461.4</td>
+          <td class="num">71.9%</td>
+          <td class="num">+342 [274, 416]</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">6563.0</td>
+          <td class="num">[2932, 9951]</td>
+          <td class="num">457.9</td>
+          <td class="num">74.6%</td>
+          <td class="num">+367 [295, 447]</td><td class="num">—</td><td class="num">—</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">6549.3</td>
+          <td class="num">[2919, 9934]</td>
+          <td class="num">447.3</td>
+          <td class="num">74.0%</td>
+          <td class="num">+353 [277, 437]</td><td class="num">-13.7 [-36.7, 2.8]</td><td class="num">-9.0</td></tr><tr><td class="tier">B3 选特征</td>
+          <td class="num">6561.5</td>
+          <td class="num">[2934, 9948]</td>
+          <td class="num">457.9</td>
+          <td class="num">74.9%</td>
+          <td class="num">+366 [292, 448]</td><td class="num">-1.5 [-18.0, 9.9]</td><td class="num">+1.0</td></tr></tbody></table></div>
+    </section><section id="r-QLD1" class="reg">
+      <h2>QLD1 <span class="chip no">不可用</span></h2>
+      <p class="lede">GW p=0.807 不显著；日收益增量区间 [-2.0, 2.0] 跨 0。</p>
+      
+      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
+        · 24 次滚动重拟合 ·
+        预调度 2025-10-26 起，区间内覆盖 100% ·
+        分小时拟合（24 个模型）</div>
+      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
+      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
+      <th>相对上层</th><th>GW p</th></tr></thead>
+      <tbody><tr>
+          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
+          <td class="num">28.13</td>
+          <td class="num rm">1.000<i style="width:0%"></i></td>
+          <td class="num dim">1.000</td>
+          <td class="num">40.4</td>
+          <td class="num">0.579</td>
+          <td class="num">—</td><td class="num">—</td></tr><tr>
+          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
+          <td class="num">20.78</td>
+          <td class="num rm">0.739<i style="width:65%"></i></td>
+          <td class="num dim">0.744</td>
+          <td class="num">30.9</td>
+          <td class="num">0.745</td>
+          <td class="num">+0.2611</td><td class="num">0.0000</td></tr><tr>
+          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
+          <td class="num">16.57</td>
+          <td class="num rm">0.589<i style="width:100%"></i></td>
+          <td class="num dim">0.569</td>
+          <td class="num">25.1</td>
+          <td class="num">0.862</td>
+          <td class="num">+0.1497</td><td class="num">0.0000</td></tr><tr class="hl">
+          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
+          <td class="num">16.53</td>
+          <td class="num rm">0.588<i style="width:100%"></i></td>
+          <td class="num dim">0.555</td>
+          <td class="num">25.2</td>
+          <td class="num">0.861</td>
+          <td class="num">+0.0014</td><td class="num">0.8072</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
+  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
+  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
+  多半是几个时刻炸了，不是模型整体不行。</p>
+      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
+      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
+      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
+      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
+      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
+      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
+      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
+      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
+      <tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">99.13</td><td class="num dim">[85.6, 110.2]</td>
+          <td class="num">70.6%</td><td class="num">0.719</td>
+          <td class="num">0.94</td>
+          <td class="num">—</td>
+          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">112.16</td><td class="num dim">[99.5, 123.1]</td>
+          <td class="num">79.8%</td><td class="num">0.793</td>
+          <td class="num">1.00</td>
+          <td class="num">+13.03</td>
+          <td class="num dim">[5.8, 21.3]</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">111.42</td><td class="num dim">[98.9, 122.3]</td>
+          <td class="num">79.3%</td><td class="num">0.819</td>
+          <td class="num">1.07</td>
+          <td class="num">-0.74</td>
+          <td class="num dim">[-6.5, 5.8]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">111.34</td><td class="num dim">[98.9, 122.3]</td>
+          <td class="num">79.3%</td><td class="num">0.818</td>
+          <td class="num">1.09</td>
+          <td class="num">-0.08</td>
+          <td class="num dim">[-2.0, 2.0]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
+      <td class="num">140.49</td><td class="num dim">收益上限</td>
+      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
+      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
+      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
+      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
+      这两个数才是它的直接驱动，MAE 不是。</p>
+      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
+      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
+      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
+      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
+      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
+      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">28.13</td><td class="num">20.30</td>
+          <td class="num">60.01</td><td class="num">142.21</td>
+          <td class="num">-2.49</td>
+          <td class="num">6.8%</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">20.78</td><td class="num">15.10</td>
+          <td class="num">42.22</td><td class="num">113.62</td>
+          <td class="num">-5.06</td>
+          <td class="num">8.1%</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">16.57</td><td class="num">11.54</td>
+          <td class="num">35.02</td><td class="num">86.36</td>
+          <td class="num">-3.31</td>
+          <td class="num">7.8%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">16.53</td><td class="num">11.26</td>
+          <td class="num">35.90</td><td class="num">83.84</td>
+          <td class="num">-4.52</td>
+          <td class="num">7.8%</td></tr></tbody></table></div>
+      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
+      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
+      而且会在样本内制造好看的假象。</p>
+      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
+      <th>特征组</th><th>rMAE</th>
+      <th>相对基准</th><th>GW p</th></tr></thead>
+      <tbody><tr class="keep">
+          <td>留</td><td class="tier">+ghi 单独</td>
+          <td class="num">0.579</td>
+          <td class="num">+0.0098</td>
+          <td class="num">0.010</td></tr><tr class="keep">
+          <td>留</td><td class="tier">去掉 temp</td>
+          <td class="num">0.580</td>
+          <td class="num">+0.0092</td>
+          <td class="num">0.091</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+wind 单独</td>
+          <td class="num">0.591</td>
+          <td class="num">-0.0018</td>
+          <td class="num">0.586</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 wind</td>
+          <td class="num">0.591</td>
+          <td class="num">-0.0019</td>
+          <td class="num">0.730</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 ghi</td>
+          <td class="num">0.603</td>
+          <td class="num">-0.0136</td>
+          <td class="num">0.001</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+temp 单独</td>
+          <td class="num">0.604</td>
+          <td class="num">-0.0145</td>
+          <td class="num">0.000</td></tr></tbody></table></div><p class="cap"><b>上面那张表是在测试集上比出来的，只能当诊断，不能拿来决定留哪个变量</b>——
+      那等于偷看了答案。真正的取舍在这里：每个滚动窗口<b>只用训练段</b>挑一次——
+      训练窗前段拟合、最后 28 天验证，枚举天气变量的全部组合（含"不用"），
+      验证误差在最好的 0.5% 以内时取变量更少的那个。挑完用整段训练窗重拟合，再预测测试段。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>相对 B2 +官方</th>
+      <th>rMAE</th><th>增量</th><th>GW p</th><th>电池日收益增量</th></tr></thead>
+      <tbody><tr class="hl"><td class="tier">B3 选特征</td>
+      <td class="num">0.586</td><td class="num">+0.0037</td>
+      <td class="num">0.368</td><td class="num">-0.45 $/天，95% 区间 [-1.8, 0.9]</td></tr></tbody></table></div>
+      <p class="cap">24 个窗口里各变量被选中的比例：</p>
+      <div class="tblwrap"><table class="lad var"><tbody><tr><td>ghi</td><td class='num'>71%</td></tr><tr><td>wind</td><td class='num'>38%</td></tr><tr><td>temp</td><td class='num'>17%</td></tr></tbody></table></div>
+      <p class="cap">最常见的组合：ghi+wind ×7、ghi ×7、不用天气 ×5、ghi+temp ×2。</p>
+      <h4>五、赌 AEMO 预调度的偏差</h4><p class="cap">电池只吃<b>日内排序</b>，而天气（尤其风）主要移动的是<b>整天的水平</b>。
+      这一项量水平信号：每个小时，预测高于 AEMO 预调度就做多 1 MW、低于就做空，
+      按 (实际 − 预调度) 结算。它回答"我们对 AEMO 的修正，方向对不对、值多少钱"。
+      NEM 没有日前市场，预调度不是成交价，所以这是<b>信号价值</b>，
+      现实里对应调整对冲头寸 / 报价或在期货、互换上表达看法。
+      电价重尾，均值会被几个尖峰日支配，所以另给日中位数、方向命中率（|实际 − 预调度| &lt; $1 的小时不计），
+      以及去掉最好、最差各 2% 日子后的增量。
+      第一行"做空 AEMO"是基线：不看任何模型、每小时都做空预调度。前一天的预调度系统性偏高，
+      光这一条就"赚"很多，那是口径偏差，不是信息；模型要和它比。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>日均 $</th><th>95% 区间</th>
+      <th>日中位 $</th><th>命中率</th><th>相对一直做空</th><th>相对 B2 +官方</th><th>去尖峰后</th></tr></thead>
+      <tbody><tr><td class="tier">做空 AEMO</td>
+          <td class="num">2229.6</td>
+          <td class="num">[572, 4051]</td>
+          <td class="num">86.0</td>
+          <td class="num">46.5%</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">2493.2</td>
+          <td class="num">[811, 4363]</td>
+          <td class="num">338.0</td>
+          <td class="num">70.5%</td>
+          <td class="num">+264 [209, 325]</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">2524.1</td>
+          <td class="num">[840, 4392]</td>
+          <td class="num">363.4</td>
+          <td class="num">73.6%</td>
+          <td class="num">+295 [237, 357]</td><td class="num">—</td><td class="num">—</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">2516.1</td>
+          <td class="num">[833, 4389]</td>
+          <td class="num">346.8</td>
+          <td class="num">73.3%</td>
+          <td class="num">+286 [231, 348]</td><td class="num">-8.1 [-22.4, 3.5]</td><td class="num">-6.8</td></tr><tr><td class="tier">B3 选特征</td>
+          <td class="num">2516.5</td>
+          <td class="num">[833, 4388]</td>
+          <td class="num">365.4</td>
+          <td class="num">73.2%</td>
+          <td class="num">+287 [230, 348]</td><td class="num">-7.6 [-18.1, 1.0]</td><td class="num">-6.1</td></tr></tbody></table></div>
+    </section><section id="r-VIC1" class="reg">
+      <h2>VIC1 <span class="chip no">不可用</span></h2>
+      <p class="lede">日收益增量区间 [-8.9, -0.4] 整体在 0 以下——显著亏钱。</p>
+      
+      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
+        · 24 次滚动重拟合 ·
+        预调度 2025-10-26 起，区间内覆盖 100% ·
+        分小时拟合（24 个模型）</div>
+      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
+      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
+      <th>相对上层</th><th>GW p</th></tr></thead>
+      <tbody><tr>
+          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
+          <td class="num">57.79</td>
+          <td class="num rm">1.000<i style="width:0%"></i></td>
+          <td class="num dim">1.000</td>
+          <td class="num">107.3</td>
+          <td class="num">0.160</td>
+          <td class="num">—</td><td class="num">—</td></tr><tr>
+          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
+          <td class="num">39.11</td>
+          <td class="num rm">0.677<i style="width:81%"></i></td>
+          <td class="num dim">0.684</td>
+          <td class="num">75.9</td>
+          <td class="num">0.512</td>
+          <td class="num">+0.3233</td><td class="num">0.0000</td></tr><tr>
+          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
+          <td class="num">29.95</td>
+          <td class="num rm">0.518<i style="width:100%"></i></td>
+          <td class="num dim">0.410</td>
+          <td class="num">72.1</td>
+          <td class="num">0.788</td>
+          <td class="num">+0.1585</td><td class="num">0.0000</td></tr><tr class="hl">
+          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
+          <td class="num">28.92</td>
+          <td class="num rm">0.500<i style="width:100%"></i></td>
+          <td class="num dim">0.404</td>
+          <td class="num">70.6</td>
+          <td class="num">0.789</td>
+          <td class="num">+0.0177</td><td class="num">0.0136</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
+  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
+  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
+  多半是几个时刻炸了，不是模型整体不行。</p>
+      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
+      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
+      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
+      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
+      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
+      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
+      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
+      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
+      <tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">80.43</td><td class="num dim">[51.7, 123.8]</td>
+          <td class="num">53.3%</td><td class="num">0.445</td>
+          <td class="num">0.97</td>
+          <td class="num">—</td>
+          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">77.10</td><td class="num dim">[61.7, 92.2]</td>
+          <td class="num">51.1%</td><td class="num">0.545</td>
+          <td class="num">0.75</td>
+          <td class="num">-3.33</td>
+          <td class="num dim">[-42.3, 22.7]</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">83.82</td><td class="num dim">[72.2, 95.0]</td>
+          <td class="num">55.5%</td><td class="num">0.664</td>
+          <td class="num">1.13</td>
+          <td class="num">+6.72</td>
+          <td class="num dim">[-3.6, 15.7]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">79.46</td><td class="num dim">[67.0, 91.4]</td>
+          <td class="num">52.6%</td><td class="num">0.642</td>
+          <td class="num">1.08</td>
+          <td class="num">-4.36</td>
+          <td class="num dim">[-8.9, -0.4]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
+      <td class="num">151.00</td><td class="num dim">收益上限</td>
+      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
+      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
+      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
+      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
+      这两个数才是它的直接驱动，MAE 不是。</p>
+      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
+      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
+      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
+      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
+      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
+      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">57.79</td><td class="num">47.00</td>
+          <td class="num">112.51</td><td class="num">209.27</td>
+          <td class="num">-0.15</td>
+          <td class="num">7.5%</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">39.11</td><td class="num">32.15</td>
+          <td class="num">72.24</td><td class="num">165.33</td>
+          <td class="num">-12.13</td>
+          <td class="num">8.1%</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">29.95</td><td class="num">19.26</td>
+          <td class="num">61.76</td><td class="num">166.14</td>
+          <td class="num">-5.87</td>
+          <td class="num">11.5%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">28.92</td><td class="num">19.00</td>
+          <td class="num">61.83</td><td class="num">149.68</td>
+          <td class="num">-8.41</td>
+          <td class="num">11.0%</td></tr></tbody></table></div>
+      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
+      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
+      而且会在样本内制造好看的假象。</p>
+      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
+      <th>特征组</th><th>rMAE</th>
+      <th>相对基准</th><th>GW p</th></tr></thead>
+      <tbody><tr class="keep">
+          <td>留</td><td class="tier">+wind 单独</td>
+          <td class="num">0.490</td>
+          <td class="num">+0.0287</td>
+          <td class="num">0.000</td></tr><tr class="keep">
+          <td>留</td><td class="tier">去掉 temp</td>
+          <td class="num">0.490</td>
+          <td class="num">+0.0285</td>
+          <td class="num">0.000</td></tr><tr class="keep">
+          <td>留</td><td class="tier">去掉 ghi</td>
+          <td class="num">0.498</td>
+          <td class="num">+0.0200</td>
+          <td class="num">0.002</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+ghi 单独</td>
+          <td class="num">0.519</td>
+          <td class="num">-0.0005</td>
+          <td class="num">0.801</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+temp 单独</td>
+          <td class="num">0.531</td>
+          <td class="num">-0.0133</td>
+          <td class="num">0.000</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 wind</td>
+          <td class="num">0.536</td>
+          <td class="num">-0.0180</td>
+          <td class="num">0.000</td></tr></tbody></table></div><p class="cap"><b>上面那张表是在测试集上比出来的，只能当诊断，不能拿来决定留哪个变量</b>——
+      那等于偷看了答案。真正的取舍在这里：每个滚动窗口<b>只用训练段</b>挑一次——
+      训练窗前段拟合、最后 28 天验证，枚举天气变量的全部组合（含"不用"），
+      验证误差在最好的 0.5% 以内时取变量更少的那个。挑完用整段训练窗重拟合，再预测测试段。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>相对 B2 +官方</th>
+      <th>rMAE</th><th>增量</th><th>GW p</th><th>电池日收益增量</th></tr></thead>
+      <tbody><tr class="hl"><td class="tier">B3 选特征</td>
+      <td class="num">0.494</td><td class="num">+0.0238</td>
+      <td class="num">0.000</td><td class="num">-1.44 $/天，95% 区间 [-5.7, 2.4]</td></tr></tbody></table></div>
+      <p class="cap">24 个窗口里各变量被选中的比例：</p>
+      <div class="tblwrap"><table class="lad var"><tbody><tr><td>ghi</td><td class='num'>29%</td></tr><tr><td>wind</td><td class='num'>92%</td></tr><tr><td>temp</td><td class='num'>0%</td></tr></tbody></table></div>
+      <p class="cap">最常见的组合：wind ×17、ghi+wind ×5、ghi ×2。</p>
+      <h4>五、赌 AEMO 预调度的偏差</h4><p class="cap">电池只吃<b>日内排序</b>，而天气（尤其风）主要移动的是<b>整天的水平</b>。
+      这一项量水平信号：每个小时，预测高于 AEMO 预调度就做多 1 MW、低于就做空，
+      按 (实际 − 预调度) 结算。它回答"我们对 AEMO 的修正，方向对不对、值多少钱"。
+      NEM 没有日前市场，预调度不是成交价，所以这是<b>信号价值</b>，
+      现实里对应调整对冲头寸 / 报价或在期货、互换上表达看法。
+      电价重尾，均值会被几个尖峰日支配，所以另给日中位数、方向命中率（|实际 − 预调度| &lt; $1 的小时不计），
+      以及去掉最好、最差各 2% 日子后的增量。
+      第一行"做空 AEMO"是基线：不看任何模型、每小时都做空预调度。前一天的预调度系统性偏高，
+      光这一条就"赚"很多，那是口径偏差，不是信息；模型要和它比。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>日均 $</th><th>95% 区间</th>
+      <th>日中位 $</th><th>命中率</th><th>相对一直做空</th><th>相对 B2 +官方</th><th>去尖峰后</th></tr></thead>
+      <tbody><tr><td class="tier">做空 AEMO</td>
+          <td class="num">4534.7</td>
+          <td class="num">[2182, 7680]</td>
+          <td class="num">172.5</td>
+          <td class="num">48.1%</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">5054.4</td>
+          <td class="num">[2671, 8091]</td>
+          <td class="num">524.6</td>
+          <td class="num">66.9%</td>
+          <td class="num">+520 [228, 793]</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">5034.9</td>
+          <td class="num">[2654, 8082]</td>
+          <td class="num">446.1</td>
+          <td class="num">67.0%</td>
+          <td class="num">+500 [207, 776]</td><td class="num">—</td><td class="num">—</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">5068.5</td>
+          <td class="num">[2681, 8112]</td>
+          <td class="num">492.1</td>
+          <td class="num">68.6%</td>
+          <td class="num">+534 [247, 803]</td><td class="num">+33.6 [13.2, 59.0]</td><td class="num">+29.6</td></tr><tr><td class="tier">B3 选特征</td>
+          <td class="num">5067.7</td>
+          <td class="num">[2679, 8125]</td>
+          <td class="num">466.2</td>
+          <td class="num">68.9%</td>
+          <td class="num">+533 [247, 807]</td><td class="num">+32.8 [14.9, 53.6]</td><td class="num">+31.3</td></tr></tbody></table></div>
+    </section><section id="r-SA1" class="reg">
+      <h2>SA1 <span class="chip no">不可用</span></h2>
+      <p class="lede">日收益增量区间 [-92.1, 4.2] 跨 0。</p>
+      
+      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
+        · 24 次滚动重拟合 ·
+        预调度 2025-10-26 起，区间内覆盖 100% ·
+        分小时拟合（24 个模型）</div>
+      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
+      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
+      <th>相对上层</th><th>GW p</th></tr></thead>
+      <tbody><tr>
+          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
+          <td class="num">87.82</td>
+          <td class="num rm">1.000<i style="width:0%"></i></td>
+          <td class="num dim">1.000</td>
+          <td class="num">409.6</td>
+          <td class="num">0.142</td>
+          <td class="num">—</td><td class="num">—</td></tr><tr>
+          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
+          <td class="num">56.33</td>
+          <td class="num rm">0.641<i style="width:90%"></i></td>
+          <td class="num dim">0.691</td>
+          <td class="num">289.5</td>
+          <td class="num">0.475</td>
+          <td class="num">+0.3586</td><td class="num">0.0000</td></tr><tr>
+          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
+          <td class="num">54.37</td>
+          <td class="num rm">0.619<i style="width:95%"></i></td>
+          <td class="num dim">0.580</td>
+          <td class="num">296.3</td>
+          <td class="num">0.596</td>
+          <td class="num">+0.0223</td><td class="num">0.1331</td></tr><tr class="hl">
+          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
+          <td class="num">52.50</td>
+          <td class="num rm">0.598<i style="width:100%"></i></td>
+          <td class="num dim">0.554</td>
+          <td class="num">291.9</td>
+          <td class="num">0.655</td>
+          <td class="num">+0.0213</td><td class="num">0.0133</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
+  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
+  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
+  多半是几个时刻炸了，不是模型整体不行。</p>
+      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
+      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
+      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
+      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
+      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
+      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
+      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
+      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
+      <tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">47.68</td><td class="num dim">[29.7, 63.5]</td>
+          <td class="num">15.9%</td><td class="num">0.355</td>
+          <td class="num">1.01</td>
+          <td class="num">—</td>
+          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">111.48</td><td class="num dim">[65.8, 172.1]</td>
+          <td class="num">37.2%</td><td class="num">0.486</td>
+          <td class="num">0.80</td>
+          <td class="num">+63.81</td>
+          <td class="num dim">[20.8, 125.0]</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">111.08</td><td class="num dim">[65.4, 170.8]</td>
+          <td class="num">37.1%</td><td class="num">0.530</td>
+          <td class="num">1.02</td>
+          <td class="num">-0.41</td>
+          <td class="num dim">[-7.0, 5.7]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">75.88</td><td class="num dim">[57.9, 92.3]</td>
+          <td class="num">25.3%</td><td class="num">0.531</td>
+          <td class="num">1.14</td>
+          <td class="num">-35.20</td>
+          <td class="num dim">[-92.1, 4.2]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
+      <td class="num">299.38</td><td class="num dim">收益上限</td>
+      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
+      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
+      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
+      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
+      这两个数才是它的直接驱动，MAE 不是。</p>
+      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
+      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
+      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
+      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
+      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
+      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">87.82</td><td class="num">52.70</td>
+          <td class="num">144.94</td><td class="num">422.09</td>
+          <td class="num">+0.54</td>
+          <td class="num">21.6%</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">56.33</td><td class="num">36.39</td>
+          <td class="num">93.64</td><td class="num">302.94</td>
+          <td class="num">-18.64</td>
+          <td class="num">20.2%</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">54.37</td><td class="num">30.55</td>
+          <td class="num">89.26</td><td class="num">300.47</td>
+          <td class="num">-13.20</td>
+          <td class="num">24.2%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">52.50</td><td class="num">29.22</td>
+          <td class="num">90.15</td><td class="num">310.14</td>
+          <td class="num">-18.78</td>
+          <td class="num">23.5%</td></tr></tbody></table></div>
+      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
+      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
+      而且会在样本内制造好看的假象。</p>
+      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
+      <th>特征组</th><th>rMAE</th>
+      <th>相对基准</th><th>GW p</th></tr></thead>
+      <tbody><tr class="keep">
+          <td>留</td><td class="tier">去掉 temp</td>
+          <td class="num">0.592</td>
+          <td class="num">+0.0267</td>
+          <td class="num">0.001</td></tr><tr class="keep">
+          <td>留</td><td class="tier">+wind 单独</td>
+          <td class="num">0.593</td>
+          <td class="num">+0.0259</td>
+          <td class="num">0.001</td></tr><tr class="keep">
+          <td>留</td><td class="tier">去掉 ghi</td>
+          <td class="num">0.596</td>
+          <td class="num">+0.0235</td>
+          <td class="num">0.003</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+ghi 单独</td>
+          <td class="num">0.623</td>
+          <td class="num">-0.0041</td>
+          <td class="num">0.315</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+temp 单独</td>
+          <td class="num">0.630</td>
+          <td class="num">-0.0114</td>
+          <td class="num">0.006</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 wind</td>
+          <td class="num">0.641</td>
+          <td class="num">-0.0224</td>
+          <td class="num">0.001</td></tr></tbody></table></div><p class="cap"><b>上面那张表是在测试集上比出来的，只能当诊断，不能拿来决定留哪个变量</b>——
+      那等于偷看了答案。真正的取舍在这里：每个滚动窗口<b>只用训练段</b>挑一次——
+      训练窗前段拟合、最后 28 天验证，枚举天气变量的全部组合（含"不用"），
+      验证误差在最好的 0.5% 以内时取变量更少的那个。挑完用整段训练窗重拟合，再预测测试段。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>相对 B2 +官方</th>
+      <th>rMAE</th><th>增量</th><th>GW p</th><th>电池日收益增量</th></tr></thead>
+      <tbody><tr class="hl"><td class="tier">B3 选特征</td>
+      <td class="num">0.594</td><td class="num">+0.0253</td>
+      <td class="num">0.001</td><td class="num">-33.48 $/天，95% 区间 [-91.0, 6.4]</td></tr></tbody></table></div>
+      <p class="cap">24 个窗口里各变量被选中的比例：</p>
+      <div class="tblwrap"><table class="lad var"><tbody><tr><td>ghi</td><td class='num'>58%</td></tr><tr><td>wind</td><td class='num'>96%</td></tr><tr><td>temp</td><td class='num'>12%</td></tr></tbody></table></div>
+      <p class="cap">最常见的组合：ghi+wind ×13、wind ×7、wind+temp ×3、ghi ×1。</p>
+      <h4>五、赌 AEMO 预调度的偏差</h4><p class="cap">电池只吃<b>日内排序</b>，而天气（尤其风）主要移动的是<b>整天的水平</b>。
+      这一项量水平信号：每个小时，预测高于 AEMO 预调度就做多 1 MW、低于就做空，
+      按 (实际 − 预调度) 结算。它回答"我们对 AEMO 的修正，方向对不对、值多少钱"。
+      NEM 没有日前市场，预调度不是成交价，所以这是<b>信号价值</b>，
+      现实里对应调整对冲头寸 / 报价或在期货、互换上表达看法。
+      电价重尾，均值会被几个尖峰日支配，所以另给日中位数、方向命中率（|实际 − 预调度| &lt; $1 的小时不计），
+      以及去掉最好、最差各 2% 日子后的增量。
+      第一行"做空 AEMO"是基线：不看任何模型、每小时都做空预调度。前一天的预调度系统性偏高，
+      光这一条就"赚"很多，那是口径偏差，不是信息；模型要和它比。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>日均 $</th><th>95% 区间</th>
+      <th>日中位 $</th><th>命中率</th><th>相对一直做空</th><th>相对 B2 +官方</th><th>去尖峰后</th></tr></thead>
+      <tbody><tr><td class="tier">做空 AEMO</td>
+          <td class="num">7025.6</td>
+          <td class="num">[3855, 11005]</td>
+          <td class="num">479.3</td>
+          <td class="num">57.5%</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">7554.0</td>
+          <td class="num">[4362, 11412]</td>
+          <td class="num">949.4</td>
+          <td class="num">69.9%</td>
+          <td class="num">+528 [197, 890]</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">7545.0</td>
+          <td class="num">[4338, 11393]</td>
+          <td class="num">957.3</td>
+          <td class="num">69.8%</td>
+          <td class="num">+519 [184, 879]</td><td class="num">—</td><td class="num">—</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">7534.6</td>
+          <td class="num">[4324, 11382]</td>
+          <td class="num">955.0</td>
+          <td class="num">68.9%</td>
+          <td class="num">+509 [176, 878]</td><td class="num">-10.4 [-39.8, 17.1]</td><td class="num">-9.5</td></tr><tr><td class="tier">B3 选特征</td>
+          <td class="num">7553.6</td>
+          <td class="num">[4335, 11400]</td>
+          <td class="num">982.6</td>
+          <td class="num">69.6%</td>
+          <td class="num">+528 [194, 899]</td><td class="num">+8.6 [-24.1, 38.7]</td><td class="num">+3.8</td></tr></tbody></table></div>
+    </section><section id="r-TAS1" class="reg">
+      <h2>TAS1 <span class="chip no">不可用</span></h2>
+      <p class="lede">日收益增量区间 [-7.2, 0.1] 跨 0。</p>
+      
+      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
+        · 24 次滚动重拟合 ·
+        预调度 2025-10-26 起，区间内覆盖 100% ·
+        分小时拟合（24 个模型）</div>
+      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
+      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
+      <th>相对上层</th><th>GW p</th></tr></thead>
+      <tbody><tr>
+          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
+          <td class="num">38.96</td>
+          <td class="num rm">1.000<i style="width:0%"></i></td>
+          <td class="num dim">1.000</td>
+          <td class="num">104.7</td>
+          <td class="num">0.333</td>
+          <td class="num">—</td><td class="num">—</td></tr><tr>
+          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
+          <td class="num">26.77</td>
+          <td class="num rm">0.687<i style="width:78%"></i></td>
+          <td class="num dim">0.741</td>
+          <td class="num">74.3</td>
+          <td class="num">0.605</td>
+          <td class="num">+0.3127</td><td class="num">0.0000</td></tr><tr>
+          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
+          <td class="num">23.19</td>
+          <td class="num rm">0.595<i style="width:100%"></i></td>
+          <td class="num dim">0.596</td>
+          <td class="num">72.4</td>
+          <td class="num">0.732</td>
+          <td class="num">+0.0921</td><td class="num">0.0000</td></tr><tr class="hl">
+          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
+          <td class="num">22.72</td>
+          <td class="num rm">0.583<i style="width:100%"></i></td>
+          <td class="num dim">0.599</td>
+          <td class="num">72.1</td>
+          <td class="num">0.750</td>
+          <td class="num">+0.0120</td><td class="num">0.0216</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
+  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
+  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
+  多半是几个时刻炸了，不是模型整体不行。</p>
+      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
+      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
+      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
+      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
+      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
+      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
+      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
+      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
+      <tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">46.21</td><td class="num dim">[26.8, 71.5]</td>
+          <td class="num">36.0%</td><td class="num">0.402</td>
+          <td class="num">0.95</td>
+          <td class="num">—</td>
+          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">47.89</td><td class="num dim">[32.3, 65.4]</td>
+          <td class="num">37.3%</td><td class="num">0.483</td>
+          <td class="num">0.69</td>
+          <td class="num">+1.68</td>
+          <td class="num dim">[-22.9, 18.6]</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">47.36</td><td class="num dim">[31.8, 64.3]</td>
+          <td class="num">36.9%</td><td class="num">0.557</td>
+          <td class="num">0.88</td>
+          <td class="num">-0.53</td>
+          <td class="num dim">[-6.2, 5.0]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">43.89</td><td class="num dim">[28.3, 60.6]</td>
+          <td class="num">34.2%</td><td class="num">0.540</td>
+          <td class="num">0.90</td>
+          <td class="num">-3.47</td>
+          <td class="num dim">[-7.2, 0.1]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
+      <td class="num">128.36</td><td class="num dim">收益上限</td>
+      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
+      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
+      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
+      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
+      这两个数才是它的直接驱动，MAE 不是。</p>
+      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
+      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
+      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
+      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
+      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
+      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
+          <td class="num">38.96</td><td class="num">23.77</td>
+          <td class="num">80.44</td><td class="num">146.44</td>
+          <td class="num">+1.99</td>
+          <td class="num">13.6%</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">26.77</td><td class="num">17.62</td>
+          <td class="num">56.33</td><td class="num">104.58</td>
+          <td class="num">+1.49</td>
+          <td class="num">11.9%</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">23.19</td><td class="num">14.17</td>
+          <td class="num">49.33</td><td class="num">98.95</td>
+          <td class="num">+2.07</td>
+          <td class="num">13.3%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">22.72</td><td class="num">14.23</td>
+          <td class="num">47.82</td><td class="num">93.51</td>
+          <td class="num">+2.29</td>
+          <td class="num">13.4%</td></tr></tbody></table></div>
+      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
+      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
+      而且会在样本内制造好看的假象。</p>
+      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
+      <th>特征组</th><th>rMAE</th>
+      <th>相对基准</th><th>GW p</th></tr></thead>
+      <tbody><tr class="keep">
+          <td>留</td><td class="tier">去掉 temp</td>
+          <td class="num">0.581</td>
+          <td class="num">+0.0141</td>
+          <td class="num">0.003</td></tr><tr class="keep">
+          <td>留</td><td class="tier">+wind 单独</td>
+          <td class="num">0.583</td>
+          <td class="num">+0.0122</td>
+          <td class="num">0.002</td></tr><tr class="keep">
+          <td>留</td><td class="tier">去掉 ghi</td>
+          <td class="num">0.583</td>
+          <td class="num">+0.0122</td>
+          <td class="num">0.006</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+ghi 单独</td>
+          <td class="num">0.596</td>
+          <td class="num">-0.0003</td>
+          <td class="num">0.900</td></tr><tr class="drop">
+          <td>删</td><td class="tier">+temp 单独</td>
+          <td class="num">0.600</td>
+          <td class="num">-0.0049</td>
+          <td class="num">0.049</td></tr><tr class="drop">
+          <td>删</td><td class="tier">去掉 wind</td>
+          <td class="num">0.602</td>
+          <td class="num">-0.0069</td>
+          <td class="num">0.050</td></tr></tbody></table></div><p class="cap"><b>上面那张表是在测试集上比出来的，只能当诊断，不能拿来决定留哪个变量</b>——
+      那等于偷看了答案。真正的取舍在这里：每个滚动窗口<b>只用训练段</b>挑一次——
+      训练窗前段拟合、最后 28 天验证，枚举天气变量的全部组合（含"不用"），
+      验证误差在最好的 0.5% 以内时取变量更少的那个。挑完用整段训练窗重拟合，再预测测试段。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>相对 B2 +官方</th>
+      <th>rMAE</th><th>增量</th><th>GW p</th><th>电池日收益增量</th></tr></thead>
+      <tbody><tr class="hl"><td class="tier">B3 选特征</td>
+      <td class="num">0.577</td><td class="num">+0.0187</td>
+      <td class="num">0.000</td><td class="num">-0.06 $/天，95% 区间 [-2.2, 2.0]</td></tr></tbody></table></div>
+      <p class="cap">24 个窗口里各变量被选中的比例：</p>
+      <div class="tblwrap"><table class="lad var"><tbody><tr><td>ghi</td><td class='num'>25%</td></tr><tr><td>wind</td><td class='num'>58%</td></tr><tr><td>temp</td><td class='num'>12%</td></tr></tbody></table></div>
+      <p class="cap">最常见的组合：不用天气 ×9、wind ×7、ghi+wind ×4、wind+temp ×2。</p>
+      <h4>五、赌 AEMO 预调度的偏差</h4><p class="cap">电池只吃<b>日内排序</b>，而天气（尤其风）主要移动的是<b>整天的水平</b>。
+      这一项量水平信号：每个小时，预测高于 AEMO 预调度就做多 1 MW、低于就做空，
+      按 (实际 − 预调度) 结算。它回答"我们对 AEMO 的修正，方向对不对、值多少钱"。
+      NEM 没有日前市场，预调度不是成交价，所以这是<b>信号价值</b>，
+      现实里对应调整对冲头寸 / 报价或在期货、互换上表达看法。
+      电价重尾，均值会被几个尖峰日支配，所以另给日中位数、方向命中率（|实际 − 预调度| &lt; $1 的小时不计），
+      以及去掉最好、最差各 2% 日子后的增量。
+      第一行"做空 AEMO"是基线：不看任何模型、每小时都做空预调度。前一天的预调度系统性偏高，
+      光这一条就"赚"很多，那是口径偏差，不是信息；模型要和它比。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>日均 $</th><th>95% 区间</th>
+      <th>日中位 $</th><th>命中率</th><th>相对一直做空</th><th>相对 B2 +官方</th><th>去尖峰后</th></tr></thead>
+      <tbody><tr><td class="tier">做空 AEMO</td>
+          <td class="num">3827.6</td>
+          <td class="num">[1774, 6470]</td>
+          <td class="num">224.2</td>
+          <td class="num">55.2%</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B1 自回归</td>
+          <td class="num">4093.6</td>
+          <td class="num">[2081, 6733]</td>
+          <td class="num">457.8</td>
+          <td class="num">71.0%</td>
+          <td class="num">+266 [160, 401]</td><td class="num">—</td><td class="num">—</td></tr><tr><td class="tier">B2 +官方</td>
+          <td class="num">4101.0</td>
+          <td class="num">[2088, 6735]</td>
+          <td class="num">466.8</td>
+          <td class="num">72.1%</td>
+          <td class="num">+273 [172, 404]</td><td class="num">—</td><td class="num">—</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
+          <td class="num">4102.1</td>
+          <td class="num">[2090, 6730]</td>
+          <td class="num">440.2</td>
+          <td class="num">71.3%</td>
+          <td class="num">+275 [173, 405]</td><td class="num">+1.1 [-9.4, 14.7]</td><td class="num">+1.2</td></tr><tr><td class="tier">B3 选特征</td>
+          <td class="num">4109.8</td>
+          <td class="num">[2097, 6740]</td>
+          <td class="num">476.0</td>
+          <td class="num">72.6%</td>
+          <td class="num">+282 [181, 413]</td><td class="num">+8.8 [0.1, 20.9]</td><td class="num">+7.8</td></tr></tbody></table></div>
+    </section>
+
+<footer>
+<h3>口径</h3>
+<ul>
+<li><b>决策时刻</b>：NEM 日 D 的全部 24 小时，在 D−1 天 <b>13:30</b>（NEM）一次性定计划——
+    电池运营商排次日计划的真实做法，也和 EPF 综述的 day-ahead 设定一致。
+    AEMO 预调度最远只看到次日 04:00，而且约 12:30 之后才开始覆盖下一天，
+    所以"每小时滚动提前 24 小时"的口径会让 04:00–12:30 的小时拿不到官方预测。
+    <b>每一个特征在决策时刻都必须已经可见</b>：一小时的结算价要等这一小时结束再过 10 分钟
+    才发布；天气预报和 AEMO 预调度都取决策时刻之前发出的版本里最新的一版。
+    价格滞后按<b>时间戳</b>取，不按下标平移；天气分位用滚动窗口，不用全样本分位。</li>
+<li><b>每个 hour-of-day 各拟合一个模型</b>，不是一个模型跨 24 小时。共享模型会把
+    日内曲线压平（NSW1 实测振幅比 0.09），水平贴得准，挑出来的充放电时刻却是噪声。</li>
+<li><b>rMAE</b>，不是 MAPE。电价会穿零，MAPE 在那里没有定义。分母固定是
+    naive P(d−7,h)。MAE 和 RMSE 同时报——只报一个会掩盖尖峰上的表现。</li>
+<li><b>Giacomini-White</b>，不是 Diebold-Mariano。滚动重拟合下校准窗口一直在变，
+    DM 的前提（预测方法固定）不成立。方差用 Newey-West 修正，
+    否则损失差分的自相关会把 p 值压到荒谬的小。</li>
+<li><b>asinh 变换</b>后再拟合，预测夹回训练期见过的范围。电价重尾，
+    直接在原尺度上做最小二乘，几个尖峰就能主导整条回归线；
+    而 sinh 是指数级的，不夹住的话一个离群输入就能吐出上万块的预测。</li>
+<li><b>禁运带</b>：训练集和测试集之间留 3 天空隙，避免相邻小时把信息漏过去。
+    训练窗 180 天、每 7 天滚动重拟合一次。</li>
+<li><b>四道门槛</b>全过才判"可用"：样本外 ≥ 90 天、rMAE 有改善、
+    GW p ≤ 0.05、储能日收益增量的 95% 区间下界 &gt; 0。宁可漏掉真信号，
+    也不把噪声当 alpha。</li>
+</ul>
+<h3>为什么是这个结构</h3>
+<p>之前问的是"天气和电价相不相关"。那个问题的答案永远是"相关"——天气驱动供给，
+供给驱动价格。但它不是交易问题。交易问题是：我已经知道最近的价格，也知道 AEMO
+公开发布的预调度，再加上天气，还能<b>多</b>赚多少。所以每一层只比上一层多一组特征，
+天气的价值就是最后那一格的增量。</p>
+<h3>出处</h3>
+<ul>
+<li>Lago, Marcjasz, De Schutter, Weron，
+  <a href="https://arxiv.org/pdf/2204.11735">Forecasting day-ahead electricity prices:
+  A review of state-of-the-art algorithms, best practices and an open-access benchmark</a>
+  —— 基准阶梯、rMAE、GW 检验、"统计误差不等于经济价值"都出自这篇。</li>
+<li><a href="https://ieeexplore.ieee.org/document/9788043/">The Role of Weather Predictions
+  in Electricity Price Forecasting Beyond the Day-Ahead Horizon</a></li>
+<li><a href="https://arxiv.org/html/2510.03657">Optimising Battery Energy Storage System
+  Trading via Energy Market Operator Price Forecast</a> —— 经济评估用储能套利的依据。</li>
+</ul>
+<p style="margin-top:20px">生成于 2026-10-24 12:17 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</p>
+<p>代码与方法：<a href="https://github.com/Eric-S108/nem-weather-desk">https://github.com/Eric-S108/nem-weather-desk</a></p>
+</footer>
+</div>
+</body>
+</html>

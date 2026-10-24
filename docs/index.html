@@ -4,863 +4,503 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NEM 天气交易台</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Serif+4:ital@1&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f7f6f3;--fg:#16181c;--dim:#6b7280;--line:#e2e0da;--card:#fff;
- --ac:#0f5d70;--ok:#0f7a4f;--no:#9a3412;--none:#6b7280;--hl:#eef6f8}
-:root:not([data-theme=light]) @media(prefers-color-scheme:dark){}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
- --bg:#0e1113;--fg:#e8e6e1;--dim:#9aa1a9;--line:#242a2e;--card:#161a1d;
- --ac:#4fb3c9;--ok:#3fbf87;--no:#e08a5a;--none:#8b939b;--hl:#12262c}}
-:root[data-theme=dark]{--bg:#0e1113;--fg:#e8e6e1;--dim:#9aa1a9;--line:#242a2e;
- --card:#161a1d;--ac:#4fb3c9;--ok:#3fbf87;--no:#e08a5a;--none:#8b939b;--hl:#12262c}
+:root{
+ color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--base:#9b9a94;
+ --good:#0ca30c;--good-ink:#006300;--warning:#fab219;--critical:#d03b3b;
+ --chipbg-good:#e6f4e6;--chipbg-critical:#fbe9e9;--chipbg-warning:#fdf3dc;--chipbg-neutral:#efeeea;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme=light])){
+ color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--base:#6f6e69;
+ --good-ink:#0ca30c;
+ --chipbg-good:#13301a;--chipbg-critical:#3a1717;--chipbg-warning:#3a2d0a;--chipbg-neutral:#2a2a28;
+}}
+:root[data-theme=dark]{
+ color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--base:#6f6e69;
+ --good-ink:#0ca30c;
+ --chipbg-good:#13301a;--chipbg-critical:#3a1717;--chipbg-warning:#3a2d0a;--chipbg-neutral:#2a2a28;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);
- font:15px/1.6 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+body{margin:0;background:var(--page);color:var(--ink);
+ font:15px/1.55 system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
  -webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px}
-header{border-bottom:2px solid var(--fg);padding-bottom:18px;margin-bottom:28px}
-h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em;font-weight:700}
-.tagline{color:var(--dim);margin:0;font-size:14px}
-.stamp{margin-top:14px;font:12px/1.5 "IBM Plex Mono",ui-monospace,Menlo,monospace;
- color:var(--dim)}
-.fixture{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:4px;
- background:#7c2d12;color:#fff;font-weight:700;font-size:13px}
-.q{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ac);
- padding:16px 20px;margin:24px 0;border-radius:0 6px 6px 0}
-.q p{margin:0;font:italic 16px/1.6 "Source Serif 4",Georgia,serif}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
- margin:26px 0 36px}
-.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:8px;
- padding:16px;text-decoration:none;color:inherit;border-top:3px solid var(--none);
- transition:transform .12s ease,box-shadow .12s ease}
-.card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.09)}
-.card.yes{border-top-color:var(--ok)}.card.no{border-top-color:var(--no)}
-.card h3{margin:6px 0 10px;font-size:17px;letter-spacing:.02em}
-.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
- background:var(--none);color:#fff;letter-spacing:.04em}
-.card.yes .chip,.chip.yes{background:var(--ok)}
-.card.no .chip,.chip.no{background:var(--no)}
-.chip.none{background:var(--none)}
-.big{font:700 30px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:-.02em}
-.card.no .big,.card.none .big{color:var(--dim)}
-.card.yes .big{color:var(--ok)}
-.sub{color:var(--dim);font-size:12px;margin-top:3px}
-.mini{margin-top:8px;font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--dim)}
-.why{font-size:12.5px;color:var(--dim);margin:10px 0 0;line-height:1.5}
-.reg{margin:44px 0;padding-top:22px;border-top:1px solid var(--line)}
-.reg h2{font-size:23px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
-.reg h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);
- margin:28px 0 10px;font-weight:700}
-.lede{margin:0 0 12px;font-size:15px}
-.meta{font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--dim);margin-bottom:6px}
-.warn ul{margin:8px 0 0;padding-left:20px}
-.warn li{margin:3px 0}
-.warn{background:#fef3c7;color:#5b3a00;border-radius:6px;padding:14px 16px;
- font-size:13.5px;line-height:1.6;margin:12px 0}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .warn{
- background:#3a2d0a;color:#f6dfa0}}
-:root[data-theme=dark] .warn{background:#3a2d0a;color:#f6dfa0}
-.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tblwrap table{min-width:560px}
-.tblwrap table.wide{min-width:700px}
-@media(max-width:560px){td.tier .note{max-width:200px}}
-table.lad{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 4px}
-table.lad th{text-align:right;font-size:11.5px;letter-spacing:.03em;
- color:var(--dim);border-bottom:1px solid var(--line);padding:6px 8px;font-weight:700}
-table.lad th:first-child,table.lad th:nth-child(2){text-align:left}
-table.lad td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-table.lad td.num{text-align:right;font:13px "IBM Plex Mono",ui-monospace,monospace;
- white-space:nowrap}
-td.dim{color:var(--dim)}
-td.warnnum{color:var(--no);font-weight:700}
-td.tier{font-weight:600;min-width:130px}
-td.tier .note{display:block;font-weight:400;font-size:11.5px;color:var(--dim);
- margin-top:2px;max-width:330px}
-tr.hl td{background:var(--hl)}
-tr.skip td{color:var(--dim);font-style:italic}
-tr.perfect td{color:var(--dim);border-top:1px solid var(--line)}
-td.rm{position:relative}
-td.rm i{display:block;height:3px;background:var(--ac);margin-top:4px;border-radius:2px;
- opacity:.75}
-tr.keep td:first-child{color:var(--ok);font-weight:700}
-tr.drop td:first-child{color:var(--dim)}
-.cap{font-size:12.5px;color:var(--dim);line-height:1.6;margin:4px 0 10px}
-.card.none .chip,.chip.none{background:var(--none)}
-.empty{color:var(--dim);font-style:italic}
-footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line);
- font-size:13px;color:var(--dim);line-height:1.7}
-footer h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg);
- margin:22px 0 8px}
-footer ul{margin:6px 0;padding-left:20px}
-footer a{color:var(--ac)}
-code{font:12.5px "IBM Plex Mono",ui-monospace,monospace;background:var(--hl);
- padding:1px 5px;border-radius:3px}
+a{color:var(--s1)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 64px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+ padding:16px 0;border-bottom:1px solid var(--grid)}
+.brand{font-weight:700;font-size:17px;letter-spacing:.01em}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{padding:6px 12px;border-radius:999px;text-decoration:none;color:var(--ink2);font-size:14px}
+.nav a.on{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--ring)}
+.asof{color:var(--muted);font-size:13px;padding:10px 0 0}
+.fixture{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--chipbg-critical);
+ color:var(--ink);font-size:13px}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;margin:28px 0 8px;
+ background:var(--surface);border-radius:14px;padding:24px 28px;box-shadow:0 0 0 1px var(--ring)}
+.hero .q{color:var(--ink2);font-size:14px;margin:0 0 4px}
+.hero .big{font-size:52px;font-weight:700;line-height:1.05;letter-spacing:-.01em}
+.hero .big small{font-size:18px;font-weight:600;color:var(--ink2);margin-left:6px}
+.hero .say{font-size:16px;margin:0}
+.hero .say b{font-weight:650}
+@media (max-width:640px){.hero{grid-template-columns:1fr;gap:12px;padding:18px}.hero .big{font-size:44px}}
+h2{font-size:18px;margin:36px 0 12px}
+.lead2{font-size:14px;color:var(--ink2);margin:-4px 0 14px;max-width:820px}
+.lead2 b{color:var(--ink)}
+.card{background:var(--surface);border-radius:14px;box-shadow:0 0 0 1px var(--ring);overflow:hidden;margin-bottom:20px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.act{width:100%;border-collapse:collapse;min-width:760px}
+table.act th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:12px 14px;
+ border-bottom:1px solid var(--grid);white-space:nowrap}
+table.act td{padding:14px;border-bottom:1px solid var(--grid);vertical-align:middle}
+table.act tr:last-child td{border-bottom:0}
+table.act .num,table.dt .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.act .rg{font-weight:700;font-size:16px}
+table.act .model{font-weight:600}
+table.act .hint{display:block;font-size:12px;color:var(--muted);font-weight:400}
+table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
+.big2{font-size:18px;font-weight:650}
+@media (max-width:700px){
+ table.act{min-width:0}table.act thead{display:none}
+ table.act,table.act tbody{display:block}
+ table.act tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 12px;padding:14px 16px;
+  border-bottom:1px solid var(--grid)}
+ table.act tr:last-child{border-bottom:0}
+ table.act td{padding:0;border:0}
+ table.act td.rg{grid-column:1/3;align-self:center}
+ table.act td.st{grid-column:3;justify-self:end}
+ table.act td.mdl,table.act td.why{grid-column:1/-1}
+ table.act td.why{max-width:none}
+ table.act td.num{text-align:left;white-space:normal}
+ table.act td[data-l]::before{content:attr(data-l);display:block;font-size:11.5px;color:var(--muted);
+  font-weight:500;margin-bottom:2px}
+ table.act .big2{font-size:16px}
+}
+.dim{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 8px;border-radius:999px;
+ font-size:13px;font-weight:600;white-space:nowrap;color:var(--ink)}
+.chip.good{background:var(--chipbg-good)}.chip.good span{color:var(--good)}
+.chip.critical{background:var(--chipbg-critical)}.chip.critical span{color:var(--critical)}
+.chip.warning{background:var(--chipbg-warning)}.chip.warning span{color:#b07800}
+.chip.neutral{background:var(--chipbg-neutral)}.chip.neutral span{color:var(--muted)}
+.fig{margin:0 0 24px;background:var(--surface);border-radius:14px;box-shadow:0 0 0 1px var(--ring);
+ padding:18px 20px}
+.fig figcaption h3{margin:0;font-size:16px}
+.fig figcaption p{margin:4px 0 12px;font-size:13px;color:var(--ink2)}
+.figbody{overflow-x:auto}
+svg{display:block;width:100%;height:auto;font-family:inherit}
+svg .grid{stroke:var(--grid);stroke-width:1}
+svg .zero{stroke:var(--axis);stroke-width:1.5}
+svg .tick{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+svg .axislab{fill:var(--muted);font-size:11px}
+@media (max-width:640px){svg.cum .tick{font-size:16px}}
+svg .rlab{fill:var(--ink);font-size:13px;font-weight:600}
+svg .rval{font-size:12.5px;font-variant-numeric:tabular-nums}
+svg .rval .strong{fill:var(--ink);font-weight:650}
+svg .rval .muted{fill:var(--muted)}
+.forest{display:flex;flex-direction:column}
+.fr{display:grid;grid-template-columns:64px 1fr 190px;align-items:center;gap:14px;min-height:40px;
+ border-radius:8px;outline:none}
+.fr[data-tip]:hover,.fr[data-tip]:focus-visible{background:color-mix(in srgb,var(--grid) 45%,transparent)}
+.fl{font-weight:700;text-align:right}
+.ftrack{position:relative;height:40px;display:block}
+.fhead .ftrack,.faxis .ftrack{height:22px}
+.fhead,.faxis{min-height:22px}
+.fg{position:absolute;top:0;bottom:0;width:1px;background:var(--grid)}
+.f0{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--axis)}
+.fw{position:absolute;top:50%;height:2px;margin-top:-1px;border-radius:2px;background:currentColor}
+.fd{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+ background:currentColor;box-shadow:0 0 0 2px var(--surface)}
+.fd.clip{background:var(--surface);box-shadow:inset 0 0 0 2px currentColor,0 0 0 2px var(--surface)}
+.fa{position:absolute;top:-4px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent}
+.fa.l{left:-2px;border-right:8px solid currentColor}
+.fa.r{right:-2px;border-left:8px solid currentColor}
+.ftrack.good{color:var(--good)}.ftrack.critical{color:var(--critical)}.ftrack.neutral{color:var(--muted)}
+.ft{position:absolute;top:2px;transform:translateX(-50%);font-size:12px;color:var(--muted);
+ font-variant-numeric:tabular-nums;white-space:nowrap}
+.fdir{position:absolute;top:0;font-size:12px;color:var(--muted)}.fdir.l{left:0}.fdir.r{right:0}
+.fv{font-variant-numeric:tabular-nums;white-space:nowrap}
+.fv b{font-weight:650;margin-right:6px}.fv small{color:var(--muted);font-size:12.5px}
+@media (max-width:640px){.fr{grid-template-columns:44px 1fr;gap:8px}
+ .fr .fv{grid-column:2;margin-top:-8px;padding-bottom:6px}.fhead .fv,.faxis .fv{display:none}}
+svg .whisk{stroke-width:2;stroke-linecap:round}
+svg .whisk.good,svg .dot.good,svg .arrow.good{stroke:var(--good);fill:var(--good)}
+svg .whisk.critical,svg .dot.critical,svg .arrow.critical{stroke:var(--critical);fill:var(--critical)}
+svg .whisk.neutral,svg .dot.neutral,svg .arrow.neutral{stroke:var(--muted);fill:var(--muted)}
+svg .dot{stroke:var(--surface)!important;stroke-width:2}
+svg .arrow{stroke:none!important}
+svg .hit{fill:transparent}
+svg .frow:hover .hit,svg .frow:focus .hit{fill:var(--grid);opacity:.45}
+svg .frow:focus{outline:none}
+svg .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+svg .ln.s1{stroke:var(--s1)}svg .ln.s2{stroke:var(--s2)}svg .ln.s3{stroke:var(--s3)}
+svg .ln.base{stroke:var(--base)}
+svg .end{stroke:var(--surface);stroke-width:2}
+svg .end.s1{fill:var(--s1)}svg .end.s2{fill:var(--s2)}svg .end.s3{fill:var(--s3)}svg .end.base{fill:var(--base)}
+svg .cross{stroke:var(--axis);stroke-width:1}
+svg .hitarea{fill:transparent;cursor:crosshair}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 10px;font-size:13px;color:var(--ink2)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:16px;height:3px;border-radius:2px}
+.sw.s1{background:var(--s1)}.sw.s2{background:var(--s2)}.sw.s3{background:var(--s3)}.sw.base{background:var(--base)}
+.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:14px}
+.panel{border-radius:10px;box-shadow:0 0 0 1px var(--ring);padding:10px 10px 4px}
+.phead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 4px}
+.pname{font-weight:700}
+.pnote{font-size:12.5px;color:var(--ink2);margin-left:auto}
+details.tv{margin-top:10px;font-size:13px}
+details.tv summary{cursor:pointer;color:var(--ink2)}
+table.dt{border-collapse:collapse;margin-top:8px;font-size:13px}
+table.dt th,table.dt td{padding:5px 12px 5px 0;border-bottom:1px solid var(--grid);text-align:left}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:12px}
+.how div{background:var(--surface);border-radius:12px;box-shadow:0 0 0 1px var(--ring);padding:14px 16px;
+ font-size:13.5px;color:var(--ink2)}
+.how b{color:var(--ink)}
+.next{margin-top:28px;padding:16px 18px;border-radius:12px;background:var(--surface);
+ box-shadow:0 0 0 1px var(--ring);display:flex;justify-content:space-between;gap:12px;align-items:center;
+ flex-wrap:wrap}
+.next a{font-weight:600;text-decoration:none}
+.tip{position:fixed;pointer-events:none;z-index:10;background:var(--surface);color:var(--ink);
+ box-shadow:0 2px 10px rgba(0,0,0,.18),0 0 0 1px var(--ring);border-radius:8px;padding:8px 10px;
+ font-size:12.5px;line-height:1.5;display:none;font-variant-numeric:tabular-nums;max-width:280px}
+.tip .k{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-  <h1>NEM 天气交易台</h1>
-  <p class="tagline">天气预报在价格自回归与 AEMO 官方预调度之上，还剩多少可交易的增量</p>
-  
-  <div class="stamp">生成于 2026-10-24 11:41 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</div>
-</header>
-<div class="q"><p>“Statistical error measures … may not necessarily reflect
-the economic value of reducing prediction errors.”<br>
-—— Lago &amp; Weron, EPF 综述。所以这一页每个区都配一块电池实际能多赚多少钱，
-不只是误差。</p></div>
-<p class="lede">跑通 5 个区，<b>没有一个</b>通过全部四道门槛。按现在的数据，天气预报还不能作为独立的交易优势。</p>
-<div class="grid">
-    <a class="card no" href="#r-NSW1">
-      <div class="chip">不可用</div>
-      <h3>NSW1</h3>
-      <div class="big">$-0.19</div>
-      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
-      <div class="mini">rMAE 增量 -0.0081</div>
-      <p class="why">rMAE 没改善（-0.0081）；GW p=0.297 不显著；日收益增量区间 [-5.3, 4.6] 跨 0。</p>
-    </a>
-    <a class="card no" href="#r-QLD1">
-      <div class="chip">不可用</div>
-      <h3>QLD1</h3>
-      <div class="big">$-0.08</div>
-      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
-      <div class="mini">rMAE 增量 +0.0014</div>
-      <p class="why">GW p=0.807 不显著；日收益增量区间 [-2.0, 2.0] 跨 0。</p>
-    </a>
-    <a class="card no" href="#r-VIC1">
-      <div class="chip">不可用</div>
-      <h3>VIC1</h3>
-      <div class="big">$-4.36</div>
-      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
-      <div class="mini">rMAE 增量 +0.0177</div>
-      <p class="why">日收益增量区间 [-8.9, -0.4] 整体在 0 以下——显著亏钱。</p>
-    </a>
-    <a class="card no" href="#r-SA1">
-      <div class="chip">不可用</div>
-      <h3>SA1</h3>
-      <div class="big">$-35.20</div>
-      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
-      <div class="mini">rMAE 增量 +0.0213</div>
-      <p class="why">日收益增量区间 [-92.1, 4.2] 跨 0。</p>
-    </a>
-    <a class="card no" href="#r-TAS1">
-      <div class="chip">不可用</div>
-      <h3>TAS1</h3>
-      <div class="big">$-3.47</div>
-      <div class="sub">每天 · 1 MW / 2 MWh 电池</div>
-      <div class="mini">rMAE 增量 +0.0120</div>
-      <p class="why">日收益增量区间 [-7.2, 0.1] 跨 0。</p>
-    </a></div>
-<section id="r-NSW1" class="reg">
-      <h2>NSW1 <span class="chip no">不可用</span></h2>
-      <p class="lede">rMAE 没改善（-0.0081）；GW p=0.297 不显著；日收益增量区间 [-5.3, 4.6] 跨 0。</p>
-      
-      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
-        · 24 次滚动重拟合 ·
-        预调度 2025-10-26 起，区间内覆盖 100% ·
-        分小时拟合（24 个模型）</div>
-      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
-      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
-      <th>相对上层</th><th>GW p</th></tr></thead>
-      <tbody><tr>
-          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
-          <td class="num">34.75</td>
-          <td class="num rm">1.000<i style="width:0%"></i></td>
-          <td class="num dim">1.000</td>
-          <td class="num">57.1</td>
-          <td class="num">0.357</td>
-          <td class="num">—</td><td class="num">—</td></tr><tr>
-          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
-          <td class="num">25.06</td>
-          <td class="num rm">0.721<i style="width:70%"></i></td>
-          <td class="num dim">0.694</td>
-          <td class="num">49.5</td>
-          <td class="num">0.617</td>
-          <td class="num">+0.2787</td><td class="num">0.0000</td></tr><tr>
-          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
-          <td class="num">20.95</td>
-          <td class="num rm">0.603<i style="width:99%"></i></td>
-          <td class="num dim">0.516</td>
-          <td class="num">48.6</td>
-          <td class="num">0.774</td>
-          <td class="num">+0.1185</td><td class="num">0.0000</td></tr><tr class="hl">
-          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
-          <td class="num">21.23</td>
-          <td class="num rm">0.611<i style="width:97%"></i></td>
-          <td class="num dim">0.527</td>
-          <td class="num">47.0</td>
-          <td class="num">0.764</td>
-          <td class="num">-0.0081</td><td class="num">0.2968</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
-  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
-  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
-  多半是几个时刻炸了，不是模型整体不行。</p>
-      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
-      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
-      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
-      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
-      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
-      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
-      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
-      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
-      <tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">48.91</td><td class="num dim">[28.9, 69.9]</td>
-          <td class="num">39.3%</td><td class="num">0.588</td>
-          <td class="num">1.04</td>
-          <td class="num">—</td>
-          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">56.39</td><td class="num dim">[35.8, 79.8]</td>
-          <td class="num">45.3%</td><td class="num">0.686</td>
-          <td class="num">0.94</td>
-          <td class="num">+7.48</td>
-          <td class="num dim">[2.4, 14.9]</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">60.07</td><td class="num dim">[40.1, 81.9]</td>
-          <td class="num">48.3%</td><td class="num">0.714</td>
-          <td class="num">1.05</td>
-          <td class="num">+3.68</td>
-          <td class="num dim">[-4.2, 11.7]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">59.89</td><td class="num dim">[39.3, 82.2]</td>
-          <td class="num">48.1%</td><td class="num">0.702</td>
-          <td class="num">1.06</td>
-          <td class="num">-0.19</td>
-          <td class="num dim">[-5.3, 4.6]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
-      <td class="num">124.46</td><td class="num dim">收益上限</td>
-      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
-      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
-      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
-      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
-      这两个数才是它的直接驱动，MAE 不是。</p>
-      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
-      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
-      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
-      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
-      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
-      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
-      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">34.75</td><td class="num">26.25</td>
-          <td class="num">71.02</td><td class="num">163.44</td>
-          <td class="num">-3.47</td>
-          <td class="num">7.2%</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">25.06</td><td class="num">18.22</td>
-          <td class="num">49.81</td><td class="num">129.44</td>
-          <td class="num">-9.90</td>
-          <td class="num">9.4%</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">20.95</td><td class="num">13.54</td>
-          <td class="num">43.60</td><td class="num">121.41</td>
-          <td class="num">-6.36</td>
-          <td class="num">11.7%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">21.23</td><td class="num">13.84</td>
-          <td class="num">44.59</td><td class="num">120.52</td>
-          <td class="num">-7.57</td>
-          <td class="num">10.7%</td></tr></tbody></table></div>
-      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
-      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
-      而且会在样本内制造好看的假象。</p>
-      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
-      <th>特征组</th><th>rMAE</th>
-      <th>相对基准</th><th>GW p</th></tr></thead>
-      <tbody><tr class="drop">
-          <td>删</td><td class="tier">+ghi 单独</td>
-          <td class="num">0.597</td>
-          <td class="num">+0.0055</td>
-          <td class="num">0.402</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 temp</td>
-          <td class="num">0.604</td>
-          <td class="num">-0.0007</td>
-          <td class="num">0.933</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+wind 单独</td>
-          <td class="num">0.610</td>
-          <td class="num">-0.0070</td>
-          <td class="num">0.133</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 wind</td>
-          <td class="num">0.610</td>
-          <td class="num">-0.0071</td>
-          <td class="num">0.283</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+temp 单独</td>
-          <td class="num">0.610</td>
-          <td class="num">-0.0073</td>
-          <td class="num">0.017</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 ghi</td>
-          <td class="num">0.614</td>
-          <td class="num">-0.0115</td>
-          <td class="num">0.034</td></tr></tbody></table></div>
-    </section><section id="r-QLD1" class="reg">
-      <h2>QLD1 <span class="chip no">不可用</span></h2>
-      <p class="lede">GW p=0.807 不显著；日收益增量区间 [-2.0, 2.0] 跨 0。</p>
-      
-      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
-        · 24 次滚动重拟合 ·
-        预调度 2025-10-26 起，区间内覆盖 100% ·
-        分小时拟合（24 个模型）</div>
-      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
-      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
-      <th>相对上层</th><th>GW p</th></tr></thead>
-      <tbody><tr>
-          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
-          <td class="num">28.13</td>
-          <td class="num rm">1.000<i style="width:0%"></i></td>
-          <td class="num dim">1.000</td>
-          <td class="num">40.4</td>
-          <td class="num">0.579</td>
-          <td class="num">—</td><td class="num">—</td></tr><tr>
-          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
-          <td class="num">20.78</td>
-          <td class="num rm">0.739<i style="width:65%"></i></td>
-          <td class="num dim">0.744</td>
-          <td class="num">30.9</td>
-          <td class="num">0.745</td>
-          <td class="num">+0.2611</td><td class="num">0.0000</td></tr><tr>
-          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
-          <td class="num">16.57</td>
-          <td class="num rm">0.589<i style="width:100%"></i></td>
-          <td class="num dim">0.569</td>
-          <td class="num">25.1</td>
-          <td class="num">0.862</td>
-          <td class="num">+0.1497</td><td class="num">0.0000</td></tr><tr class="hl">
-          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
-          <td class="num">16.53</td>
-          <td class="num rm">0.588<i style="width:100%"></i></td>
-          <td class="num dim">0.555</td>
-          <td class="num">25.2</td>
-          <td class="num">0.861</td>
-          <td class="num">+0.0014</td><td class="num">0.8072</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
-  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
-  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
-  多半是几个时刻炸了，不是模型整体不行。</p>
-      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
-      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
-      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
-      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
-      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
-      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
-      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
-      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
-      <tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">99.13</td><td class="num dim">[85.6, 110.2]</td>
-          <td class="num">70.6%</td><td class="num">0.719</td>
-          <td class="num">0.94</td>
-          <td class="num">—</td>
-          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">112.16</td><td class="num dim">[99.5, 123.1]</td>
-          <td class="num">79.8%</td><td class="num">0.793</td>
-          <td class="num">1.00</td>
-          <td class="num">+13.03</td>
-          <td class="num dim">[5.8, 21.3]</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">111.42</td><td class="num dim">[98.9, 122.3]</td>
-          <td class="num">79.3%</td><td class="num">0.819</td>
-          <td class="num">1.07</td>
-          <td class="num">-0.74</td>
-          <td class="num dim">[-6.5, 5.8]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">111.34</td><td class="num dim">[98.9, 122.3]</td>
-          <td class="num">79.3%</td><td class="num">0.818</td>
-          <td class="num">1.09</td>
-          <td class="num">-0.08</td>
-          <td class="num dim">[-2.0, 2.0]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
-      <td class="num">140.49</td><td class="num dim">收益上限</td>
-      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
-      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
-      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
-      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
-      这两个数才是它的直接驱动，MAE 不是。</p>
-      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
-      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
-      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
-      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
-      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
-      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
-      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">28.13</td><td class="num">20.30</td>
-          <td class="num">60.01</td><td class="num">142.21</td>
-          <td class="num">-2.49</td>
-          <td class="num">6.8%</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">20.78</td><td class="num">15.10</td>
-          <td class="num">42.22</td><td class="num">113.62</td>
-          <td class="num">-5.06</td>
-          <td class="num">8.1%</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">16.57</td><td class="num">11.54</td>
-          <td class="num">35.02</td><td class="num">86.36</td>
-          <td class="num">-3.31</td>
-          <td class="num">7.8%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">16.53</td><td class="num">11.26</td>
-          <td class="num">35.90</td><td class="num">83.84</td>
-          <td class="num">-4.52</td>
-          <td class="num">7.8%</td></tr></tbody></table></div>
-      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
-      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
-      而且会在样本内制造好看的假象。</p>
-      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
-      <th>特征组</th><th>rMAE</th>
-      <th>相对基准</th><th>GW p</th></tr></thead>
-      <tbody><tr class="keep">
-          <td>留</td><td class="tier">+ghi 单独</td>
-          <td class="num">0.579</td>
-          <td class="num">+0.0098</td>
-          <td class="num">0.010</td></tr><tr class="keep">
-          <td>留</td><td class="tier">去掉 temp</td>
-          <td class="num">0.580</td>
-          <td class="num">+0.0092</td>
-          <td class="num">0.091</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+wind 单独</td>
-          <td class="num">0.591</td>
-          <td class="num">-0.0018</td>
-          <td class="num">0.586</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 wind</td>
-          <td class="num">0.591</td>
-          <td class="num">-0.0019</td>
-          <td class="num">0.730</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 ghi</td>
-          <td class="num">0.603</td>
-          <td class="num">-0.0136</td>
-          <td class="num">0.001</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+temp 单独</td>
-          <td class="num">0.604</td>
-          <td class="num">-0.0145</td>
-          <td class="num">0.000</td></tr></tbody></table></div>
-    </section><section id="r-VIC1" class="reg">
-      <h2>VIC1 <span class="chip no">不可用</span></h2>
-      <p class="lede">日收益增量区间 [-8.9, -0.4] 整体在 0 以下——显著亏钱。</p>
-      
-      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
-        · 24 次滚动重拟合 ·
-        预调度 2025-10-26 起，区间内覆盖 100% ·
-        分小时拟合（24 个模型）</div>
-      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
-      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
-      <th>相对上层</th><th>GW p</th></tr></thead>
-      <tbody><tr>
-          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
-          <td class="num">57.79</td>
-          <td class="num rm">1.000<i style="width:0%"></i></td>
-          <td class="num dim">1.000</td>
-          <td class="num">107.3</td>
-          <td class="num">0.160</td>
-          <td class="num">—</td><td class="num">—</td></tr><tr>
-          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
-          <td class="num">39.11</td>
-          <td class="num rm">0.677<i style="width:81%"></i></td>
-          <td class="num dim">0.684</td>
-          <td class="num">75.9</td>
-          <td class="num">0.512</td>
-          <td class="num">+0.3233</td><td class="num">0.0000</td></tr><tr>
-          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
-          <td class="num">29.95</td>
-          <td class="num rm">0.518<i style="width:100%"></i></td>
-          <td class="num dim">0.410</td>
-          <td class="num">72.1</td>
-          <td class="num">0.788</td>
-          <td class="num">+0.1585</td><td class="num">0.0000</td></tr><tr class="hl">
-          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
-          <td class="num">28.92</td>
-          <td class="num rm">0.500<i style="width:100%"></i></td>
-          <td class="num dim">0.404</td>
-          <td class="num">70.6</td>
-          <td class="num">0.789</td>
-          <td class="num">+0.0177</td><td class="num">0.0136</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
-  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
-  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
-  多半是几个时刻炸了，不是模型整体不行。</p>
-      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
-      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
-      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
-      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
-      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
-      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
-      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
-      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
-      <tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">80.43</td><td class="num dim">[51.7, 123.8]</td>
-          <td class="num">53.3%</td><td class="num">0.445</td>
-          <td class="num">0.97</td>
-          <td class="num">—</td>
-          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">77.10</td><td class="num dim">[61.7, 92.2]</td>
-          <td class="num">51.1%</td><td class="num">0.545</td>
-          <td class="num">0.75</td>
-          <td class="num">-3.33</td>
-          <td class="num dim">[-42.3, 22.7]</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">83.82</td><td class="num dim">[72.2, 95.0]</td>
-          <td class="num">55.5%</td><td class="num">0.664</td>
-          <td class="num">1.13</td>
-          <td class="num">+6.72</td>
-          <td class="num dim">[-3.6, 15.7]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">79.46</td><td class="num dim">[67.0, 91.4]</td>
-          <td class="num">52.6%</td><td class="num">0.642</td>
-          <td class="num">1.08</td>
-          <td class="num">-4.36</td>
-          <td class="num dim">[-8.9, -0.4]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
-      <td class="num">151.00</td><td class="num dim">收益上限</td>
-      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
-      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
-      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
-      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
-      这两个数才是它的直接驱动，MAE 不是。</p>
-      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
-      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
-      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
-      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
-      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
-      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
-      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">57.79</td><td class="num">47.00</td>
-          <td class="num">112.51</td><td class="num">209.27</td>
-          <td class="num">-0.15</td>
-          <td class="num">7.5%</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">39.11</td><td class="num">32.15</td>
-          <td class="num">72.24</td><td class="num">165.33</td>
-          <td class="num">-12.13</td>
-          <td class="num">8.1%</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">29.95</td><td class="num">19.26</td>
-          <td class="num">61.76</td><td class="num">166.14</td>
-          <td class="num">-5.87</td>
-          <td class="num">11.5%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">28.92</td><td class="num">19.00</td>
-          <td class="num">61.83</td><td class="num">149.68</td>
-          <td class="num">-8.41</td>
-          <td class="num">11.0%</td></tr></tbody></table></div>
-      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
-      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
-      而且会在样本内制造好看的假象。</p>
-      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
-      <th>特征组</th><th>rMAE</th>
-      <th>相对基准</th><th>GW p</th></tr></thead>
-      <tbody><tr class="keep">
-          <td>留</td><td class="tier">+wind 单独</td>
-          <td class="num">0.490</td>
-          <td class="num">+0.0287</td>
-          <td class="num">0.000</td></tr><tr class="keep">
-          <td>留</td><td class="tier">去掉 temp</td>
-          <td class="num">0.490</td>
-          <td class="num">+0.0285</td>
-          <td class="num">0.000</td></tr><tr class="keep">
-          <td>留</td><td class="tier">去掉 ghi</td>
-          <td class="num">0.498</td>
-          <td class="num">+0.0200</td>
-          <td class="num">0.002</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+ghi 单独</td>
-          <td class="num">0.519</td>
-          <td class="num">-0.0005</td>
-          <td class="num">0.801</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+temp 单独</td>
-          <td class="num">0.531</td>
-          <td class="num">-0.0133</td>
-          <td class="num">0.000</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 wind</td>
-          <td class="num">0.536</td>
-          <td class="num">-0.0180</td>
-          <td class="num">0.000</td></tr></tbody></table></div>
-    </section><section id="r-SA1" class="reg">
-      <h2>SA1 <span class="chip no">不可用</span></h2>
-      <p class="lede">日收益增量区间 [-92.1, 4.2] 跨 0。</p>
-      
-      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
-        · 24 次滚动重拟合 ·
-        预调度 2025-10-26 起，区间内覆盖 100% ·
-        分小时拟合（24 个模型）</div>
-      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
-      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
-      <th>相对上层</th><th>GW p</th></tr></thead>
-      <tbody><tr>
-          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
-          <td class="num">87.82</td>
-          <td class="num rm">1.000<i style="width:0%"></i></td>
-          <td class="num dim">1.000</td>
-          <td class="num">409.6</td>
-          <td class="num">0.142</td>
-          <td class="num">—</td><td class="num">—</td></tr><tr>
-          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
-          <td class="num">56.33</td>
-          <td class="num rm">0.641<i style="width:90%"></i></td>
-          <td class="num dim">0.691</td>
-          <td class="num">289.5</td>
-          <td class="num">0.475</td>
-          <td class="num">+0.3586</td><td class="num">0.0000</td></tr><tr>
-          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
-          <td class="num">54.37</td>
-          <td class="num rm">0.619<i style="width:95%"></i></td>
-          <td class="num dim">0.580</td>
-          <td class="num">296.3</td>
-          <td class="num">0.596</td>
-          <td class="num">+0.0223</td><td class="num">0.1331</td></tr><tr class="hl">
-          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
-          <td class="num">52.50</td>
-          <td class="num rm">0.598<i style="width:100%"></i></td>
-          <td class="num dim">0.554</td>
-          <td class="num">291.9</td>
-          <td class="num">0.655</td>
-          <td class="num">+0.0213</td><td class="num">0.0133</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
-  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
-  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
-  多半是几个时刻炸了，不是模型整体不行。</p>
-      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
-      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
-      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
-      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
-      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
-      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
-      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
-      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
-      <tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">47.68</td><td class="num dim">[29.7, 63.5]</td>
-          <td class="num">15.9%</td><td class="num">0.355</td>
-          <td class="num">1.01</td>
-          <td class="num">—</td>
-          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">111.48</td><td class="num dim">[65.8, 172.1]</td>
-          <td class="num">37.2%</td><td class="num">0.486</td>
-          <td class="num">0.80</td>
-          <td class="num">+63.81</td>
-          <td class="num dim">[20.8, 125.0]</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">111.08</td><td class="num dim">[65.4, 170.8]</td>
-          <td class="num">37.1%</td><td class="num">0.530</td>
-          <td class="num">1.02</td>
-          <td class="num">-0.41</td>
-          <td class="num dim">[-7.0, 5.7]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">75.88</td><td class="num dim">[57.9, 92.3]</td>
-          <td class="num">25.3%</td><td class="num">0.531</td>
-          <td class="num">1.14</td>
-          <td class="num">-35.20</td>
-          <td class="num dim">[-92.1, 4.2]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
-      <td class="num">299.38</td><td class="num dim">收益上限</td>
-      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
-      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
-      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
-      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
-      这两个数才是它的直接驱动，MAE 不是。</p>
-      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
-      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
-      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
-      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
-      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
-      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
-      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">87.82</td><td class="num">52.70</td>
-          <td class="num">144.94</td><td class="num">422.09</td>
-          <td class="num">+0.54</td>
-          <td class="num">21.6%</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">56.33</td><td class="num">36.39</td>
-          <td class="num">93.64</td><td class="num">302.94</td>
-          <td class="num">-18.64</td>
-          <td class="num">20.2%</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">54.37</td><td class="num">30.55</td>
-          <td class="num">89.26</td><td class="num">300.47</td>
-          <td class="num">-13.20</td>
-          <td class="num">24.2%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">52.50</td><td class="num">29.22</td>
-          <td class="num">90.15</td><td class="num">310.14</td>
-          <td class="num">-18.78</td>
-          <td class="num">23.5%</td></tr></tbody></table></div>
-      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
-      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
-      而且会在样本内制造好看的假象。</p>
-      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
-      <th>特征组</th><th>rMAE</th>
-      <th>相对基准</th><th>GW p</th></tr></thead>
-      <tbody><tr class="keep">
-          <td>留</td><td class="tier">去掉 temp</td>
-          <td class="num">0.592</td>
-          <td class="num">+0.0267</td>
-          <td class="num">0.001</td></tr><tr class="keep">
-          <td>留</td><td class="tier">+wind 单独</td>
-          <td class="num">0.593</td>
-          <td class="num">+0.0259</td>
-          <td class="num">0.001</td></tr><tr class="keep">
-          <td>留</td><td class="tier">去掉 ghi</td>
-          <td class="num">0.596</td>
-          <td class="num">+0.0235</td>
-          <td class="num">0.003</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+ghi 单独</td>
-          <td class="num">0.623</td>
-          <td class="num">-0.0041</td>
-          <td class="num">0.315</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+temp 单独</td>
-          <td class="num">0.630</td>
-          <td class="num">-0.0114</td>
-          <td class="num">0.006</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 wind</td>
-          <td class="num">0.641</td>
-          <td class="num">-0.0224</td>
-          <td class="num">0.001</td></tr></tbody></table></div>
-    </section><section id="r-TAS1" class="reg">
-      <h2>TAS1 <span class="chip no">不可用</span></h2>
-      <p class="lede">日收益增量区间 [-7.2, 0.1] 跨 0。</p>
-      
-      <div class="meta">样本外 4012 小时 · 2026-04-27 → 2026-10-11
-        · 24 次滚动重拟合 ·
-        预调度 2025-10-26 起，区间内覆盖 100% ·
-        分小时拟合（24 个模型）</div>
-      <h4>一、基准阶梯</h4><div class="tblwrap"><table class="lad"><thead><tr>
-      <th>层</th><th>MAE</th><th>rMAE</th><th>rMdAE</th><th>RMSE</th><th>ρ</th>
-      <th>相对上层</th><th>GW p</th></tr></thead>
-      <tbody><tr>
-          <td class="tier">B0 naive<span class="note">一周前同一时刻的价格。所有 rMAE 的分母。</span></td>
-          <td class="num">38.96</td>
-          <td class="num rm">1.000<i style="width:0%"></i></td>
-          <td class="num dim">1.000</td>
-          <td class="num">104.7</td>
-          <td class="num">0.333</td>
-          <td class="num">—</td><td class="num">—</td></tr><tr>
-          <td class="tier">B1 自回归<span class="note">加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。</span></td>
-          <td class="num">26.77</td>
-          <td class="num rm">0.687<i style="width:78%"></i></td>
-          <td class="num dim">0.741</td>
-          <td class="num">74.3</td>
-          <td class="num">0.605</td>
-          <td class="num">+0.3127</td><td class="num">0.0000</td></tr><tr>
-          <td class="tier">B2 +官方<span class="note">加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。</span></td>
-          <td class="num">23.19</td>
-          <td class="num rm">0.595<i style="width:100%"></i></td>
-          <td class="num dim">0.596</td>
-          <td class="num">72.4</td>
-          <td class="num">0.732</td>
-          <td class="num">+0.0921</td><td class="num">0.0000</td></tr><tr class="hl">
-          <td class="tier">B3 +天气<span class="note">加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。</span></td>
-          <td class="num">22.72</td>
-          <td class="num rm">0.583<i style="width:100%"></i></td>
-          <td class="num dim">0.599</td>
-          <td class="num">72.1</td>
-          <td class="num">0.750</td>
-          <td class="num">+0.0120</td><td class="num">0.0216</td></tr></tbody></table></div><p class="cap"><b>rMdAE</b> 是同样口径的<b>中位</b>误差比。
-  电价的 MAE 常常被极少数尖峰主导——这时 rMAE 讲的是"尖峰上表现如何"，
-  rMdAE 讲的是"平常一小时表现如何"。两个背离得厉害，就看下面的误差解剖：
-  多半是几个时刻炸了，不是模型整体不行。</p>
-      <h4>二、经济评估</h4><p class="cap">一块 1 MW / 2 MWh 电池，
-      每个 NEM 交易日<b>只用预测价</b>定计划：先充 2 小时、后放 2 小时，
-      往返效率 η=0.85，吞吐成本 $5/MWh，预测收益 ≤ 0 的日子不动；
-      然后按<b>实际</b>价结算。共 168 个交易日。完美预知用同一个优化器喂实际价，
-      是同一约束下的上限。区间是按日块自助（2000 次）算的。</p>
-      <div class="tblwrap"><table class="lad wide"><thead><tr><th>层</th>
-      <th>日均 $/天</th><th>95% 区间</th><th>捕获率</th><th>日内秩 ρ</th>
-      <th>振幅比</th><th>相对上层</th><th>增量区间</th></tr></thead>
-      <tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">46.21</td><td class="num dim">[26.8, 71.5]</td>
-          <td class="num">36.0%</td><td class="num">0.402</td>
-          <td class="num">0.95</td>
-          <td class="num">—</td>
-          <td class="num dim">—</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">47.89</td><td class="num dim">[32.3, 65.4]</td>
-          <td class="num">37.3%</td><td class="num">0.483</td>
-          <td class="num">0.69</td>
-          <td class="num">+1.68</td>
-          <td class="num dim">[-22.9, 18.6]</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">47.36</td><td class="num dim">[31.8, 64.3]</td>
-          <td class="num">36.9%</td><td class="num">0.557</td>
-          <td class="num">0.88</td>
-          <td class="num">-0.53</td>
-          <td class="num dim">[-6.2, 5.0]</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">43.89</td><td class="num dim">[28.3, 60.6]</td>
-          <td class="num">34.2%</td><td class="num">0.540</td>
-          <td class="num">0.90</td>
-          <td class="num">-3.47</td>
-          <td class="num dim">[-7.2, 0.1]</td></tr><tr class="perfect"><td class="tier">完美预知</td>
-      <td class="num">128.36</td><td class="num dim">收益上限</td>
-      <td class="num">100.0%</td><td class="num">1.000</td><td class="num">1.00</td>
-      <td class="num">—</td><td class="num dim">—</td></tr></tbody></table></div>
-      <p class="cap"><b>日内秩 ρ</b> = 每天 pred 与 actual 的秩相关的均值；
-      <b>振幅比</b> = 日内预测振幅 / 实际振幅的中位数。套利只吃日内排序，
-      这两个数才是它的直接驱动，MAE 不是。</p>
-      <h4>三、误差解剖</h4><p class="cap">MAE 是个均值，会把"整体偏"和"几天炸"混成同一个数。
-      中位数和分位数拆开看：中位误差就大 = 模型或特征错了；
-      中位数正常但最坏 1% 占比高 = 尖峰时刻的外推问题。
-      偏差是平均<b>带符号</b>误差，正数表示系统性高估。</p>
-      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>MAE</th>
-      <th>中位 AE</th><th>p90</th><th>p99</th><th>偏差</th><th>最坏 1% 占比</th>
-      </tr></thead><tbody><tr><td class="tier">B0 naive</td>
-          <td class="num">38.96</td><td class="num">23.77</td>
-          <td class="num">80.44</td><td class="num">146.44</td>
-          <td class="num">+1.99</td>
-          <td class="num">13.6%</td></tr><tr><td class="tier">B1 自回归</td>
-          <td class="num">26.77</td><td class="num">17.62</td>
-          <td class="num">56.33</td><td class="num">104.58</td>
-          <td class="num">+1.49</td>
-          <td class="num">11.9%</td></tr><tr><td class="tier">B2 +官方</td>
-          <td class="num">23.19</td><td class="num">14.17</td>
-          <td class="num">49.33</td><td class="num">98.95</td>
-          <td class="num">+2.07</td>
-          <td class="num">13.3%</td></tr><tr class="hl"><td class="tier">B3 +天气</td>
-          <td class="num">22.72</td><td class="num">14.23</td>
-          <td class="num">47.82</td><td class="num">93.51</td>
-          <td class="num">+2.29</td>
-          <td class="num">13.4%</td></tr></tbody></table></div>
-      <h4>四、特征取舍</h4><p class="cap">每一组都和 <b>B2 +官方</b> 比。判为"留"要同时满足
-      rMAE 有改善且 GW p≤0.10。没过的特征应当删掉——多一个自由度，少一分稳定，
-      而且会在样本内制造好看的假象。</p>
-      <div class="tblwrap"><table class="lad var"><thead><tr><th></th>
-      <th>特征组</th><th>rMAE</th>
-      <th>相对基准</th><th>GW p</th></tr></thead>
-      <tbody><tr class="keep">
-          <td>留</td><td class="tier">去掉 temp</td>
-          <td class="num">0.581</td>
-          <td class="num">+0.0141</td>
-          <td class="num">0.003</td></tr><tr class="keep">
-          <td>留</td><td class="tier">+wind 单独</td>
-          <td class="num">0.583</td>
-          <td class="num">+0.0122</td>
-          <td class="num">0.002</td></tr><tr class="keep">
-          <td>留</td><td class="tier">去掉 ghi</td>
-          <td class="num">0.583</td>
-          <td class="num">+0.0122</td>
-          <td class="num">0.006</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+ghi 单独</td>
-          <td class="num">0.596</td>
-          <td class="num">-0.0003</td>
-          <td class="num">0.900</td></tr><tr class="drop">
-          <td>删</td><td class="tier">+temp 单独</td>
-          <td class="num">0.600</td>
-          <td class="num">-0.0049</td>
-          <td class="num">0.049</td></tr><tr class="drop">
-          <td>删</td><td class="tier">去掉 wind</td>
-          <td class="num">0.602</td>
-          <td class="num">-0.0069</td>
-          <td class="num">0.050</td></tr></tbody></table></div>
-    </section>
-
-<footer>
-<h3>口径</h3>
-<ul>
-<li><b>决策时刻</b>：NEM 日 D 的全部 24 小时，在 D−1 天 <b>13:30</b>（NEM）一次性定计划——
-    电池运营商排次日计划的真实做法，也和 EPF 综述的 day-ahead 设定一致。
-    AEMO 预调度最远只看到次日 04:00，而且约 12:30 之后才开始覆盖下一天，
-    所以"每小时滚动提前 24 小时"的口径会让 04:00–12:30 的小时拿不到官方预测。
-    <b>每一个特征在决策时刻都必须已经可见</b>：一小时的结算价要等这一小时结束再过 10 分钟
-    才发布；天气预报和 AEMO 预调度都取决策时刻之前发出的版本里最新的一版。
-    价格滞后按<b>时间戳</b>取，不按下标平移；天气分位用滚动窗口，不用全样本分位。</li>
-<li><b>每个 hour-of-day 各拟合一个模型</b>，不是一个模型跨 24 小时。共享模型会把
-    日内曲线压平（NSW1 实测振幅比 0.09），水平贴得准，挑出来的充放电时刻却是噪声。</li>
-<li><b>rMAE</b>，不是 MAPE。电价会穿零，MAPE 在那里没有定义。分母固定是
-    naive P(d−7,h)。MAE 和 RMSE 同时报——只报一个会掩盖尖峰上的表现。</li>
-<li><b>Giacomini-White</b>，不是 Diebold-Mariano。滚动重拟合下校准窗口一直在变，
-    DM 的前提（预测方法固定）不成立。方差用 Newey-West 修正，
-    否则损失差分的自相关会把 p 值压到荒谬的小。</li>
-<li><b>asinh 变换</b>后再拟合，预测夹回训练期见过的范围。电价重尾，
-    直接在原尺度上做最小二乘，几个尖峰就能主导整条回归线；
-    而 sinh 是指数级的，不夹住的话一个离群输入就能吐出上万块的预测。</li>
-<li><b>禁运带</b>：训练集和测试集之间留 3 天空隙，避免相邻小时把信息漏过去。
-    训练窗 180 天、每 7 天滚动重拟合一次。</li>
-<li><b>四道门槛</b>全过才判"可用"：样本外 ≥ 90 天、rMAE 有改善、
-    GW p ≤ 0.05、储能日收益增量的 95% 区间下界 &gt; 0。宁可漏掉真信号，
-    也不把噪声当 alpha。</li>
-</ul>
-<h3>为什么是这个结构</h3>
-<p>之前问的是"天气和电价相不相关"。那个问题的答案永远是"相关"——天气驱动供给，
-供给驱动价格。但它不是交易问题。交易问题是：我已经知道最近的价格，也知道 AEMO
-公开发布的预调度，再加上天气，还能<b>多</b>赚多少。所以每一层只比上一层多一组特征，
-天气的价值就是最后那一格的增量。</p>
-<h3>出处</h3>
-<ul>
-<li>Lago, Marcjasz, De Schutter, Weron，
-  <a href="https://arxiv.org/pdf/2204.11735">Forecasting day-ahead electricity prices:
-  A review of state-of-the-art algorithms, best practices and an open-access benchmark</a>
-  —— 基准阶梯、rMAE、GW 检验、"统计误差不等于经济价值"都出自这篇。</li>
-<li><a href="https://ieeexplore.ieee.org/document/9788043/">The Role of Weather Predictions
-  in Electricity Price Forecasting Beyond the Day-Ahead Horizon</a></li>
-<li><a href="https://arxiv.org/html/2510.03657">Optimising Battery Energy Storage System
-  Trading via Energy Market Operator Price Forecast</a> —— 经济评估用储能套利的依据。</li>
-</ul>
-<p style="margin-top:20px">生成于 2026-10-24 11:41 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</p>
-<p>代码与方法：<a href="https://github.com/Eric-S108/nem-weather-desk">https://github.com/Eric-S108/nem-weather-desk</a></p>
-</footer>
+<div class="top">
+  <div class="brand">NEM 天气交易台</div>
+  <nav class="nav"><a class="on" href="index.html">交易台</a><a href="method.html">方法与证据</a>
+    <a href="https://github.com/Eric-S108/nem-weather-desk">代码</a></nav>
 </div>
+<div class="asof">样本外 2026-04-28 → 2026-10-12（168 天）· 每天 13:30（NEM）定次日 24 小时计划 ·
+  1 MW / 2 MWh 电池 · 生成于 2026-10-24 12:17 UTC</div>
+
+
+<section class="hero">
+  <div><p class="q">排电池：加上天气后显著多赚的区</p><div class="big">0<small>/ 5 个区</small></div></div>
+  <p class="say">加上天气预报后，<b>没有一个区</b>的电池收益显著提高；<b>VIC1</b> 反而显著少赚。<br>排电池建议用：<b>价格模型</b>（NSW1、QLD1、SA1）；<b>一周前同期</b>（VIC1、TAS1）。<br>只用训练段挑天气变量（不偷看测试集）后：仍然<b>没有</b>区显著多赚。<br>换成赌 AEMO 预调度的偏差（吃整天水平，不是日内排序）：天气在 <b>VIC1</b> 显著多赚。</p>
+</section>
+
+<h2>每个区怎么做</h2>
+<div class="card"><div class="scroll"><table class="act">
+<thead><tr><th>区</th><th>天气</th><th>排电池用</th><th class="num">日收益</th>
+<th class="num">抓到上限的</th><th class="num">加天气每天</th><th>原因</th></tr></thead>
+<tbody><tr>
+  <td class="rg">NSW1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="mdl" data-l="排电池用"><span class="model">价格模型</span><span class="hint">只看最近的电价</span></td>
+  <td class="num" data-l="日收益"><span class="big2">$56</span><span class="hint">/ 天</span></td>
+  <td class="num" data-l="抓到上限的">45%<span class="hint">上限 $124</span></td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$0.19</span>
+      <span class="hint">[−$5.3, +$4.6]</span></td>
+  <td class="why">加天气后价格预测没有更准；电池收益 −$0.19/天，和 0 分不开。</td>
+</tr><tr>
+  <td class="rg">QLD1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="mdl" data-l="排电池用"><span class="model">价格模型</span><span class="hint">只看最近的电价</span></td>
+  <td class="num" data-l="日收益"><span class="big2">$112</span><span class="hint">/ 天</span></td>
+  <td class="num" data-l="抓到上限的">80%<span class="hint">上限 $140</span></td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$0.08</span>
+      <span class="hint">[−$2.0, +$2.0]</span></td>
+  <td class="why">加天气后价格预测准了约 0.1%，但和运气分不开；电池收益 −$0.08/天，和 0 分不开。</td>
+</tr><tr>
+  <td class="rg">VIC1</td>
+  <td class="st"><span class="chip critical"><span aria-hidden="true">✕</span>亏钱</span></td>
+  <td class="mdl" data-l="排电池用"><span class="model">一周前同期</span><span class="hint">直接照抄上周同一天、同一小时的价格</span></td>
+  <td class="num" data-l="日收益"><span class="big2">$80</span><span class="hint">/ 天</span></td>
+  <td class="num" data-l="抓到上限的">53%<span class="hint">上限 $151</span></td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$4.36</span>
+      <span class="hint">[−$8.9, −$0.4]</span></td>
+  <td class="why">加天气后价格预测准了约 1.8%（不是运气）；但排电池每天反而少赚 $4.36，而且不是运气。</td>
+</tr><tr>
+  <td class="rg">SA1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="mdl" data-l="排电池用"><span class="model">价格模型</span><span class="hint">只看最近的电价</span></td>
+  <td class="num" data-l="日收益"><span class="big2">$111</span><span class="hint">/ 天</span></td>
+  <td class="num" data-l="抓到上限的">37%<span class="hint">上限 $299</span></td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$35.20</span>
+      <span class="hint">[−$92.1, +$4.2]</span></td>
+  <td class="why">加天气后价格预测准了约 2.1%（不是运气）；电池收益 −$35.20/天，和 0 分不开。</td>
+</tr><tr>
+  <td class="rg">TAS1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="mdl" data-l="排电池用"><span class="model">一周前同期</span><span class="hint">直接照抄上周同一天、同一小时的价格</span></td>
+  <td class="num" data-l="日收益"><span class="big2">$46</span><span class="hint">/ 天</span></td>
+  <td class="num" data-l="抓到上限的">36%<span class="hint">上限 $128</span></td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$3.47</span>
+      <span class="hint">[−$7.2, +$0.1]</span></td>
+  <td class="why">加天气后价格预测准了约 1.2%（不是运气）；电池收益 −$3.47/天，和 0 分不开。</td>
+</tr></tbody></table></div></div>
+
+<h2>证据</h2>
+
+<figure class="fig" id="fig-weather">
+  <figcaption><h3>加上天气预报，电池每天多赚还是少赚？</h3><p>点 = 168 天里的日均差额（相对不用天气的同一套模型），横线 = 95% 区间。横线整段在 0 右边才算真的多赚，整段在左边是真的少赚，跨过 0 就是和运气分不开。空心点 / 箭头 = 超出刻度，看右侧数字。</p></figcaption>
+  <div class="forest" role="img" aria-label="加上天气预报，电池每天多赚还是少赚？">
+    <div class="fr fhead"><span class="fl"></span>
+      <span class="ftrack"><span class="fdir l">← 少赚</span><span class="fdir r">多赚 →</span></span>
+      <span class="fv"></span></div>
+    
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;NSW1&lt;/b&gt;&lt;br&gt;日均 −$0.19&lt;br&gt;95% 区间 [−$5.3, +$4.6]">
+      <span class="fl">NSW1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:23.45%;width:49.70%"></i>
+        <i class="fd" style="left:49.05%"></i></span>
+      <span class="fv"><b>−$0.19</b><small>[−$5.3, +$4.6]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;QLD1&lt;/b&gt;&lt;br&gt;日均 −$0.08&lt;br&gt;95% 区间 [−$2.0, +$2.0]">
+      <span class="fl">QLD1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:40.15%;width:19.85%"></i>
+        <i class="fd" style="left:49.60%"></i></span>
+      <span class="fv"><b>−$0.08</b><small>[−$2.0, +$2.0]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;VIC1&lt;/b&gt;&lt;br&gt;日均 −$4.36&lt;br&gt;95% 区间 [−$8.9, −$0.4]">
+      <span class="fl">VIC1</span>
+      <span class="ftrack critical"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:5.25%;width:42.80%"></i>
+        <i class="fd" style="left:28.20%"></i></span>
+      <span class="fv"><b>−$4.36</b><small>[−$8.9, −$0.4]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;SA1&lt;/b&gt;&lt;br&gt;日均 −$35.20&lt;br&gt;95% 区间 [−$92.1, +$4.2]">
+      <span class="fl">SA1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:0.00%;width:71.05%"><i class="fa l"></i></i>
+        <i class="fd clip" style="left:0.00%"></i></span>
+      <span class="fv"><b>−$35.20</b><small>[−$92.1, +$4.2]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;TAS1&lt;/b&gt;&lt;br&gt;日均 −$3.47&lt;br&gt;95% 区间 [−$7.2, +$0.1]">
+      <span class="fl">TAS1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:14.25%;width:36.45%"></i>
+        <i class="fd" style="left:32.65%"></i></span>
+      <span class="fv"><b>−$3.47</b><small>[−$7.2, +$0.1]</small></span>
+    </div>
+    <div class="fr faxis"><span class="fl"></span><span class="ftrack"><span class="ft" style="left:0.00%">−$10</span><span class="ft" style="left:25.00%">−$5</span><span class="ft" style="left:50.00%">$0</span><span class="ft" style="left:75.00%">$5</span><span class="ft" style="left:100.00%">$10</span></span><span class="fv"></span></div>
+  </div>
+  <details class="tv"><summary>表格视图</summary>
+    <table class="dt"><thead><tr><th>区</th><th class="num">日均</th><th class="num">95% 区间</th></tr></thead>
+    <tbody><tr><td>NSW1</td><td class='num'>−$0.19</td><td class='num'>[−$5.3, +$4.6]</td></tr><tr><td>QLD1</td><td class='num'>−$0.08</td><td class='num'>[−$2.0, +$2.0]</td></tr><tr><td>VIC1</td><td class='num'>−$4.36</td><td class='num'>[−$8.9, −$0.4]</td></tr><tr><td>SA1</td><td class='num'>−$35.20</td><td class='num'>[−$92.1, +$4.2]</td></tr><tr><td>TAS1</td><td class='num'>−$3.47</td><td class='num'>[−$7.2, +$0.1]</td></tr></tbody></table></details>
+</figure>
+
+<figure class="fig" id="fig-cum">
+  <figcaption><h3>累计收益：一块 1 MW / 2 MWh 电池</h3>
+    <p>每天 13:30 用各模型的预测排好次日计划，按实际电价结算后的累计美元。线越高越好；
+    圆点是该区建议使用的模型。</p></figcaption>
+  <div class="legend"><span class="key"><i class="sw base"></i>一周前同期</span><span class="key"><i class="sw s1"></i>价格模型</span><span class="key"><i class="sw s2"></i>价格 + AEMO</span><span class="key"><i class="sw s3"></i>价格 + AEMO + 天气</span></div>
+  <div class="grid5">
+  <div class="panel">
+    <div class="phead"><span class="pname">NSW1</span><span class="chip neutral"><span aria-hidden="true">—</span>不用</span>
+      <span class="pnote">加天气比 价格 + AEMO 累计 <b>−$31</b></span></div>
+    <svg class="cum" viewBox="0 0 500 250" role="img" data-cum='{&quot;dates&quot;: [&quot;2026-04-28&quot;, &quot;2026-04-29&quot;, &quot;2026-04-30&quot;, &quot;2026-05-01&quot;, &quot;2026-05-02&quot;, &quot;2026-05-03&quot;, &quot;2026-05-04&quot;, &quot;2026-05-05&quot;, &quot;2026-05-06&quot;, &quot;2026-05-07&quot;, &quot;2026-05-08&quot;, &quot;2026-05-09&quot;, &quot;2026-05-10&quot;, &quot;2026-05-11&quot;, &quot;2026-05-12&quot;, &quot;2026-05-13&quot;, &quot;2026-05-14&quot;, &quot;2026-05-15&quot;, &quot;2026-05-16&quot;, &quot;2026-05-17&quot;, &quot;2026-05-18&quot;, &quot;2026-05-19&quot;, &quot;2026-05-20&quot;, &quot;2026-05-21&quot;, &quot;2026-05-22&quot;, &quot;2026-05-23&quot;, &quot;2026-05-24&quot;, &quot;2026-05-25&quot;, &quot;2026-05-26&quot;, &quot;2026-05-27&quot;, &quot;2026-05-28&quot;, &quot;2026-05-29&quot;, &quot;2026-05-30&quot;, &quot;2026-05-31&quot;, &quot;2026-06-01&quot;, &quot;2026-06-02&quot;, &quot;2026-06-03&quot;, &quot;2026-06-04&quot;, &quot;2026-06-05&quot;, &quot;2026-06-06&quot;, &quot;2026-06-07&quot;, &quot;2026-06-08&quot;, &quot;2026-06-09&quot;, &quot;2026-06-10&quot;, &quot;2026-06-11&quot;, &quot;2026-06-12&quot;, &quot;2026-06-13&quot;, &quot;2026-06-14&quot;, &quot;2026-06-15&quot;, &quot;2026-06-16&quot;, &quot;2026-06-17&quot;, &quot;2026-06-18&quot;, &quot;2026-06-19&quot;, &quot;2026-06-20&quot;, &quot;2026-06-21&quot;, &quot;2026-06-22&quot;, &quot;2026-06-23&quot;, &quot;2026-06-24&quot;, &quot;2026-06-25&quot;, &quot;2026-06-26&quot;, &quot;2026-06-27&quot;, &quot;2026-06-28&quot;, &quot;2026-06-29&quot;, &quot;2026-06-30&quot;, &quot;2026-07-01&quot;, &quot;2026-07-02&quot;, &quot;2026-07-03&quot;, &quot;2026-07-04&quot;, &quot;2026-07-05&quot;, &quot;2026-07-06&quot;, &quot;2026-07-07&quot;, &quot;2026-07-08&quot;, &quot;2026-07-09&quot;, &quot;2026-07-10&quot;, &quot;2026-07-11&quot;, &quot;2026-07-12&quot;, &quot;2026-07-13&quot;, &quot;2026-07-14&quot;, &quot;2026-07-15&quot;, &quot;2026-07-16&quot;, &quot;2026-07-17&quot;, &quot;2026-07-18&quot;, &quot;2026-07-19&quot;, &quot;2026-07-20&quot;, &quot;2026-07-21&quot;, &quot;2026-07-22&quot;, &quot;2026-07-23&quot;, &quot;2026-07-24&quot;, &quot;2026-07-25&quot;, &quot;2026-07-26&quot;, &quot;2026-07-27&quot;, &quot;2026-07-28&quot;, &quot;2026-07-29&quot;, &quot;2026-07-30&quot;, &quot;2026-07-31&quot;, &quot;2026-08-01&quot;, &quot;2026-08-02&quot;, &quot;2026-08-03&quot;, &quot;2026-08-04&quot;, &quot;2026-08-05&quot;, &quot;2026-08-06&quot;, &quot;2026-08-07&quot;, &quot;2026-08-08&quot;, &quot;2026-08-09&quot;, &quot;2026-08-10&quot;, &quot;2026-08-11&quot;, &quot;2026-08-12&quot;, &quot;2026-08-13&quot;, &quot;2026-08-14&quot;, &quot;2026-08-15&quot;, &quot;2026-08-16&quot;, &quot;2026-08-17&quot;, &quot;2026-08-18&quot;, &quot;2026-08-19&quot;, &quot;2026-08-20&quot;, &quot;2026-08-21&quot;, &quot;2026-08-22&quot;, &quot;2026-08-23&quot;, &quot;2026-08-24&quot;, &quot;2026-08-25&quot;, &quot;2026-08-26&quot;, &quot;2026-08-27&quot;, &quot;2026-08-28&quot;, &quot;2026-08-29&quot;, &quot;2026-08-30&quot;, &quot;2026-08-31&quot;, &quot;2026-09-01&quot;, &quot;2026-09-02&quot;, &quot;2026-09-03&quot;, &quot;2026-09-04&quot;, &quot;2026-09-05&quot;, &quot;2026-09-06&quot;, &quot;2026-09-07&quot;, &quot;2026-09-08&quot;, &quot;2026-09-09&quot;, &quot;2026-09-10&quot;, &quot;2026-09-11&quot;, &quot;2026-09-12&quot;, &quot;2026-09-13&quot;, &quot;2026-09-14&quot;, &quot;2026-09-15&quot;, &quot;2026-09-16&quot;, &quot;2026-09-17&quot;, &quot;2026-09-18&quot;, &quot;2026-09-19&quot;, &quot;2026-09-20&quot;, &quot;2026-09-21&quot;, &quot;2026-09-22&quot;, &quot;2026-09-23&quot;, &quot;2026-09-24&quot;, &quot;2026-09-25&quot;, &quot;2026-09-26&quot;, &quot;2026-09-27&quot;, &quot;2026-09-28&quot;, &quot;2026-09-29&quot;, &quot;2026-09-30&quot;, &quot;2026-10-01&quot;, &quot;2026-10-02&quot;, &quot;2026-10-03&quot;, &quot;2026-10-04&quot;, &quot;2026-10-05&quot;, &quot;2026-10-06&quot;, &quot;2026-10-07&quot;, &quot;2026-10-08&quot;, &quot;2026-10-09&quot;, &quot;2026-10-10&quot;, &quot;2026-10-11&quot;, &quot;2026-10-12&quot;], &quot;series&quot;: [[&quot;一周前同期&quot;, [150.9, 246.6, 309.8, 353.3, 401.5, 505.3, 535.5, 609.6, 639.0, 688.0, 798.5, 936.1, 1027.9, 1081.5, 1130.7, 1212.8, 1255.0, 1291.4, 1382.7, 1473.5, 1176.3, 1170.7, 1290.2, 1338.0, 1486.9, 1570.1, 1612.7, 1601.6, 1601.6, 1537.5, 1527.7, 1532.0, 1591.1, 1651.7, 1688.3, 1679.5, 1650.2, 1643.0, 1671.4, 1781.9, 1874.8, 1957.3, 1981.7, 2002.0, 1967.5, 1912.6, 1997.7, 1998.9, 2029.7, 2056.0, 2045.8, 2033.2, 2058.0, 2089.8, 2184.9, 2320.7, 2446.1, 2642.6, 2634.8, 2725.0, 2684.1, 2681.5, 2704.2, 2717.7, 2725.2, 2740.7, 2837.7, 2816.0, 2894.6, 2923.8, 2948.0, 2917.1, 3024.5, 3084.2, 3120.8, 3229.0, 3269.3, 3323.7, 3396.8, 3420.6, 3469.8, 3530.2, 3620.4, 3686.2, 3707.1, 3777.0, 3838.0, 3871.7, 3953.1, 3968.9, 4133.1, 4121.2, 4248.9, 4445.2, 4543.6, 4494.4, 4520.8, 4556.7, 4747.1, 4945.9, 5046.0, 5027.2, 5134.2, 5094.4, 5107.7, 5194.6, 5227.3, 5235.5, 5395.7, 5394.7, 5359.4, 5404.4, 5453.9, 5519.3, 5571.1, 5589.2, 5697.2, 5786.4, 5910.6, 5927.5, 6058.8, 6184.7, 6325.8, 6402.6, 6547.1, 6690.3, 6774.9, 6861.7, 7040.3, 7149.9, 7197.5, 7330.8, 7542.0, 7687.1, 7777.2, 7800.8, 7791.0, 7889.5, 8014.9, 8041.2, 8155.3, 8348.8, 8534.2, 8632.6, 8762.2, 8939.7, 9043.3, 9041.3, 9057.3, 9144.3, 9200.8, 9320.0, 9279.2, 9302.0, 9293.8, 9432.7, 9488.4, 9523.3, 9554.3, 9554.3, 9534.2, 9644.4, 9690.6, 9718.7, 9915.1, 7920.9, 8217.2, 8217.2], &quot;B0 naive&quot;], [&quot;价格模型&quot;, [128.2, 206.3, 272.4, 286.2, 351.1, 446.6, 464.6, 531.2, 552.7, 615.2, 733.0, 855.8, 952.8, 1019.0, 1071.3, 1126.0, 1280.5, 1320.1, 1411.9, 1474.8, 1118.8, 1101.0, 1245.6, 1316.7, 1396.7, 1491.4, 1537.1, 1505.0, 1425.9, 1342.2, 1329.0, 1288.2, 1346.2, 1459.8, 1513.6, 1486.8, 1563.4, 1596.0, 1604.8, 1720.4, 1800.8, 1877.1, 1869.5, 1925.6, 1918.6, 1900.3, 1983.4, 2006.7, 2010.8, 2053.0, 2045.9, 2015.6, 2034.7, 2065.8, 2160.6, 2273.6, 2351.6, 2538.8, 2580.7, 2674.9, 2668.6, 2676.8, 2705.4, 2719.0, 2729.4, 2761.1, 2821.7, 2907.1, 2988.7, 3063.0, 3126.7, 3277.8, 3408.6, 3461.5, 3511.1, 3624.2, 3656.0, 3722.5, 3784.2, 3810.5, 3858.9, 3907.5, 3956.4, 4030.2, 4084.4, 4136.7, 4190.0, 4231.8, 4314.3, 4371.9, 4525.6, 4568.0, 4672.5, 4855.7, 4964.1, 4956.8, 5074.2, 5127.8, 5243.9, 5481.3, 5560.6, 5541.7, 5652.5, 5625.1, 5634.2, 5721.0, 5757.5, 5788.9, 5921.7, 5926.0, 5971.2, 6012.6, 6024.9, 6092.5, 6153.3, 6183.6, 6319.4, 6384.8, 6517.8, 6571.2, 6638.6, 6769.0, 6902.7, 6974.6, 7114.6, 7298.3, 7444.8, 7587.0, 7783.1, 7861.1, 7979.5, 8113.3, 8327.8, 8471.3, 8584.6, 8652.6, 8749.6, 8846.6, 8976.3, 9009.3, 9125.2, 9318.2, 9446.3, 9577.2, 9710.2, 9886.2, 10073.1, 10119.3, 10131.0, 10219.6, 10279.7, 10396.0, 10378.4, 10379.8, 10478.7, 10591.2, 10687.5, 10723.4, 10762.6, 10892.1, 10911.6, 11013.0, 11071.9, 11187.9, 11302.9, 9225.7, 9474.2, 9474.2], &quot;B1 自回归&quot;], [&quot;价格 + AEMO&quot;, [126.4, 211.5, 277.6, 291.4, 356.3, 454.2, 472.2, 540.9, 569.0, 646.7, 770.1, 892.9, 989.9, 1042.6, 1088.3, 1133.5, 1288.0, 1325.8, 1422.5, 1444.2, 1588.7, 1565.9, 1718.4, 1771.1, 1847.0, 1939.4, 1998.2, 1959.9, 2018.2, 1896.3, 1884.2, 1926.7, 1998.2, 2124.9, 2185.4, 2161.9, 2259.7, 2292.3, 2297.3, 2424.5, 2501.9, 2586.5, 2577.6, 2600.1, 2541.1, 2536.0, 2621.8, 2632.8, 2654.3, 2698.4, 2678.1, 2647.8, 2659.8, 2673.6, 2718.5, 2758.3, 2823.0, 2960.6, 2886.8, 2896.0, 2891.1, 2905.2, 2921.6, 2896.2, 2885.6, 2911.4, 2985.4, 3076.6, 3143.9, 3212.8, 3309.6, 3407.5, 3523.7, 3550.6, 3611.2, 3723.6, 3767.1, 3849.5, 3886.3, 3910.9, 3961.0, 3999.3, 4059.1, 4130.0, 4190.9, 4235.6, 4276.0, 4344.5, 4427.0, 4489.5, 4581.6, 4637.7, 4795.4, 5107.7, 5217.3, 5180.2, 5297.6, 5335.9, 5475.8, 5651.1, 5765.5, 5748.8, 5860.0, 5847.8, 5844.9, 5931.7, 5968.3, 6054.9, 6132.6, 6147.4, 6192.2, 6237.1, 6224.8, 6301.7, 6354.7, 6372.9, 6524.1, 6589.5, 6722.5, 6783.8, 6845.8, 7034.3, 7182.4, 7254.3, 7416.8, 7600.5, 7749.5, 7892.9, 8089.5, 8186.7, 8308.6, 8438.6, 8649.7, 8793.2, 8924.9, 8992.9, 9081.3, 9181.2, 9307.3, 9334.4, 9461.3, 9654.8, 9796.3, 9938.3, 10071.0, 10246.8, 10384.8, 10438.4, 10464.0, 10561.9, 10640.0, 10756.3, 10734.5, 10735.9, 10786.7, 10909.3, 10994.9, 11003.7, 11036.7, 11206.5, 11272.9, 11359.3, 11389.3, 11617.7, 11732.7, 9743.3, 10092.2, 10092.2], &quot;B2 +官方&quot;], [&quot;价格 + AEMO + 天气&quot;, [129.2, 212.9, 289.6, 325.0, 387.2, 489.9, 515.9, 571.7, 603.9, 700.4, 843.3, 971.6, 1071.9, 1112.7, 1143.4, 1175.4, 1312.2, 1354.2, 1452.8, 1474.5, 1619.0, 1591.9, 1759.5, 1875.5, 1902.7, 1988.1, 2046.9, 2066.2, 2124.5, 2019.0, 2006.9, 1961.2, 2032.7, 2155.4, 2241.1, 2217.6, 2305.0, 2325.8, 2323.9, 2451.2, 2553.4, 2644.2, 2653.5, 2702.5, 2643.5, 2654.1, 2745.3, 2749.5, 2770.9, 2818.1, 2779.9, 2749.6, 2768.7, 2801.0, 2846.0, 2839.8, 2920.2, 3075.9, 3004.8, 3112.6, 3107.7, 3080.7, 3076.7, 3051.2, 3027.2, 3040.0, 3124.0, 3208.0, 3246.6, 3315.5, 3407.9, 3524.6, 3640.7, 3670.1, 3730.7, 3851.1, 3905.3, 4004.7, 4041.1, 4055.9, 4117.6, 4150.6, 4230.3, 4279.0, 4325.3, 4372.6, 4431.3, 4525.4, 4637.1, 4699.6, 4868.1, 4924.3, 5123.9, 5438.9, 5542.5, 5515.4, 5632.8, 5685.7, 5895.3, 6043.6, 6151.0, 6326.0, 6437.2, 6383.9, 6395.9, 6425.5, 6380.1, 6417.7, 6445.3, 6426.3, 6460.8, 6497.9, 6477.3, 6554.2, 6616.9, 6607.8, 6778.5, 6855.5, 6992.2, 6971.7, 7111.0, 7314.1, 7462.1, 7534.1, 7678.6, 7853.2, 8002.2, 8144.4, 8341.0, 8438.2, 8557.8, 8687.8, 8879.4, 9025.3, 9032.6, 9100.6, 9191.4, 9291.2, 9417.4, 9436.8, 9563.7, 9757.2, 9898.6, 10040.7, 10173.4, 10349.1, 10423.0, 10476.6, 10502.2, 10600.1, 10660.2, 10775.5, 10752.9, 10754.2, 10770.9, 10893.4, 10979.1, 10987.8, 11020.9, 11190.7, 11257.6, 11328.0, 11358.0, 11586.4, 11701.4, 9712.1, 10060.9, 10060.9], &quot;B3 +天气&quot;]], &quot;L&quot;: 52, &quot;pw&quot;: 432}'
+         aria-label="NSW1 累计收益"><line class="grid" x1="52" x2="484" y1="222.0" y2="222.0"/><text class="tick" x="46" y="226.0" text-anchor="end">$0</text><line class="grid" x1="52" x2="484" y1="133.4" y2="133.4"/><text class="tick" x="46" y="137.4" text-anchor="end">$5K</text><line class="grid" x1="52" x2="484" y1="44.7" y2="44.7"/><text class="tick" x="46" y="48.7" text-anchor="end">$10K</text><text class="tick" x="52.0" y="242" text-anchor="start">26-04-28</text><text class="tick" x="269.3" y="242" text-anchor="middle">26-07-21</text><text class="tick" x="484.0" y="242" text-anchor="end">26-10-12</text><polyline class="ln base" points="52.0,219.3 54.6,217.6 57.2,216.5 59.8,215.7 62.3,214.9 64.9,213.0 67.5,212.5 70.1,211.2 72.7,210.7 75.3,209.8 77.9,207.8 80.5,205.4 83.0,203.8 85.6,202.8 88.2,202.0 90.8,200.5 93.4,199.8 96.0,199.1 98.6,197.5 101.1,195.9 103.7,201.1 106.3,201.2 108.9,199.1 111.5,198.3 114.1,195.6 116.7,194.2 119.3,193.4 121.8,193.6 124.4,193.6 127.0,194.7 129.6,194.9 132.2,194.8 134.8,193.8 137.4,192.7 140.0,192.1 142.5,192.2 145.1,192.7 147.7,192.9 150.3,192.4 152.9,190.4 155.5,188.8 158.1,187.3 160.6,186.9 163.2,186.5 165.8,187.1 168.4,188.1 171.0,186.6 173.6,186.6 176.2,186.0 178.8,185.6 181.3,185.7 183.9,186.0 186.5,185.5 189.1,185.0 191.7,183.3 194.3,180.9 196.9,178.6 199.4,175.2 202.0,175.3 204.6,173.7 207.2,174.4 209.8,174.5 212.4,174.1 215.0,173.8 217.6,173.7 220.1,173.4 222.7,171.7 225.3,172.1 227.9,170.7 230.5,170.2 233.1,169.7 235.7,170.3 238.3,168.4 240.8,167.3 243.4,166.7 246.0,164.8 248.6,164.0 251.2,163.1 253.8,161.8 256.4,161.4 258.9,160.5 261.5,159.4 264.1,157.8 266.7,156.7 269.3,156.3 271.9,155.0 274.5,154.0 277.1,153.4 279.6,151.9 282.2,151.6 284.8,148.7 287.4,148.9 290.0,146.7 292.6,143.2 295.2,141.5 297.7,142.3 300.3,141.9 302.9,141.2 305.5,137.8 308.1,134.3 310.7,132.5 313.3,132.9 315.9,131.0 318.4,131.7 321.0,131.4 323.6,129.9 326.2,129.3 328.8,129.2 331.4,126.3 334.0,126.4 336.6,127.0 339.1,126.2 341.7,125.3 344.3,124.2 346.9,123.2 349.5,122.9 352.1,121.0 354.7,119.4 357.2,117.2 359.8,116.9 362.4,114.6 365.0,112.4 367.6,109.9 370.2,108.5 372.8,105.9 375.4,103.4 377.9,101.9 380.5,100.4 383.1,97.2 385.7,95.2 388.3,94.4 390.9,92.0 393.5,88.3 396.0,85.7 398.6,84.1 401.2,83.7 403.8,83.9 406.4,82.1 409.0,79.9 411.6,79.4 414.2,77.4 416.7,74.0 419.3,70.7 421.9,69.0 424.5,66.7 427.1,63.5 429.7,61.7 432.3,61.7 434.9,61.4 437.4,59.9 440.0,58.9 442.6,56.8 445.2,57.5 447.8,57.1 450.4,57.2 453.0,54.8 455.5,53.8 458.1,53.2 460.7,52.6 463.3,52.6 465.9,53.0 468.5,51.0 471.1,50.2 473.7,49.7 476.2,46.2 478.8,81.6 481.4,76.3 484.0,76.3"/><polyline class="ln s1" points="52.0,219.7 54.6,218.3 57.2,217.2 59.8,216.9 62.3,215.8 64.9,214.1 67.5,213.8 70.1,212.6 72.7,212.2 75.3,211.1 77.9,209.0 80.5,206.8 83.0,205.1 85.6,203.9 88.2,203.0 90.8,202.0 93.4,199.3 96.0,198.6 98.6,197.0 101.1,195.9 103.7,202.2 106.3,202.5 108.9,199.9 111.5,198.7 114.1,197.2 116.7,195.6 119.3,194.7 121.8,195.3 124.4,196.7 127.0,198.2 129.6,198.4 132.2,199.2 134.8,198.1 137.4,196.1 140.0,195.2 142.5,195.6 145.1,194.3 147.7,193.7 150.3,193.5 152.9,191.5 155.5,190.1 158.1,188.7 160.6,188.9 163.2,187.9 165.8,188.0 168.4,188.3 171.0,186.8 173.6,186.4 176.2,186.4 178.8,185.6 181.3,185.7 183.9,186.3 186.5,185.9 189.1,185.4 191.7,183.7 194.3,181.7 196.9,180.3 199.4,177.0 202.0,176.2 204.6,174.6 207.2,174.7 209.8,174.5 212.4,174.0 215.0,173.8 217.6,173.6 220.1,173.1 222.7,172.0 225.3,170.5 227.9,169.0 230.5,167.7 233.1,166.6 235.7,163.9 238.3,161.6 240.8,160.6 243.4,159.8 246.0,157.7 248.6,157.2 251.2,156.0 253.8,154.9 256.4,154.4 258.9,153.6 261.5,152.7 264.1,151.9 266.7,150.6 269.3,149.6 271.9,148.7 274.5,147.7 277.1,147.0 279.6,145.5 282.2,144.5 284.8,141.8 287.4,141.0 290.0,139.2 292.6,135.9 295.2,134.0 297.7,134.1 300.3,132.0 302.9,131.1 305.5,129.0 308.1,124.8 310.7,123.4 313.3,123.8 315.9,121.8 318.4,122.3 321.0,122.1 323.6,120.6 326.2,119.9 328.8,119.4 331.4,117.0 334.0,116.9 336.6,116.1 339.1,115.4 341.7,115.2 344.3,114.0 346.9,112.9 349.5,112.4 352.1,110.0 354.7,108.8 357.2,106.5 359.8,105.5 362.4,104.3 365.0,102.0 367.6,99.6 370.2,98.4 372.8,95.9 375.4,92.6 377.9,90.0 380.5,87.5 383.1,84.0 385.7,82.6 388.3,80.5 390.9,78.2 393.5,74.4 396.0,71.8 398.6,69.8 401.2,68.6 403.8,66.9 406.4,65.2 409.0,62.9 411.6,62.3 414.2,60.2 416.7,56.8 419.3,54.5 421.9,52.2 424.5,49.9 427.1,46.7 429.7,43.4 432.3,42.6 434.9,42.4 437.4,40.8 440.0,39.8 442.6,37.7 445.2,38.0 447.8,38.0 450.4,36.2 453.0,34.2 455.5,32.5 458.1,31.9 460.7,31.2 463.3,28.9 465.9,28.6 468.5,26.8 471.1,25.7 473.7,23.7 476.2,21.6 478.8,58.4 481.4,54.0 484.0,54.0"/><polyline class="ln s2" points="52.0,219.8 54.6,218.3 57.2,217.1 59.8,216.8 62.3,215.7 64.9,213.9 67.5,213.6 70.1,212.4 72.7,211.9 75.3,210.5 77.9,208.3 80.5,206.2 83.0,204.5 85.6,203.5 88.2,202.7 90.8,201.9 93.4,199.2 96.0,198.5 98.6,196.8 101.1,196.4 103.7,193.8 106.3,194.2 108.9,191.5 111.5,190.6 114.1,189.3 116.7,187.6 119.3,186.6 121.8,187.3 124.4,186.2 127.0,188.4 129.6,188.6 132.2,187.8 134.8,186.6 137.4,184.3 140.0,183.3 142.5,183.7 145.1,181.9 147.7,181.4 150.3,181.3 152.9,179.0 155.5,177.6 158.1,176.1 160.6,176.3 163.2,175.9 165.8,177.0 168.4,177.0 171.0,175.5 173.6,175.3 176.2,174.9 178.8,174.2 181.3,174.5 183.9,175.1 186.5,174.8 189.1,174.6 191.7,173.8 194.3,173.1 196.9,172.0 199.4,169.5 202.0,170.8 204.6,170.7 207.2,170.7 209.8,170.5 212.4,170.2 215.0,170.7 217.6,170.8 220.1,170.4 222.7,169.1 225.3,167.5 227.9,166.3 230.5,165.0 233.1,163.3 235.7,161.6 238.3,159.5 240.8,159.1 243.4,158.0 246.0,156.0 248.6,155.2 251.2,153.8 253.8,153.1 256.4,152.7 258.9,151.8 261.5,151.1 264.1,150.0 266.7,148.8 269.3,147.7 271.9,146.9 274.5,146.2 277.1,145.0 279.6,143.5 282.2,142.4 284.8,140.8 287.4,139.8 290.0,137.0 292.6,131.4 295.2,129.5 297.7,130.2 300.3,128.1 302.9,127.4 305.5,124.9 308.1,121.8 310.7,119.8 313.3,120.1 315.9,118.1 318.4,118.3 321.0,118.4 323.6,116.8 326.2,116.2 328.8,114.7 331.4,113.3 334.0,113.0 336.6,112.2 339.1,111.4 341.7,111.6 344.3,110.3 346.9,109.3 349.5,109.0 352.1,106.3 354.7,105.2 357.2,102.8 359.8,101.7 362.4,100.6 365.0,97.3 367.6,94.7 370.2,93.4 372.8,90.5 375.4,87.3 377.9,84.6 380.5,82.1 383.1,78.6 385.7,76.9 388.3,74.7 390.9,72.4 393.5,68.7 396.0,66.1 398.6,63.8 401.2,62.6 403.8,61.0 406.4,59.2 409.0,57.0 411.6,56.5 414.2,54.3 416.7,50.8 419.3,48.3 421.9,45.8 424.5,43.5 427.1,40.3 429.7,37.9 432.3,36.9 434.9,36.5 437.4,34.8 440.0,33.4 442.6,31.3 445.2,31.7 447.8,31.7 450.4,30.8 453.0,28.6 455.5,27.1 458.1,26.9 460.7,26.3 463.3,23.3 465.9,22.2 468.5,20.6 471.1,20.1 473.7,16.0 476.2,14.0 478.8,49.3 481.4,43.1 484.0,43.1"/><polyline class="ln s3" points="52.0,219.7 54.6,218.2 57.2,216.9 59.8,216.2 62.3,215.1 64.9,213.3 67.5,212.9 70.1,211.9 72.7,211.3 75.3,209.6 77.9,207.0 80.5,204.8 83.0,203.0 85.6,202.3 88.2,201.7 90.8,201.2 93.4,198.7 96.0,198.0 98.6,196.2 101.1,195.9 103.7,193.3 106.3,193.8 108.9,190.8 111.5,188.8 114.1,188.3 116.7,186.8 119.3,185.7 121.8,185.4 124.4,184.3 127.0,186.2 129.6,186.4 132.2,187.2 134.8,186.0 137.4,183.8 140.0,182.3 142.5,182.7 145.1,181.1 147.7,180.8 150.3,180.8 152.9,178.5 155.5,176.7 158.1,175.1 160.6,175.0 163.2,174.1 165.8,175.1 168.4,174.9 171.0,173.3 173.6,173.3 176.2,172.9 178.8,172.0 181.3,172.7 183.9,173.3 186.5,172.9 189.1,172.3 191.7,171.5 194.3,171.7 196.9,170.2 199.4,167.5 202.0,168.7 204.6,166.8 207.2,166.9 209.8,167.4 212.4,167.5 215.0,167.9 217.6,168.3 220.1,168.1 222.7,166.6 225.3,165.1 227.9,164.4 230.5,163.2 233.1,161.6 235.7,159.5 238.3,157.5 240.8,156.9 243.4,155.9 246.0,153.7 248.6,152.8 251.2,151.0 253.8,150.4 256.4,150.1 258.9,149.0 261.5,148.4 264.1,147.0 266.7,146.1 269.3,145.3 271.9,144.5 274.5,143.4 277.1,141.8 279.6,139.8 282.2,138.7 284.8,135.7 287.4,134.7 290.0,131.2 292.6,125.6 295.2,123.7 297.7,124.2 300.3,122.1 302.9,121.2 305.5,117.5 308.1,114.9 310.7,113.0 313.3,109.9 315.9,107.9 318.4,108.8 321.0,108.6 323.6,108.1 326.2,108.9 328.8,108.2 331.4,107.7 334.0,108.1 336.6,107.5 339.1,106.8 341.7,107.2 344.3,105.8 346.9,104.7 349.5,104.9 352.1,101.8 354.7,100.5 357.2,98.0 359.8,98.4 362.4,95.9 365.0,92.3 367.6,89.7 370.2,88.4 372.8,85.9 375.4,82.8 377.9,80.1 380.5,77.6 383.1,74.1 385.7,72.4 388.3,70.3 390.9,68.0 393.5,64.6 396.0,62.0 398.6,61.9 401.2,60.7 403.8,59.1 406.4,57.3 409.0,55.0 411.6,54.7 414.2,52.5 416.7,49.0 419.3,46.5 421.9,44.0 424.5,41.6 427.1,38.5 429.7,37.2 432.3,36.3 434.9,35.8 437.4,34.1 440.0,33.0 442.6,31.0 445.2,31.4 447.8,31.3 450.4,31.1 453.0,28.9 455.5,27.4 458.1,27.2 460.7,26.6 463.3,23.6 465.9,22.4 468.5,21.2 471.1,20.6 473.7,16.6 476.2,14.6 478.8,49.8 481.4,43.6 484.0,43.6"/><circle class="end s1" cx="484.0" cy="54.0" r="4"/><line class="cross" x1="0" x2="0" y1="14" y2="222" style="display:none"/><rect class="hitarea" x="52" y="14" width="432" height="208"/></svg>
+  </div>
+  <div class="panel">
+    <div class="phead"><span class="pname">QLD1</span><span class="chip neutral"><span aria-hidden="true">—</span>不用</span>
+      <span class="pnote">加天气比 价格 + AEMO 累计 <b>−$13</b></span></div>
+    <svg class="cum" viewBox="0 0 500 250" role="img" data-cum='{&quot;dates&quot;: [&quot;2026-04-28&quot;, &quot;2026-04-29&quot;, &quot;2026-04-30&quot;, &quot;2026-05-01&quot;, &quot;2026-05-02&quot;, &quot;2026-05-03&quot;, &quot;2026-05-04&quot;, &quot;2026-05-05&quot;, &quot;2026-05-06&quot;, &quot;2026-05-07&quot;, &quot;2026-05-08&quot;, &quot;2026-05-09&quot;, &quot;2026-05-10&quot;, &quot;2026-05-11&quot;, &quot;2026-05-12&quot;, &quot;2026-05-13&quot;, &quot;2026-05-14&quot;, &quot;2026-05-15&quot;, &quot;2026-05-16&quot;, &quot;2026-05-17&quot;, &quot;2026-05-18&quot;, &quot;2026-05-19&quot;, &quot;2026-05-20&quot;, &quot;2026-05-21&quot;, &quot;2026-05-22&quot;, &quot;2026-05-23&quot;, &quot;2026-05-24&quot;, &quot;2026-05-25&quot;, &quot;2026-05-26&quot;, &quot;2026-05-27&quot;, &quot;2026-05-28&quot;, &quot;2026-05-29&quot;, &quot;2026-05-30&quot;, &quot;2026-05-31&quot;, &quot;2026-06-01&quot;, &quot;2026-06-02&quot;, &quot;2026-06-03&quot;, &quot;2026-06-04&quot;, &quot;2026-06-05&quot;, &quot;2026-06-06&quot;, &quot;2026-06-07&quot;, &quot;2026-06-08&quot;, &quot;2026-06-09&quot;, &quot;2026-06-10&quot;, &quot;2026-06-11&quot;, &quot;2026-06-12&quot;, &quot;2026-06-13&quot;, &quot;2026-06-14&quot;, &quot;2026-06-15&quot;, &quot;2026-06-16&quot;, &quot;2026-06-17&quot;, &quot;2026-06-18&quot;, &quot;2026-06-19&quot;, &quot;2026-06-20&quot;, &quot;2026-06-21&quot;, &quot;2026-06-22&quot;, &quot;2026-06-23&quot;, &quot;2026-06-24&quot;, &quot;2026-06-25&quot;, &quot;2026-06-26&quot;, &quot;2026-06-27&quot;, &quot;2026-06-28&quot;, &quot;2026-06-29&quot;, &quot;2026-06-30&quot;, &quot;2026-07-01&quot;, &quot;2026-07-02&quot;, &quot;2026-07-03&quot;, &quot;2026-07-04&quot;, &quot;2026-07-05&quot;, &quot;2026-07-06&quot;, &quot;2026-07-07&quot;, &quot;2026-07-08&quot;, &quot;2026-07-09&quot;, &quot;2026-07-10&quot;, &quot;2026-07-11&quot;, &quot;2026-07-12&quot;, &quot;2026-07-13&quot;, &quot;2026-07-14&quot;, &quot;2026-07-15&quot;, &quot;2026-07-16&quot;, &quot;2026-07-17&quot;, &quot;2026-07-18&quot;, &quot;2026-07-19&quot;, &quot;2026-07-20&quot;, &quot;2026-07-21&quot;, &quot;2026-07-22&quot;, &quot;2026-07-23&quot;, &quot;2026-07-24&quot;, &quot;2026-07-25&quot;, &quot;2026-07-26&quot;, &quot;2026-07-27&quot;, &quot;2026-07-28&quot;, &quot;2026-07-29&quot;, &quot;2026-07-30&quot;, &quot;2026-07-31&quot;, &quot;2026-08-01&quot;, &quot;2026-08-02&quot;, &quot;2026-08-03&quot;, &quot;2026-08-04&quot;, &quot;2026-08-05&quot;, &quot;2026-08-06&quot;, &quot;2026-08-07&quot;, &quot;2026-08-08&quot;, &quot;2026-08-09&quot;, &quot;2026-08-10&quot;, &quot;2026-08-11&quot;, &quot;2026-08-12&quot;, &quot;2026-08-13&quot;, &quot;2026-08-14&quot;, &quot;2026-08-15&quot;, &quot;2026-08-16&quot;, &quot;2026-08-17&quot;, &quot;2026-08-18&quot;, &quot;2026-08-19&quot;, &quot;2026-08-20&quot;, &quot;2026-08-21&quot;, &quot;2026-08-22&quot;, &quot;2026-08-23&quot;, &quot;2026-08-24&quot;, &quot;2026-08-25&quot;, &quot;2026-08-26&quot;, &quot;2026-08-27&quot;, &quot;2026-08-28&quot;, &quot;2026-08-29&quot;, &quot;2026-08-30&quot;, &quot;2026-08-31&quot;, &quot;2026-09-01&quot;, &quot;2026-09-02&quot;, &quot;2026-09-03&quot;, &quot;2026-09-04&quot;, &quot;2026-09-05&quot;, &quot;2026-09-06&quot;, &quot;2026-09-07&quot;, &quot;2026-09-08&quot;, &quot;2026-09-09&quot;, &quot;2026-09-10&quot;, &quot;2026-09-11&quot;, &quot;2026-09-12&quot;, &quot;2026-09-13&quot;, &quot;2026-09-14&quot;, &quot;2026-09-15&quot;, &quot;2026-09-16&quot;, &quot;2026-09-17&quot;, &quot;2026-09-18&quot;, &quot;2026-09-19&quot;, &quot;2026-09-20&quot;, &quot;2026-09-21&quot;, &quot;2026-09-22&quot;, &quot;2026-09-23&quot;, &quot;2026-09-24&quot;, &quot;2026-09-25&quot;, &quot;2026-09-26&quot;, &quot;2026-09-27&quot;, &quot;2026-09-28&quot;, &quot;2026-09-29&quot;, &quot;2026-09-30&quot;, &quot;2026-10-01&quot;, &quot;2026-10-02&quot;, &quot;2026-10-03&quot;, &quot;2026-10-04&quot;, &quot;2026-10-05&quot;, &quot;2026-10-06&quot;, &quot;2026-10-07&quot;, &quot;2026-10-08&quot;, &quot;2026-10-09&quot;, &quot;2026-10-10&quot;, &quot;2026-10-11&quot;, &quot;2026-10-12&quot;], &quot;series&quot;: [[&quot;一周前同期&quot;, [132.2, 239.2, 351.3, 438.2, 481.3, 584.0, 659.6, 742.8, 783.5, 843.3, 969.0, 1131.2, 1212.4, 1270.4, 1334.4, 1419.1, 1514.8, 1575.6, 1657.1, 1843.3, 1696.1, 1633.7, 1798.3, 1949.4, 2134.8, 2275.4, 2385.9, 2337.8, 2350.6, 2305.9, 2343.5, 2432.7, 2571.0, 2664.2, 2745.9, 2681.2, 2618.0, 2709.2, 2841.2, 3000.3, 3087.5, 3134.4, 3179.1, 3250.9, 3247.2, 3284.9, 3367.2, 3434.7, 3499.4, 3557.2, 3585.3, 3596.1, 3691.0, 3748.5, 3810.2, 3900.7, 4070.5, 4270.5, 4473.3, 4579.9, 4586.2, 4599.4, 4736.9, 4783.5, 4803.2, 4834.0, 4914.7, 5003.6, 5137.9, 5213.8, 5335.5, 5443.6, 5537.1, 5592.5, 5644.9, 5759.1, 5888.2, 5981.4, 6163.8, 6322.1, 6404.2, 6536.5, 6653.6, 6726.0, 6786.4, 6833.6, 6888.9, 6978.6, 7093.2, 7287.3, 7457.8, 7536.9, 7715.4, 7934.2, 8018.2, 8020.2, 8115.5, 8202.4, 8380.4, 8655.5, 8736.9, 8927.3, 9083.0, 9162.8, 9192.5, 9402.5, 9442.1, 9446.6, 9692.0, 9834.5, 9962.2, 10009.7, 10077.9, 10185.1, 10308.4, 10433.2, 10504.7, 10639.9, 10743.8, 10857.2, 11012.7, 11201.6, 11370.0, 11483.0, 11644.3, 11761.9, 11884.8, 11972.6, 12155.9, 12270.8, 12393.9, 12597.5, 12796.3, 12937.0, 13061.1, 13086.9, 13140.8, 13235.5, 13359.3, 13475.8, 13612.7, 13791.8, 13968.8, 14113.5, 14247.4, 14428.8, 14525.3, 14649.3, 14689.2, 14780.1, 14802.5, 14920.7, 15052.5, 15059.0, 15089.7, 15225.7, 15175.3, 15326.8, 15496.5, 15671.8, 15713.1, 15816.2, 15864.4, 15997.0, 16228.4, 16313.6, 16654.1, 16654.1], &quot;B0 naive&quot;], [&quot;价格模型&quot;, [134.0, 240.7, 350.5, 442.7, 519.3, 615.1, 687.7, 765.1, 817.1, 854.4, 979.7, 1133.6, 1242.3, 1302.0, 1410.2, 1490.7, 1724.3, 1845.8, 1953.7, 2104.8, 1909.7, 1830.4, 1998.4, 2149.5, 2318.3, 2464.1, 2557.9, 2574.5, 2587.5, 2562.3, 2562.5, 2651.7, 2779.8, 2904.6, 3078.7, 3202.6, 3361.0, 3475.4, 3600.4, 3742.9, 3842.0, 3910.6, 3960.5, 4016.0, 4001.8, 4043.0, 4166.4, 4239.7, 4300.7, 4342.9, 4381.8, 4410.1, 4523.3, 4588.0, 4641.5, 4774.0, 4963.3, 5190.4, 5357.7, 5450.3, 5476.4, 5517.1, 5662.7, 5746.6, 5788.5, 5819.3, 5926.5, 6063.7, 6206.4, 6289.6, 6437.0, 6568.3, 6686.5, 6761.6, 6857.8, 6965.9, 7088.8, 7179.6, 7362.0, 7534.5, 7605.5, 7735.8, 7860.1, 7959.4, 8038.4, 8083.9, 8139.2, 8245.9, 8357.5, 8541.0, 8708.0, 8788.1, 8972.1, 9189.2, 9343.3, 9463.1, 9575.5, 9655.8, 9849.1, 10121.2, 10225.1, 10201.2, 10365.7, 10458.8, 10472.9, 10630.4, 10718.3, 10890.0, 11132.7, 11280.2, 11408.0, 11517.8, 11605.5, 11713.3, 11829.1, 11963.1, 12034.5, 12170.9, 12281.2, 12444.0, 12476.5, 12673.2, 12840.2, 12962.3, 13115.8, 13276.2, 13399.1, 13540.0, 13718.6, 13838.2, 13962.1, 14122.0, 14320.8, 14475.4, 14621.1, 14653.5, 14740.1, 14860.9, 14989.9, 15106.3, 15241.2, 15418.4, 15596.6, 15743.0, 15877.9, 16062.0, 16298.7, 16419.4, 16480.2, 16571.8, 16648.3, 16764.6, 16898.2, 16903.7, 16913.1, 17070.4, 17253.7, 17425.1, 17600.8, 17788.0, 17921.0, 17970.0, 18018.5, 18164.5, 18387.5, 18504.7, 18842.4, 18842.4], &quot;B1 自回归&quot;], [&quot;价格 + AEMO&quot;, [134.6, 241.3, 351.1, 443.3, 529.6, 626.5, 699.1, 772.4, 831.8, 913.7, 1034.3, 1182.1, 1290.9, 1350.5, 1454.2, 1534.7, 1734.7, 1831.9, 1939.8, 2101.5, 2090.4, 2124.7, 2306.4, 2457.7, 2646.7, 2792.5, 2902.1, 2927.5, 2996.5, 2890.0, 2858.1, 2947.3, 3076.8, 3201.6, 3460.4, 3546.1, 3727.8, 3842.2, 3959.1, 4108.0, 4207.1, 4292.9, 4342.9, 4419.5, 4417.9, 4462.6, 4589.7, 4663.0, 4715.9, 4763.3, 4795.7, 4826.9, 4940.0, 5000.0, 5028.8, 5017.5, 5178.2, 5398.9, 5511.0, 5540.7, 5572.8, 5603.4, 5720.4, 5768.4, 5797.8, 5812.6, 5919.8, 6057.0, 6195.8, 6276.7, 6424.1, 6555.4, 6653.6, 6697.7, 6784.7, 6893.0, 7015.9, 7106.6, 7295.8, 7468.4, 7541.8, 7672.3, 7796.5, 7887.3, 7958.9, 7994.8, 8037.5, 8144.2, 8255.8, 8472.1, 8558.9, 8634.7, 8808.6, 9065.7, 9217.0, 9336.9, 9449.3, 9523.2, 9729.6, 9960.5, 10049.8, 10221.7, 10374.7, 10467.8, 10559.9, 10714.1, 10802.0, 10980.8, 11181.3, 11328.8, 11456.6, 11566.4, 11654.1, 11765.1, 11882.4, 12015.4, 12089.4, 12224.6, 12334.9, 12497.7, 12542.7, 12741.5, 12891.7, 13013.7, 13167.2, 13331.3, 13460.9, 13601.8, 13795.4, 13914.9, 14038.9, 14203.8, 14402.6, 14565.0, 14717.9, 14750.2, 14847.2, 14968.0, 15099.0, 15215.4, 15352.4, 15529.2, 15698.6, 15845.4, 15980.3, 16168.8, 16305.5, 16426.2, 16476.9, 16532.7, 16612.0, 16725.4, 16859.0, 16900.1, 16909.6, 17058.6, 17222.2, 17393.6, 17569.0, 17756.2, 17884.0, 17908.5, 17920.9, 18103.7, 18308.9, 18380.5, 18718.3, 18718.3], &quot;B2 +官方&quot;], [&quot;价格 + AEMO + 天气&quot;, [128.9, 235.6, 344.8, 420.9, 504.4, 601.3, 662.4, 735.9, 776.8, 843.4, 964.0, 1119.3, 1228.1, 1302.4, 1402.8, 1483.3, 1642.4, 1739.7, 1846.3, 2027.8, 2016.7, 2051.0, 2220.9, 2365.9, 2535.3, 2686.3, 2796.8, 2822.2, 2891.2, 2797.0, 2779.1, 2868.2, 2995.1, 3102.7, 3361.5, 3404.7, 3595.3, 3708.3, 3816.3, 3969.7, 4075.8, 4168.0, 4217.9, 4302.6, 4308.7, 4353.4, 4483.4, 4565.4, 4618.3, 4665.6, 4697.4, 4728.6, 4841.8, 4901.4, 4946.1, 4949.2, 5120.8, 5347.9, 5460.0, 5489.8, 5489.2, 5519.9, 5636.9, 5737.7, 5744.7, 5759.4, 5866.7, 6000.6, 6149.2, 6218.7, 6369.1, 6482.6, 6600.8, 6646.4, 6732.5, 6845.3, 6974.4, 7065.1, 7220.5, 7383.0, 7463.9, 7594.3, 7702.9, 7780.8, 7859.7, 7891.5, 7934.2, 8041.0, 8156.8, 8375.0, 8501.3, 8581.3, 8755.2, 9012.4, 9178.7, 9298.5, 9416.8, 9494.2, 9700.7, 9931.5, 10012.9, 10184.3, 10344.8, 10444.0, 10581.0, 10734.7, 10839.0, 11017.8, 11238.5, 11384.5, 11512.2, 11622.0, 11709.7, 11817.5, 11942.3, 12076.2, 12137.5, 12273.9, 12384.9, 12512.8, 12613.6, 12853.8, 13000.7, 13122.7, 13276.9, 13433.4, 13564.5, 13705.5, 13899.1, 14015.0, 14139.0, 14302.2, 14500.4, 14655.0, 14800.7, 14829.1, 14912.6, 15033.4, 15157.6, 15268.6, 15406.6, 15576.7, 15740.9, 15887.6, 16026.1, 16209.8, 16340.0, 16449.8, 16486.3, 16542.1, 16621.5, 16734.9, 16868.5, 16874.0, 16883.4, 17032.8, 17197.6, 17369.0, 17544.7, 17731.9, 17859.8, 17884.3, 17896.8, 18075.8, 18298.8, 18367.3, 18705.0, 18705.0], &quot;B3 +天气&quot;]], &quot;L&quot;: 52, &quot;pw&quot;: 432}'
+         aria-label="QLD1 累计收益"><line class="grid" x1="52" x2="484" y1="222.0" y2="222.0"/><text class="tick" x="46" y="226.0" text-anchor="end">$0</text><line class="grid" x1="52" x2="484" y1="166.8" y2="166.8"/><text class="tick" x="46" y="170.8" text-anchor="end">$5K</text><line class="grid" x1="52" x2="484" y1="111.6" y2="111.6"/><text class="tick" x="46" y="115.6" text-anchor="end">$10K</text><line class="grid" x1="52" x2="484" y1="56.4" y2="56.4"/><text class="tick" x="46" y="60.4" text-anchor="end">$15K</text><text class="tick" x="52.0" y="242" text-anchor="start">26-04-28</text><text class="tick" x="269.3" y="242" text-anchor="middle">26-07-21</text><text class="tick" x="484.0" y="242" text-anchor="end">26-10-12</text><polyline class="ln base" points="52.0,220.5 54.6,219.4 57.2,218.1 59.8,217.2 62.3,216.7 64.9,215.6 67.5,214.7 70.1,213.8 72.7,213.4 75.3,212.7 77.9,211.3 80.5,209.5 83.0,208.6 85.6,208.0 88.2,207.3 90.8,206.3 93.4,205.3 96.0,204.6 98.6,203.7 101.1,201.7 103.7,203.3 106.3,204.0 108.9,202.1 111.5,200.5 114.1,198.4 116.7,196.9 119.3,195.7 121.8,196.2 124.4,196.1 127.0,196.5 129.6,196.1 132.2,195.1 134.8,193.6 137.4,192.6 140.0,191.7 142.5,192.4 145.1,193.1 147.7,192.1 150.3,190.6 152.9,188.9 155.5,187.9 158.1,187.4 160.6,186.9 163.2,186.1 165.8,186.2 168.4,185.7 171.0,184.8 173.6,184.1 176.2,183.4 178.8,182.7 181.3,182.4 183.9,182.3 186.5,181.3 189.1,180.6 191.7,179.9 194.3,178.9 196.9,177.1 199.4,174.9 202.0,172.6 204.6,171.4 207.2,171.4 209.8,171.2 212.4,169.7 215.0,169.2 217.6,169.0 220.1,168.6 222.7,167.7 225.3,166.8 227.9,165.3 230.5,164.4 233.1,163.1 235.7,161.9 238.3,160.9 240.8,160.3 243.4,159.7 246.0,158.4 248.6,157.0 251.2,156.0 253.8,154.0 256.4,152.2 258.9,151.3 261.5,149.8 264.1,148.6 266.7,147.8 269.3,147.1 271.9,146.6 274.5,146.0 277.1,145.0 279.6,143.7 282.2,141.6 284.8,139.7 287.4,138.8 290.0,136.8 292.6,134.4 295.2,133.5 297.7,133.5 300.3,132.4 302.9,131.5 305.5,129.5 308.1,126.5 310.7,125.6 313.3,123.5 315.9,121.7 318.4,120.9 321.0,120.5 323.6,118.2 326.2,117.8 328.8,117.7 331.4,115.0 334.0,113.4 336.6,112.0 339.1,111.5 341.7,110.8 344.3,109.6 346.9,108.2 349.5,106.8 352.1,106.0 354.7,104.5 357.2,103.4 359.8,102.1 362.4,100.4 365.0,98.3 367.6,96.5 370.2,95.2 372.8,93.5 375.4,92.2 377.9,90.8 380.5,89.8 383.1,87.8 385.7,86.5 388.3,85.2 390.9,82.9 393.5,80.7 396.0,79.2 398.6,77.8 401.2,77.5 403.8,76.9 406.4,75.9 409.0,74.5 411.6,73.2 414.2,71.7 416.7,69.8 419.3,67.8 421.9,66.2 424.5,64.7 427.1,62.7 429.7,61.7 432.3,60.3 434.9,59.8 437.4,58.8 440.0,58.6 442.6,57.3 445.2,55.8 447.8,55.8 450.4,55.4 453.0,53.9 455.5,54.5 458.1,52.8 460.7,50.9 463.3,49.0 465.9,48.5 468.5,47.4 471.1,46.9 473.7,45.4 476.2,42.9 478.8,41.9 481.4,38.2 484.0,38.2"/><polyline class="ln s1" points="52.0,220.5 54.6,219.3 57.2,218.1 59.8,217.1 62.3,216.3 64.9,215.2 67.5,214.4 70.1,213.6 72.7,213.0 75.3,212.6 77.9,211.2 80.5,209.5 83.0,208.3 85.6,207.6 88.2,206.4 90.8,205.5 93.4,203.0 96.0,201.6 98.6,200.4 101.1,198.8 103.7,200.9 106.3,201.8 108.9,199.9 111.5,198.3 114.1,196.4 116.7,194.8 119.3,193.8 121.8,193.6 124.4,193.4 127.0,193.7 129.6,193.7 132.2,192.7 134.8,191.3 137.4,189.9 140.0,188.0 142.5,186.6 145.1,184.9 147.7,183.6 150.3,182.3 152.9,180.7 155.5,179.6 158.1,178.8 160.6,178.3 163.2,177.7 165.8,177.8 168.4,177.4 171.0,176.0 173.6,175.2 176.2,174.5 178.8,174.1 181.3,173.6 183.9,173.3 186.5,172.1 189.1,171.4 191.7,170.8 194.3,169.3 196.9,167.2 199.4,164.7 202.0,162.9 204.6,161.8 207.2,161.5 209.8,161.1 212.4,159.5 215.0,158.6 217.6,158.1 220.1,157.8 222.7,156.6 225.3,155.1 227.9,153.5 230.5,152.6 233.1,150.9 235.7,149.5 238.3,148.2 240.8,147.4 243.4,146.3 246.0,145.1 248.6,143.7 251.2,142.7 253.8,140.7 256.4,138.8 258.9,138.0 261.5,136.6 264.1,135.2 266.7,134.1 269.3,133.3 271.9,132.8 274.5,132.2 277.1,131.0 279.6,129.7 282.2,127.7 284.8,125.9 287.4,125.0 290.0,123.0 292.6,120.6 295.2,118.9 297.7,117.5 300.3,116.3 302.9,115.4 305.5,113.3 308.1,110.3 310.7,109.1 313.3,109.4 315.9,107.6 318.4,106.5 321.0,106.4 323.6,104.7 326.2,103.7 328.8,101.8 331.4,99.1 334.0,97.5 336.6,96.1 339.1,94.9 341.7,93.9 344.3,92.7 346.9,91.4 349.5,89.9 352.1,89.2 354.7,87.6 357.2,86.4 359.8,84.6 362.4,84.3 365.0,82.1 367.6,80.3 370.2,78.9 372.8,77.2 375.4,75.4 377.9,74.1 380.5,72.5 383.1,70.6 385.7,69.2 388.3,67.9 390.9,66.1 393.5,63.9 396.0,62.2 398.6,60.6 401.2,60.2 403.8,59.3 406.4,58.0 409.0,56.5 411.6,55.2 414.2,53.8 416.7,51.8 419.3,49.8 421.9,48.2 424.5,46.7 427.1,44.7 429.7,42.1 432.3,40.7 434.9,40.1 437.4,39.1 440.0,38.2 442.6,36.9 445.2,35.5 447.8,35.4 450.4,35.3 453.0,33.6 455.5,31.5 458.1,29.6 460.7,27.7 463.3,25.6 465.9,24.2 468.5,23.6 471.1,23.1 473.7,21.5 476.2,19.0 478.8,17.7 481.4,14.0 484.0,14.0"/><polyline class="ln s2" points="52.0,220.5 54.6,219.3 57.2,218.1 59.8,217.1 62.3,216.2 64.9,215.1 67.5,214.3 70.1,213.5 72.7,212.8 75.3,211.9 77.9,210.6 80.5,209.0 83.0,207.7 85.6,207.1 88.2,205.9 90.8,205.1 93.4,202.9 96.0,201.8 98.6,200.6 101.1,198.8 103.7,198.9 106.3,198.5 108.9,196.5 111.5,194.9 114.1,192.8 116.7,191.2 119.3,190.0 121.8,189.7 124.4,188.9 127.0,190.1 129.6,190.4 132.2,189.5 134.8,188.0 137.4,186.7 140.0,183.8 142.5,182.9 145.1,180.8 147.7,179.6 150.3,178.3 152.9,176.7 155.5,175.6 158.1,174.6 160.6,174.1 163.2,173.2 165.8,173.2 168.4,172.7 171.0,171.3 173.6,170.5 176.2,169.9 178.8,169.4 181.3,169.1 183.9,168.7 186.5,167.5 189.1,166.8 191.7,166.5 194.3,166.6 196.9,164.8 199.4,162.4 202.0,161.2 204.6,160.8 207.2,160.5 209.8,160.1 212.4,158.9 215.0,158.3 217.6,158.0 220.1,157.8 222.7,156.7 225.3,155.1 227.9,153.6 230.5,152.7 233.1,151.1 235.7,149.6 238.3,148.6 240.8,148.1 243.4,147.1 246.0,145.9 248.6,144.6 251.2,143.6 253.8,141.5 256.4,139.6 258.9,138.7 261.5,137.3 264.1,135.9 266.7,134.9 269.3,134.1 271.9,133.7 274.5,133.3 277.1,132.1 279.6,130.9 282.2,128.5 284.8,127.5 287.4,126.7 290.0,124.8 292.6,121.9 295.2,120.3 297.7,118.9 300.3,117.7 302.9,116.9 305.5,114.6 308.1,112.0 310.7,111.1 313.3,109.2 315.9,107.5 318.4,106.4 321.0,105.4 323.6,103.7 326.2,102.8 328.8,100.8 331.4,98.6 334.0,96.9 336.6,95.5 339.1,94.3 341.7,93.4 344.3,92.1 346.9,90.8 349.5,89.4 352.1,88.5 354.7,87.1 357.2,85.8 359.8,84.0 362.4,83.5 365.0,81.3 367.6,79.7 370.2,78.3 372.8,76.6 375.4,74.8 377.9,73.4 380.5,71.9 383.1,69.7 385.7,68.4 388.3,67.0 390.9,65.2 393.5,63.0 396.0,61.2 398.6,59.5 401.2,59.2 403.8,58.1 406.4,56.8 409.0,55.3 411.6,54.0 414.2,52.5 416.7,50.6 419.3,48.7 421.9,47.1 424.5,45.6 427.1,43.5 429.7,42.0 432.3,40.7 434.9,40.1 437.4,39.5 440.0,38.6 442.6,37.4 445.2,35.9 447.8,35.4 450.4,35.3 453.0,33.7 455.5,31.9 458.1,30.0 460.7,28.1 463.3,26.0 465.9,24.6 468.5,24.3 471.1,24.2 473.7,22.2 476.2,19.9 478.8,19.1 481.4,15.4 484.0,15.4"/><polyline class="ln s3" points="52.0,220.6 54.6,219.4 57.2,218.2 59.8,217.4 62.3,216.4 64.9,215.4 67.5,214.7 70.1,213.9 72.7,213.4 75.3,212.7 77.9,211.4 80.5,209.6 83.0,208.4 85.6,207.6 88.2,206.5 90.8,205.6 93.4,203.9 96.0,202.8 98.6,201.6 101.1,199.6 103.7,199.7 106.3,199.4 108.9,197.5 111.5,195.9 114.1,194.0 116.7,192.3 119.3,191.1 121.8,190.8 124.4,190.1 127.0,191.1 129.6,191.3 132.2,190.3 134.8,188.9 137.4,187.7 140.0,184.9 142.5,184.4 145.1,182.3 147.7,181.1 150.3,179.9 152.9,178.2 155.5,177.0 158.1,176.0 160.6,175.4 163.2,174.5 165.8,174.4 168.4,173.9 171.0,172.5 173.6,171.6 176.2,171.0 178.8,170.5 181.3,170.1 183.9,169.8 186.5,168.6 189.1,167.9 191.7,167.4 194.3,167.4 196.9,165.5 199.4,163.0 202.0,161.7 204.6,161.4 207.2,161.4 209.8,161.1 212.4,159.8 215.0,158.7 217.6,158.6 220.1,158.4 222.7,157.2 225.3,155.8 227.9,154.1 230.5,153.4 233.1,151.7 235.7,150.4 238.3,149.1 240.8,148.6 243.4,147.7 246.0,146.4 248.6,145.0 251.2,144.0 253.8,142.3 256.4,140.5 258.9,139.6 261.5,138.2 264.1,137.0 266.7,136.1 269.3,135.2 271.9,134.9 274.5,134.4 277.1,133.2 279.6,132.0 282.2,129.5 284.8,128.2 287.4,127.3 290.0,125.4 292.6,122.5 295.2,120.7 297.7,119.4 300.3,118.0 302.9,117.2 305.5,114.9 308.1,112.4 310.7,111.5 313.3,109.6 315.9,107.8 318.4,106.7 321.0,105.2 323.6,103.5 326.2,102.3 328.8,100.4 331.4,97.9 334.0,96.3 336.6,94.9 339.1,93.7 341.7,92.7 344.3,91.5 346.9,90.2 349.5,88.7 352.1,88.0 354.7,86.5 357.2,85.3 359.8,83.9 362.4,82.8 365.0,80.1 367.6,78.5 370.2,77.1 372.8,75.4 375.4,73.7 377.9,72.3 380.5,70.7 383.1,68.6 385.7,67.3 388.3,65.9 390.9,64.1 393.5,61.9 396.0,60.2 398.6,58.6 401.2,58.3 403.8,57.4 406.4,56.0 409.0,54.7 411.6,53.5 414.2,51.9 416.7,50.0 419.3,48.2 421.9,46.6 424.5,45.1 427.1,43.1 429.7,41.6 432.3,40.4 434.9,40.0 437.4,39.4 440.0,38.5 442.6,37.3 445.2,35.8 447.8,35.7 450.4,35.6 453.0,34.0 455.5,32.2 458.1,30.3 460.7,28.3 463.3,26.3 465.9,24.8 468.5,24.6 471.1,24.4 473.7,22.5 476.2,20.0 478.8,19.2 481.4,15.5 484.0,15.5"/><circle class="end s1" cx="484.0" cy="14.0" r="4"/><line class="cross" x1="0" x2="0" y1="14" y2="222" style="display:none"/><rect class="hitarea" x="52" y="14" width="432" height="208"/></svg>
+  </div>
+  <div class="panel">
+    <div class="phead"><span class="pname">VIC1</span><span class="chip critical"><span aria-hidden="true">✕</span>亏钱</span>
+      <span class="pnote">加天气比 价格 + AEMO 累计 <b>−$732</b></span></div>
+    <svg class="cum" viewBox="0 0 500 250" role="img" data-cum='{&quot;dates&quot;: [&quot;2026-04-28&quot;, &quot;2026-04-29&quot;, &quot;2026-04-30&quot;, &quot;2026-05-01&quot;, &quot;2026-05-02&quot;, &quot;2026-05-03&quot;, &quot;2026-05-04&quot;, &quot;2026-05-05&quot;, &quot;2026-05-06&quot;, &quot;2026-05-07&quot;, &quot;2026-05-08&quot;, &quot;2026-05-09&quot;, &quot;2026-05-10&quot;, &quot;2026-05-11&quot;, &quot;2026-05-12&quot;, &quot;2026-05-13&quot;, &quot;2026-05-14&quot;, &quot;2026-05-15&quot;, &quot;2026-05-16&quot;, &quot;2026-05-17&quot;, &quot;2026-05-18&quot;, &quot;2026-05-19&quot;, &quot;2026-05-20&quot;, &quot;2026-05-21&quot;, &quot;2026-05-22&quot;, &quot;2026-05-23&quot;, &quot;2026-05-24&quot;, &quot;2026-05-25&quot;, &quot;2026-05-26&quot;, &quot;2026-05-27&quot;, &quot;2026-05-28&quot;, &quot;2026-05-29&quot;, &quot;2026-05-30&quot;, &quot;2026-05-31&quot;, &quot;2026-06-01&quot;, &quot;2026-06-02&quot;, &quot;2026-06-03&quot;, &quot;2026-06-04&quot;, &quot;2026-06-05&quot;, &quot;2026-06-06&quot;, &quot;2026-06-07&quot;, &quot;2026-06-08&quot;, &quot;2026-06-09&quot;, &quot;2026-06-10&quot;, &quot;2026-06-11&quot;, &quot;2026-06-12&quot;, &quot;2026-06-13&quot;, &quot;2026-06-14&quot;, &quot;2026-06-15&quot;, &quot;2026-06-16&quot;, &quot;2026-06-17&quot;, &quot;2026-06-18&quot;, &quot;2026-06-19&quot;, &quot;2026-06-20&quot;, &quot;2026-06-21&quot;, &quot;2026-06-22&quot;, &quot;2026-06-23&quot;, &quot;2026-06-24&quot;, &quot;2026-06-25&quot;, &quot;2026-06-26&quot;, &quot;2026-06-27&quot;, &quot;2026-06-28&quot;, &quot;2026-06-29&quot;, &quot;2026-06-30&quot;, &quot;2026-07-01&quot;, &quot;2026-07-02&quot;, &quot;2026-07-03&quot;, &quot;2026-07-04&quot;, &quot;2026-07-05&quot;, &quot;2026-07-06&quot;, &quot;2026-07-07&quot;, &quot;2026-07-08&quot;, &quot;2026-07-09&quot;, &quot;2026-07-10&quot;, &quot;2026-07-11&quot;, &quot;2026-07-12&quot;, &quot;2026-07-13&quot;, &quot;2026-07-14&quot;, &quot;2026-07-15&quot;, &quot;2026-07-16&quot;, &quot;2026-07-17&quot;, &quot;2026-07-18&quot;, &quot;2026-07-19&quot;, &quot;2026-07-20&quot;, &quot;2026-07-21&quot;, &quot;2026-07-22&quot;, &quot;2026-07-23&quot;, &quot;2026-07-24&quot;, &quot;2026-07-25&quot;, &quot;2026-07-26&quot;, &quot;2026-07-27&quot;, &quot;2026-07-28&quot;, &quot;2026-07-29&quot;, &quot;2026-07-30&quot;, &quot;2026-07-31&quot;, &quot;2026-08-01&quot;, &quot;2026-08-02&quot;, &quot;2026-08-03&quot;, &quot;2026-08-04&quot;, &quot;2026-08-05&quot;, &quot;2026-08-06&quot;, &quot;2026-08-07&quot;, &quot;2026-08-08&quot;, &quot;2026-08-09&quot;, &quot;2026-08-10&quot;, &quot;2026-08-11&quot;, &quot;2026-08-12&quot;, &quot;2026-08-13&quot;, &quot;2026-08-14&quot;, &quot;2026-08-15&quot;, &quot;2026-08-16&quot;, &quot;2026-08-17&quot;, &quot;2026-08-18&quot;, &quot;2026-08-19&quot;, &quot;2026-08-20&quot;, &quot;2026-08-21&quot;, &quot;2026-08-22&quot;, &quot;2026-08-23&quot;, &quot;2026-08-24&quot;, &quot;2026-08-25&quot;, &quot;2026-08-26&quot;, &quot;2026-08-27&quot;, &quot;2026-08-28&quot;, &quot;2026-08-29&quot;, &quot;2026-08-30&quot;, &quot;2026-08-31&quot;, &quot;2026-09-01&quot;, &quot;2026-09-02&quot;, &quot;2026-09-03&quot;, &quot;2026-09-04&quot;, &quot;2026-09-05&quot;, &quot;2026-09-06&quot;, &quot;2026-09-07&quot;, &quot;2026-09-08&quot;, &quot;2026-09-09&quot;, &quot;2026-09-10&quot;, &quot;2026-09-11&quot;, &quot;2026-09-12&quot;, &quot;2026-09-13&quot;, &quot;2026-09-14&quot;, &quot;2026-09-15&quot;, &quot;2026-09-16&quot;, &quot;2026-09-17&quot;, &quot;2026-09-18&quot;, &quot;2026-09-19&quot;, &quot;2026-09-20&quot;, &quot;2026-09-21&quot;, &quot;2026-09-22&quot;, &quot;2026-09-23&quot;, &quot;2026-09-24&quot;, &quot;2026-09-25&quot;, &quot;2026-09-26&quot;, &quot;2026-09-27&quot;, &quot;2026-09-28&quot;, &quot;2026-09-29&quot;, &quot;2026-09-30&quot;, &quot;2026-10-01&quot;, &quot;2026-10-02&quot;, &quot;2026-10-03&quot;, &quot;2026-10-04&quot;, &quot;2026-10-05&quot;, &quot;2026-10-06&quot;, &quot;2026-10-07&quot;, &quot;2026-10-08&quot;, &quot;2026-10-09&quot;, &quot;2026-10-10&quot;, &quot;2026-10-11&quot;, &quot;2026-10-12&quot;], &quot;series&quot;: [[&quot;一周前同期&quot;, [162.1, 260.6, 372.7, 396.8, 388.2, 375.8, 397.0, 394.2, 373.9, 455.5, 546.4, 546.4, 639.6, 674.5, 666.9, 686.0, 771.2, 864.7, 1048.4, 999.2, 712.4, 818.3, 968.0, 1014.0, 1160.6, 1238.5, 1292.8, 1321.0, 1298.8, 1224.6, 1226.6, 1247.2, 1304.1, 1435.9, 1493.4, 1516.6, 1538.0, 1615.2, 1656.7, 1752.8, 1814.0, 1947.1, 1948.1, 2000.6, 1946.1, 1908.0, 2034.1, 2105.2, 2127.8, 2186.3, 2207.4, 2203.6, 2201.5, 2235.1, 2312.6, 2275.2, 2403.6, 2385.1, 2414.8, 2489.9, 2470.7, 2477.2, 2643.8, 2682.5, 2739.1, 2834.6, 2954.0, 3046.9, 3175.8, 3226.9, 3262.7, 6554.6, 6638.2, 6546.3, 6568.6, 6605.6, 6786.9, 6869.1, 7011.0, 7031.7, 7143.6, 7215.6, 7304.5, 7416.2, 7343.9, 7496.9, 7591.7, 7622.5, 7699.4, 7809.8, 7645.3, 7711.8, 7894.0, 8102.1, 8287.8, 8390.0, 8422.4, 8449.2, 8538.8, 8703.7, 8767.0, 8752.1, 8782.3, 8889.9, 9011.9, 8935.7, 9077.1, 9097.8, 9237.9, 9247.4, 9236.1, 9340.0, 9366.7, 9443.4, 9427.8, 9454.4, 9596.3, 9728.5, 9795.9, 9821.6, 9860.8, 9690.3, 9729.7, 9894.6, 10067.5, 10230.2, 10270.9, 10367.6, 10535.5, 10524.7, 10534.5, 10661.7, 10878.4, 11019.4, 11164.8, 11260.3, 11263.4, 11317.1, 11405.6, 11461.2, 11531.1, 11635.7, 11802.2, 11856.9, 12004.8, 12122.7, 12281.7, 12422.0, 12592.4, 12689.2, 12777.4, 12761.3, 12863.8, 12988.6, 13060.5, 13212.6, 13080.7, 13126.9, 13121.3, 13310.0, 13331.3, 13462.9, 13414.4, 13155.3, 13152.0, 13409.6, 13511.9, 13511.9], &quot;B0 naive&quot;], [&quot;价格模型&quot;, [124.3, 203.5, 289.8, 299.0, 293.1, 291.3, 300.2, 275.4, 251.9, 326.7, 450.2, 491.3, 622.2, 678.6, 719.3, 813.0, 907.6, 1005.2, 1183.2, 1189.1, 928.2, 862.8, 1018.9, 990.6, 1115.3, 1207.1, 1203.3, 1167.3, 1127.6, 1100.1, 1128.6, 1166.5, 1207.1, 1343.7, 1443.7, 1485.2, 1539.8, 1567.9, 1550.2, 1635.0, 1692.0, 1809.4, 1815.9, 1942.1, 1924.2, 1935.4, 2036.0, 2128.2, 2123.9, 2203.5, 2197.2, 2186.3, 2245.5, 2254.0, 2353.6, 2186.5, 2222.8, 2277.7, 2255.3, 2356.7, 2295.4, 2343.0, 2362.8, 2451.8, 2451.1, 2512.3, 2602.3, 2682.9, 2807.1, 2890.9, 2900.8, 3530.1, 3536.1, 3545.8, 3559.6, 3596.5, 3838.9, 3922.7, 3988.6, 4010.1, 4125.5, 4199.7, 4277.7, 4336.5, 4371.4, 4508.8, 4588.1, 4594.0, 4657.2, 4806.6, 4821.7, 4873.1, 5065.7, 5287.3, 5350.7, 5479.1, 5525.1, 5679.7, 5756.5, 5873.5, 5961.6, 6119.6, 6148.6, 6248.6, 6257.6, 6352.3, 6449.8, 6480.4, 6600.7, 6616.8, 6732.1, 6845.3, 6872.2, 6937.7, 6966.0, 6949.1, 7102.0, 7234.1, 7394.6, 7406.3, 7524.3, 7716.3, 7860.8, 7997.3, 8177.0, 8339.6, 8411.6, 8525.1, 8692.1, 8698.3, 8706.2, 8834.5, 9051.3, 9226.4, 9362.8, 9519.8, 9689.4, 9829.6, 9862.3, 9927.5, 9997.6, 10121.1, 10248.4, 10303.1, 10468.5, 10650.4, 10815.1, 10969.1, 11151.7, 11312.9, 11411.8, 11386.2, 11488.7, 11629.8, 11723.2, 11851.2, 11719.3, 11792.7, 11858.7, 12053.2, 12101.0, 12240.5, 12443.8, 12557.7, 12602.0, 12824.0, 12952.3, 12952.3], &quot;B1 自回归&quot;], [&quot;价格 + AEMO&quot;, [144.1, 242.0, 329.7, 346.0, 340.1, 338.2, 353.1, 398.5, 383.1, 458.0, 605.5, 636.9, 796.7, 875.4, 915.4, 1015.2, 1113.4, 1211.0, 1434.5, 1457.8, 1246.4, 1326.6, 1489.2, 1534.5, 1675.0, 1774.8, 1791.9, 1786.7, 1810.1, 2057.9, 2111.4, 2100.5, 2155.6, 2254.0, 2352.5, 2423.2, 2468.5, 2559.6, 2570.1, 2656.9, 2713.9, 2827.9, 2829.5, 3021.4, 3047.8, 3023.6, 3151.8, 3237.1, 3240.4, 3344.8, 3354.1, 3369.0, 3457.4, 3448.3, 3513.1, 3415.3, 3474.7, 3601.6, 3659.5, 3734.3, 3730.6, 3778.3, 3996.0, 4125.8, 4125.3, 4195.9, 4311.8, 4391.3, 4508.8, 4525.7, 4525.2, 4893.5, 4920.5, 4914.8, 4931.7, 4989.1, 5241.1, 5334.5, 5424.5, 5430.0, 5535.8, 5616.4, 5692.5, 5826.8, 5830.4, 5927.2, 6026.3, 6069.2, 6129.7, 6275.7, 6289.4, 6369.4, 6562.6, 6813.8, 6799.9, 6928.4, 7027.1, 7101.3, 7128.5, 7075.6, 7067.3, 7246.8, 7275.8, 7427.0, 7457.6, 7551.2, 7653.7, 7725.7, 7758.2, 7788.4, 7913.6, 8003.7, 8030.6, 8132.2, 8161.3, 8147.5, 8313.1, 8446.3, 8609.0, 8564.8, 8727.6, 8932.2, 9064.5, 9231.7, 9409.8, 9570.7, 9606.2, 9719.7, 9871.9, 9877.1, 9885.3, 9996.3, 10213.6, 10127.0, 10265.5, 10420.1, 10593.5, 10721.9, 10755.1, 10789.4, 10858.6, 10944.0, 11074.3, 11141.9, 11317.8, 11499.7, 11661.6, 11827.3, 12004.4, 12193.8, 12282.0, 12207.7, 12310.2, 12437.3, 12530.2, 12673.7, 12619.2, 12720.0, 12834.2, 13049.9, 13085.8, 13282.5, 13471.9, 13609.5, 13682.0, 13889.2, 14055.8, 14081.2], &quot;B2 +官方&quot;], [&quot;价格 + AEMO + 天气&quot;, [134.9, 232.7, 326.3, 340.0, 329.4, 322.0, 331.8, 322.1, 311.8, 381.1, 527.5, 555.1, 714.9, 780.6, 832.1, 931.9, 1030.1, 1133.8, 1340.7, 1363.9, 1152.5, 1125.9, 1282.5, 1280.6, 1442.1, 1540.4, 1581.9, 1576.9, 1600.4, 1848.1, 1901.6, 1890.7, 1931.8, 2032.3, 2135.9, 2155.0, 2166.5, 2209.0, 2205.5, 2284.6, 2344.7, 2475.9, 2477.5, 2632.5, 2651.1, 2626.8, 2755.0, 2837.9, 2839.2, 2937.6, 2946.0, 2958.7, 3007.7, 3031.0, 3115.3, 3045.5, 3037.7, 3160.5, 3185.9, 3301.8, 3300.2, 3331.0, 3548.7, 3678.5, 3682.0, 3782.3, 3898.2, 3996.4, 4119.3, 4123.7, 4127.8, 4470.0, 4558.9, 4553.3, 4570.1, 4594.0, 4706.2, 4806.8, 4862.3, 4844.3, 4950.1, 5029.2, 5090.5, 5238.9, 5242.5, 5373.3, 5466.4, 5476.5, 5543.6, 5689.7, 5704.2, 5760.5, 5922.9, 6242.1, 6233.7, 6356.7, 6455.5, 6588.1, 6574.2, 6537.9, 6634.2, 6813.7, 6839.7, 6964.2, 6921.6, 6975.3, 7108.2, 7169.2, 7201.7, 7233.7, 7362.4, 7406.0, 7429.5, 7511.5, 7545.7, 7531.9, 7705.0, 7837.1, 7991.8, 8007.1, 8128.0, 8325.1, 8444.8, 8612.0, 8796.5, 8957.3, 8992.9, 9119.7, 9301.8, 9307.0, 9315.2, 9429.8, 9635.2, 9548.6, 9687.0, 9834.4, 10010.3, 10144.9, 10178.2, 10199.4, 10275.1, 10355.7, 10501.5, 10563.8, 10762.9, 10899.3, 11050.4, 11216.1, 11393.1, 11582.5, 11688.2, 11621.8, 11731.1, 11872.2, 11965.1, 12090.5, 11978.8, 12040.8, 12077.5, 12291.3, 12313.4, 12509.9, 12710.0, 12817.9, 12876.1, 13157.0, 13324.0, 13349.4], &quot;B3 +天气&quot;]], &quot;L&quot;: 52, &quot;pw&quot;: 432}'
+         aria-label="VIC1 累计收益"><line class="grid" x1="52" x2="484" y1="222.0" y2="222.0"/><text class="tick" x="46" y="226.0" text-anchor="end">$0</text><line class="grid" x1="52" x2="484" y1="148.1" y2="148.1"/><text class="tick" x="46" y="152.1" text-anchor="end">$5K</text><line class="grid" x1="52" x2="484" y1="74.3" y2="74.3"/><text class="tick" x="46" y="78.3" text-anchor="end">$10K</text><text class="tick" x="52.0" y="242" text-anchor="start">26-04-28</text><text class="tick" x="269.3" y="242" text-anchor="middle">26-07-21</text><text class="tick" x="484.0" y="242" text-anchor="end">26-10-12</text><polyline class="ln base" points="52.0,219.6 54.6,218.2 57.2,216.5 59.8,216.1 62.3,216.3 64.9,216.4 67.5,216.1 70.1,216.2 72.7,216.5 75.3,215.3 77.9,213.9 80.5,213.9 83.0,212.6 85.6,212.0 88.2,212.1 90.8,211.9 93.4,210.6 96.0,209.2 98.6,206.5 101.1,207.2 103.7,211.5 106.3,209.9 108.9,207.7 111.5,207.0 114.1,204.9 116.7,203.7 119.3,202.9 121.8,202.5 124.4,202.8 127.0,203.9 129.6,203.9 132.2,203.6 134.8,202.7 137.4,200.8 140.0,199.9 142.5,199.6 145.1,199.3 147.7,198.1 150.3,197.5 152.9,196.1 155.5,195.2 158.1,193.2 160.6,193.2 163.2,192.4 165.8,193.3 168.4,193.8 171.0,192.0 173.6,190.9 176.2,190.6 178.8,189.7 181.3,189.4 183.9,189.4 186.5,189.5 189.1,189.0 191.7,187.8 194.3,188.4 196.9,186.5 199.4,186.8 202.0,186.3 204.6,185.2 207.2,185.5 209.8,185.4 212.4,182.9 215.0,182.4 217.6,181.5 220.1,180.1 222.7,178.4 225.3,177.0 227.9,175.1 230.5,174.3 233.1,173.8 235.7,125.2 238.3,123.9 240.8,125.3 243.4,125.0 246.0,124.4 248.6,121.7 251.2,120.5 253.8,118.4 256.4,118.1 258.9,116.5 261.5,115.4 264.1,114.1 266.7,112.5 269.3,113.5 271.9,111.3 274.5,109.9 277.1,109.4 279.6,108.3 282.2,106.6 284.8,109.1 287.4,108.1 290.0,105.4 292.6,102.3 295.2,99.6 297.7,98.1 300.3,97.6 302.9,97.2 305.5,95.9 308.1,93.4 310.7,92.5 313.3,92.7 315.9,92.3 318.4,90.7 321.0,88.9 323.6,90.0 326.2,87.9 328.8,87.6 331.4,85.5 334.0,85.4 336.6,85.6 339.1,84.0 341.7,83.6 344.3,82.5 346.9,82.7 349.5,82.3 352.1,80.2 354.7,78.3 357.2,77.3 359.8,76.9 362.4,76.3 365.0,78.9 367.6,78.3 370.2,75.8 372.8,73.3 375.4,70.9 377.9,70.3 380.5,68.9 383.1,66.4 385.7,66.5 388.3,66.4 390.9,64.5 393.5,61.3 396.0,59.2 398.6,57.1 401.2,55.7 403.8,55.6 406.4,54.8 409.0,53.5 411.6,52.7 414.2,51.7 416.7,50.1 419.3,47.7 421.9,46.9 424.5,44.7 427.1,42.9 429.7,40.6 432.3,38.5 434.9,36.0 437.4,34.6 440.0,33.3 442.6,33.5 445.2,32.0 447.8,30.1 450.4,29.1 453.0,26.8 455.5,28.8 458.1,28.1 460.7,28.2 463.3,25.4 465.9,25.1 468.5,23.1 471.1,23.8 473.7,27.7 476.2,27.7 478.8,23.9 481.4,22.4 484.0,22.4"/><polyline class="ln s1" points="52.0,220.2 54.6,219.0 57.2,217.7 59.8,217.6 62.3,217.7 64.9,217.7 67.5,217.6 70.1,217.9 72.7,218.3 75.3,217.2 77.9,215.3 80.5,214.7 83.0,212.8 85.6,212.0 88.2,211.4 90.8,210.0 93.4,208.6 96.0,207.2 98.6,204.5 101.1,204.4 103.7,208.3 106.3,209.3 108.9,206.9 111.5,207.4 114.1,205.5 116.7,204.2 119.3,204.2 121.8,204.8 124.4,205.3 127.0,205.7 129.6,205.3 132.2,204.8 134.8,204.2 137.4,202.2 140.0,200.7 142.5,200.1 145.1,199.3 147.7,198.8 150.3,199.1 152.9,197.8 155.5,197.0 158.1,195.3 160.6,195.2 163.2,193.3 165.8,193.6 168.4,193.4 171.0,191.9 173.6,190.6 176.2,190.6 178.8,189.5 181.3,189.5 183.9,189.7 186.5,188.8 189.1,188.7 191.7,187.2 194.3,189.7 196.9,189.2 199.4,188.4 202.0,188.7 204.6,187.2 207.2,188.1 209.8,187.4 212.4,187.1 215.0,185.8 217.6,185.8 220.1,184.9 222.7,183.6 225.3,182.4 227.9,180.5 230.5,179.3 233.1,179.2 235.7,169.9 238.3,169.8 240.8,169.6 243.4,169.4 246.0,168.9 248.6,165.3 251.2,164.1 253.8,163.1 256.4,162.8 258.9,161.1 261.5,160.0 264.1,158.8 266.7,157.9 269.3,157.4 271.9,155.4 274.5,154.2 277.1,154.1 279.6,153.2 282.2,151.0 284.8,150.8 287.4,150.0 290.0,147.2 292.6,143.9 295.2,143.0 297.7,141.1 300.3,140.4 302.9,138.1 305.5,137.0 308.1,135.2 310.7,133.9 313.3,131.6 315.9,131.2 318.4,129.7 321.0,129.6 323.6,128.2 326.2,126.7 328.8,126.3 331.4,124.5 334.0,124.3 336.6,122.6 339.1,120.9 341.7,120.5 344.3,119.5 346.9,119.1 349.5,119.4 352.1,117.1 354.7,115.1 357.2,112.8 359.8,112.6 362.4,110.9 365.0,108.0 367.6,105.9 370.2,103.9 372.8,101.2 375.4,98.8 377.9,97.7 380.5,96.1 383.1,93.6 385.7,93.5 388.3,93.4 390.9,91.5 393.5,88.3 396.0,85.7 398.6,83.7 401.2,81.4 403.8,78.9 406.4,76.8 409.0,76.3 411.6,75.4 414.2,74.3 416.7,72.5 419.3,70.6 421.9,69.8 424.5,67.4 427.1,64.7 429.7,62.2 432.3,60.0 434.9,57.3 437.4,54.9 440.0,53.4 442.6,53.8 445.2,52.3 447.8,50.2 450.4,48.8 453.0,46.9 455.5,48.9 458.1,47.8 460.7,46.8 463.3,44.0 465.9,43.3 468.5,41.2 471.1,38.2 473.7,36.5 476.2,35.8 478.8,32.6 481.4,30.7 484.0,30.7"/><polyline class="ln s2" points="52.0,219.9 54.6,218.4 57.2,217.1 59.8,216.9 62.3,217.0 64.9,217.0 67.5,216.8 70.1,216.1 72.7,216.3 75.3,215.2 77.9,213.1 80.5,212.6 83.0,210.2 85.6,209.1 88.2,208.5 90.8,207.0 93.4,205.6 96.0,204.1 98.6,200.8 101.1,200.5 103.7,203.6 106.3,202.4 108.9,200.0 111.5,199.3 114.1,197.3 116.7,195.8 119.3,195.5 121.8,195.6 124.4,195.3 127.0,191.6 129.6,190.8 132.2,191.0 134.8,190.2 137.4,188.7 140.0,187.3 142.5,186.2 145.1,185.5 147.7,184.2 150.3,184.0 152.9,182.8 155.5,181.9 158.1,180.2 160.6,180.2 163.2,177.4 165.8,177.0 168.4,177.3 171.0,175.4 173.6,174.2 176.2,174.1 178.8,172.6 181.3,172.5 183.9,172.2 186.5,170.9 189.1,171.1 191.7,170.1 194.3,171.6 196.9,170.7 199.4,168.8 202.0,167.9 204.6,166.8 207.2,166.9 209.8,166.2 212.4,163.0 215.0,161.1 217.6,161.1 220.1,160.0 222.7,158.3 225.3,157.1 227.9,155.4 230.5,155.1 233.1,155.2 235.7,149.7 238.3,149.3 240.8,149.4 243.4,149.2 246.0,148.3 248.6,144.6 251.2,143.2 253.8,141.9 256.4,141.8 258.9,140.2 261.5,139.0 264.1,137.9 266.7,135.9 269.3,135.9 271.9,134.4 274.5,133.0 277.1,132.3 279.6,131.5 282.2,129.3 284.8,129.1 287.4,127.9 290.0,125.1 292.6,121.4 295.2,121.6 297.7,119.7 300.3,118.2 302.9,117.1 305.5,116.7 308.1,117.5 310.7,117.6 313.3,115.0 315.9,114.5 318.4,112.3 321.0,111.8 323.6,110.5 326.2,108.9 328.8,107.9 331.4,107.4 334.0,107.0 336.6,105.1 339.1,103.8 341.7,103.4 344.3,101.9 346.9,101.4 349.5,101.6 352.1,99.2 354.7,97.2 357.2,94.8 359.8,95.5 362.4,93.1 365.0,90.1 367.6,88.1 370.2,85.6 372.8,83.0 375.4,80.6 377.9,80.1 380.5,78.4 383.1,76.2 385.7,76.1 388.3,76.0 390.9,74.3 393.5,71.1 396.0,72.4 398.6,70.4 401.2,68.1 403.8,65.5 406.4,63.6 409.0,63.1 411.6,62.6 414.2,61.6 416.7,60.3 419.3,58.4 421.9,57.4 424.5,54.8 427.1,52.1 429.7,49.7 432.3,47.3 434.9,44.7 437.4,41.9 440.0,40.6 442.6,41.7 445.2,40.2 447.8,38.3 450.4,36.9 453.0,34.8 455.5,35.6 458.1,34.1 460.7,32.4 463.3,29.2 465.9,28.7 468.5,25.8 471.1,23.0 473.7,21.0 476.2,19.9 478.8,16.8 481.4,14.4 484.0,14.0"/><polyline class="ln s3" points="52.0,220.0 54.6,218.6 57.2,217.2 59.8,217.0 62.3,217.1 64.9,217.2 67.5,217.1 70.1,217.2 72.7,217.4 75.3,216.4 77.9,214.2 80.5,213.8 83.0,211.4 85.6,210.5 88.2,209.7 90.8,208.2 93.4,206.8 96.0,205.3 98.6,202.2 101.1,201.9 103.7,205.0 106.3,205.4 108.9,203.1 111.5,203.1 114.1,200.7 116.7,199.2 119.3,198.6 121.8,198.7 124.4,198.4 127.0,194.7 129.6,193.9 132.2,194.1 134.8,193.5 137.4,192.0 140.0,190.4 142.5,190.2 145.1,190.0 147.7,189.4 150.3,189.4 152.9,188.3 155.5,187.4 158.1,185.4 160.6,185.4 163.2,183.1 165.8,182.8 168.4,183.2 171.0,181.3 173.6,180.1 176.2,180.1 178.8,178.6 181.3,178.5 183.9,178.3 186.5,177.6 189.1,177.2 191.7,176.0 194.3,177.0 196.9,177.1 199.4,175.3 202.0,174.9 204.6,173.2 207.2,173.3 209.8,172.8 212.4,169.6 215.0,167.7 217.6,167.6 220.1,166.1 222.7,164.4 225.3,163.0 227.9,161.2 230.5,161.1 233.1,161.0 235.7,156.0 238.3,154.7 240.8,154.7 243.4,154.5 246.0,154.1 248.6,152.5 251.2,151.0 253.8,150.2 256.4,150.4 258.9,148.9 261.5,147.7 264.1,146.8 266.7,144.6 269.3,144.6 271.9,142.6 274.5,141.3 277.1,141.1 279.6,140.1 282.2,138.0 284.8,137.7 287.4,136.9 290.0,134.5 292.6,129.8 295.2,129.9 297.7,128.1 300.3,126.6 302.9,124.7 305.5,124.9 308.1,125.4 310.7,124.0 313.3,121.4 315.9,121.0 318.4,119.1 321.0,119.8 323.6,119.0 326.2,117.0 328.8,116.1 331.4,115.6 334.0,115.1 336.6,113.2 339.1,112.6 341.7,112.3 344.3,111.0 346.9,110.5 349.5,110.7 352.1,108.2 354.7,106.2 357.2,103.9 359.8,103.7 362.4,101.9 365.0,99.0 367.6,97.3 370.2,94.8 372.8,92.1 375.4,89.7 377.9,89.2 380.5,87.3 383.1,84.6 385.7,84.5 388.3,84.4 390.9,82.7 393.5,79.7 396.0,81.0 398.6,78.9 401.2,76.7 403.8,74.1 406.4,72.1 409.0,71.7 411.6,71.3 414.2,70.2 416.7,69.0 419.3,66.9 421.9,66.0 424.5,63.0 427.1,61.0 429.7,58.8 432.3,56.3 434.9,53.7 437.4,50.9 440.0,49.3 442.6,50.3 445.2,48.7 447.8,46.6 450.4,45.3 453.0,43.4 455.5,45.1 458.1,44.1 460.7,43.6 463.3,40.4 465.9,40.1 468.5,37.2 471.1,34.3 473.7,32.7 476.2,31.8 478.8,27.7 481.4,25.2 484.0,24.8"/><circle class="end base" cx="484.0" cy="22.4" r="4"/><line class="cross" x1="0" x2="0" y1="14" y2="222" style="display:none"/><rect class="hitarea" x="52" y="14" width="432" height="208"/></svg>
+  </div>
+  <div class="panel">
+    <div class="phead"><span class="pname">SA1</span><span class="chip neutral"><span aria-hidden="true">—</span>不用</span>
+      <span class="pnote">加天气比 价格 + AEMO 累计 <b>−$5,914</b></span></div>
+    <svg class="cum" viewBox="0 0 500 250" role="img" data-cum='{&quot;dates&quot;: [&quot;2026-04-28&quot;, &quot;2026-04-29&quot;, &quot;2026-04-30&quot;, &quot;2026-05-01&quot;, &quot;2026-05-02&quot;, &quot;2026-05-03&quot;, &quot;2026-05-04&quot;, &quot;2026-05-05&quot;, &quot;2026-05-06&quot;, &quot;2026-05-07&quot;, &quot;2026-05-08&quot;, &quot;2026-05-09&quot;, &quot;2026-05-10&quot;, &quot;2026-05-11&quot;, &quot;2026-05-12&quot;, &quot;2026-05-13&quot;, &quot;2026-05-14&quot;, &quot;2026-05-15&quot;, &quot;2026-05-16&quot;, &quot;2026-05-17&quot;, &quot;2026-05-18&quot;, &quot;2026-05-19&quot;, &quot;2026-05-20&quot;, &quot;2026-05-21&quot;, &quot;2026-05-22&quot;, &quot;2026-05-23&quot;, &quot;2026-05-24&quot;, &quot;2026-05-25&quot;, &quot;2026-05-26&quot;, &quot;2026-05-27&quot;, &quot;2026-05-28&quot;, &quot;2026-05-29&quot;, &quot;2026-05-30&quot;, &quot;2026-05-31&quot;, &quot;2026-06-01&quot;, &quot;2026-06-02&quot;, &quot;2026-06-03&quot;, &quot;2026-06-04&quot;, &quot;2026-06-05&quot;, &quot;2026-06-06&quot;, &quot;2026-06-07&quot;, &quot;2026-06-08&quot;, &quot;2026-06-09&quot;, &quot;2026-06-10&quot;, &quot;2026-06-11&quot;, &quot;2026-06-12&quot;, &quot;2026-06-13&quot;, &quot;2026-06-14&quot;, &quot;2026-06-15&quot;, &quot;2026-06-16&quot;, &quot;2026-06-17&quot;, &quot;2026-06-18&quot;, &quot;2026-06-19&quot;, &quot;2026-06-20&quot;, &quot;2026-06-21&quot;, &quot;2026-06-22&quot;, &quot;2026-06-23&quot;, &quot;2026-06-24&quot;, &quot;2026-06-25&quot;, &quot;2026-06-26&quot;, &quot;2026-06-27&quot;, &quot;2026-06-28&quot;, &quot;2026-06-29&quot;, &quot;2026-06-30&quot;, &quot;2026-07-01&quot;, &quot;2026-07-02&quot;, &quot;2026-07-03&quot;, &quot;2026-07-04&quot;, &quot;2026-07-05&quot;, &quot;2026-07-06&quot;, &quot;2026-07-07&quot;, &quot;2026-07-08&quot;, &quot;2026-07-09&quot;, &quot;2026-07-10&quot;, &quot;2026-07-11&quot;, &quot;2026-07-12&quot;, &quot;2026-07-13&quot;, &quot;2026-07-14&quot;, &quot;2026-07-15&quot;, &quot;2026-07-16&quot;, &quot;2026-07-17&quot;, &quot;2026-07-18&quot;, &quot;2026-07-19&quot;, &quot;2026-07-20&quot;, &quot;2026-07-21&quot;, &quot;2026-07-22&quot;, &quot;2026-07-23&quot;, &quot;2026-07-24&quot;, &quot;2026-07-25&quot;, &quot;2026-07-26&quot;, &quot;2026-07-27&quot;, &quot;2026-07-28&quot;, &quot;2026-07-29&quot;, &quot;2026-07-30&quot;, &quot;2026-07-31&quot;, &quot;2026-08-01&quot;, &quot;2026-08-02&quot;, &quot;2026-08-03&quot;, &quot;2026-08-04&quot;, &quot;2026-08-05&quot;, &quot;2026-08-06&quot;, &quot;2026-08-07&quot;, &quot;2026-08-08&quot;, &quot;2026-08-09&quot;, &quot;2026-08-10&quot;, &quot;2026-08-11&quot;, &quot;2026-08-12&quot;, &quot;2026-08-13&quot;, &quot;2026-08-14&quot;, &quot;2026-08-15&quot;, &quot;2026-08-16&quot;, &quot;2026-08-17&quot;, &quot;2026-08-18&quot;, &quot;2026-08-19&quot;, &quot;2026-08-20&quot;, &quot;2026-08-21&quot;, &quot;2026-08-22&quot;, &quot;2026-08-23&quot;, &quot;2026-08-24&quot;, &quot;2026-08-25&quot;, &quot;2026-08-26&quot;, &quot;2026-08-27&quot;, &quot;2026-08-28&quot;, &quot;2026-08-29&quot;, &quot;2026-08-30&quot;, &quot;2026-08-31&quot;, &quot;2026-09-01&quot;, &quot;2026-09-02&quot;, &quot;2026-09-03&quot;, &quot;2026-09-04&quot;, &quot;2026-09-05&quot;, &quot;2026-09-06&quot;, &quot;2026-09-07&quot;, &quot;2026-09-08&quot;, &quot;2026-09-09&quot;, &quot;2026-09-10&quot;, &quot;2026-09-11&quot;, &quot;2026-09-12&quot;, &quot;2026-09-13&quot;, &quot;2026-09-14&quot;, &quot;2026-09-15&quot;, &quot;2026-09-16&quot;, &quot;2026-09-17&quot;, &quot;2026-09-18&quot;, &quot;2026-09-19&quot;, &quot;2026-09-20&quot;, &quot;2026-09-21&quot;, &quot;2026-09-22&quot;, &quot;2026-09-23&quot;, &quot;2026-09-24&quot;, &quot;2026-09-25&quot;, &quot;2026-09-26&quot;, &quot;2026-09-27&quot;, &quot;2026-09-28&quot;, &quot;2026-09-29&quot;, &quot;2026-09-30&quot;, &quot;2026-10-01&quot;, &quot;2026-10-02&quot;, &quot;2026-10-03&quot;, &quot;2026-10-04&quot;, &quot;2026-10-05&quot;, &quot;2026-10-06&quot;, &quot;2026-10-07&quot;, &quot;2026-10-08&quot;, &quot;2026-10-09&quot;, &quot;2026-10-10&quot;, &quot;2026-10-11&quot;, &quot;2026-10-12&quot;], &quot;series&quot;: [[&quot;一周前同期&quot;, [236.2, 409.5, 544.9, 586.6, 583.8, 576.5, 671.1, 707.4, 739.2, 824.7, 956.3, 845.1, 919.9, 924.8, 984.9, 978.0, 1053.7, 1131.5, 1279.5, 1314.9, 1057.5, 933.3, 886.7, 934.4, 770.1, 832.9, 903.5, 942.3, 789.2, 699.8, 680.9, 617.1, 672.5, 822.1, 740.8, 766.3, 789.0, 796.5, 780.9, 865.8, 925.9, 902.5, 907.1, 936.6, 893.4, 858.8, 970.2, 1077.1, 1061.2, 1081.3, 1112.0, 1103.9, 1053.3, 1128.6, 1479.4, 1432.9, 1463.3, 1523.0, 1582.3, 1681.4, 1654.3, 1653.0, 1727.5, 1572.7, 1629.7, 1594.2, 1820.4, 1820.4, 1764.6, 1801.4, 1977.9, 2025.3, 1995.6, 1904.8, 1904.8, 1896.8, 1983.6, 2091.1, 2130.4, 2143.1, 2232.4, 2238.5, 2340.6, 2410.7, 2428.9, 2547.1, 2671.1, 2716.0, 2829.9, 2825.3, 2767.4, 2880.1, 3113.8, 3058.5, 3097.2, 3216.1, 3356.3, 3526.7, 3541.7, 3529.9, 3514.9, 3472.3, 3510.2, 3566.5, 3730.4, 3638.5, 3632.6, 3693.5, 3608.6, 3641.7, 3623.3, 3699.4, 3710.7, 3949.5, 3978.2, 3984.4, 3991.7, 4130.2, 4154.2, 4172.5, 3992.8, 3805.0, 3914.0, 3985.3, 4166.7, 4272.7, 4374.8, 4377.3, 4547.5, 4525.1, 4570.0, 4650.7, 4869.7, 4967.7, 5108.1, 5295.9, 5235.7, 5455.9, 5554.4, 5597.6, 5674.9, 5954.3, 6150.9, 6247.9, 6459.1, 6561.7, 6716.7, 6853.0, 7021.3, 7062.8, 7144.5, 7190.6, 7392.0, 7582.5, 7705.6, 7759.5, 7611.0, 7687.9, 7866.3, 7672.6, 7824.6, 8013.9, 8135.1, 7784.0, 7872.1, 8071.6, 8009.7, 8009.7], &quot;B0 naive&quot;], [&quot;价格模型&quot;, [172.5, 288.1, 359.9, 369.2, 364.3, 374.9, 466.8, 384.1, 407.9, 469.2, 604.6, 627.6, 704.5, 762.3, 597.7, 631.6, 727.3, 801.7, 969.1, 990.0, 709.9, 674.4, 857.2, 845.1, 926.3, 1045.5, 1077.6, 1075.6, 881.2, 835.0, 855.2, 846.5, 897.8, 1055.6, 1013.6, 1073.7, 1172.8, 1243.0, 1252.2, 1358.6, 1409.1, 1520.5, 1528.7, 1561.6, 1533.5, 1515.7, 1604.2, 1716.7, 1689.2, 1767.2, 1755.1, 1771.9, 1853.4, 1993.6, 5901.9, 5908.2, 5951.9, 6099.4, 6060.3, 6092.5, 6059.6, 6093.2, 6437.3, 6378.5, 6458.4, 6529.4, 6690.3, 6588.6, 6614.1, 6650.9, 6629.9, 9295.8, 9393.5, 9373.0, 9431.7, 9434.6, 9532.0, 9697.1, 9784.9, 9814.6, 9898.4, 9994.0, 10134.8, 10205.4, 10212.6, 10313.9, 10438.2, 10498.2, 10558.5, 10565.5, 10613.5, 10836.5, 10943.8, 11087.7, 10448.9, 10651.7, 10802.4, 10967.3, 10982.4, 10994.5, 10933.4, 11041.2, 11085.0, 11154.8, 11311.1, 11421.7, 11578.7, 11586.6, 11599.5, 11644.0, 11762.8, 11845.9, 11893.7, 12113.5, 12238.6, 12392.0, 12445.7, 12576.5, 12665.0, 12670.3, 12567.1, 12684.3, 12796.8, 12939.0, 13129.4, 13305.9, 13494.4, 13604.6, 13812.3, 13803.7, 13853.7, 13946.8, 14165.7, 14333.2, 14486.6, 14869.9, 15049.8, 15248.8, 15339.8, 15337.1, 15414.5, 15607.3, 15811.4, 15984.1, 16187.6, 16260.0, 16418.0, 16570.7, 16745.3, 16813.5, 16842.2, 16859.9, 17074.5, 17261.1, 17343.2, 17404.9, 17302.1, 17374.7, 17626.9, 17449.9, 17563.2, 17760.9, 18044.7, 18193.1, 18232.7, 18380.1, 18729.4, 18729.4], &quot;B1 自回归&quot;], [&quot;价格 + AEMO&quot;, [172.5, 332.5, 375.5, 381.1, 376.2, 386.8, 478.7, 439.2, 463.1, 526.0, 661.4, 688.7, 765.6, 823.4, 658.8, 700.9, 796.6, 870.9, 1038.4, 1058.1, 778.1, 746.0, 928.8, 916.7, 997.9, 1117.1, 1149.2, 1147.2, 952.7, 906.5, 894.2, 885.5, 942.1, 1077.5, 1035.5, 1094.6, 1193.6, 1263.9, 1273.0, 1379.5, 1430.0, 1541.3, 1549.5, 1553.3, 1547.2, 1523.9, 1612.4, 1724.9, 1697.3, 1775.4, 1763.2, 1780.0, 1861.6, 1941.3, 5849.5, 5920.1, 6040.4, 6053.3, 6014.3, 6046.4, 6013.5, 6047.1, 6456.4, 6394.1, 6464.7, 6515.6, 6724.0, 6619.6, 6645.1, 6683.5, 6662.6, 9326.2, 9315.2, 9322.6, 9382.4, 9385.3, 9482.7, 9640.9, 9728.6, 9757.0, 9840.8, 9918.5, 10059.4, 10129.9, 10137.1, 10238.4, 10362.7, 10422.8, 10483.1, 10490.0, 10519.2, 10742.2, 10816.7, 10854.2, 10386.0, 10588.7, 10739.4, 10904.4, 10928.7, 10893.0, 10826.2, 10924.5, 10951.1, 11020.9, 11180.1, 11290.8, 11436.9, 11448.8, 11331.9, 11376.3, 11495.1, 11578.2, 11626.0, 11845.9, 11970.9, 12108.6, 12162.4, 12304.3, 12402.4, 12407.8, 12401.7, 12518.9, 12631.4, 12773.6, 12964.0, 13140.5, 13312.1, 13215.6, 13464.0, 13455.4, 13505.9, 13545.4, 13764.4, 13705.6, 13858.8, 14404.9, 14584.9, 14948.4, 15039.4, 15057.3, 15134.6, 15500.3, 15725.5, 15848.1, 16075.7, 16120.4, 16275.7, 16428.4, 16599.6, 16657.1, 16736.5, 16754.2, 16960.8, 17163.6, 17245.7, 17217.4, 17114.6, 17187.2, 17430.6, 17253.6, 17363.5, 17561.2, 17834.5, 18071.5, 18150.0, 18339.6, 18631.5, 18660.6], &quot;B2 +官方&quot;], [&quot;价格 + AEMO + 天气&quot;, [230.5, 399.2, 507.6, 535.1, 525.2, 528.1, 651.5, 612.1, 632.9, 683.4, 847.0, 872.7, 921.1, 988.9, 855.1, 891.4, 994.1, 1068.5, 1230.0, 1244.6, 1188.6, 1153.1, 1350.7, 1286.9, 1153.0, 1264.3, 1287.7, 1291.8, 1367.2, 1288.6, 1281.5, 1198.6, 1244.8, 1402.6, 1384.8, 1432.2, 1504.4, 1585.9, 1603.2, 1709.7, 1719.8, 1787.8, 1779.1, 1888.9, 1875.3, 1860.7, 1970.2, 2080.6, 2053.1, 2119.0, 2076.5, 2095.2, 2111.3, 2179.7, 2779.7, 2540.2, 2539.9, 2552.9, 2638.0, 2670.1, 2660.5, 2707.0, 3116.2, 3050.7, 3121.4, 3172.2, 3379.7, 3278.7, 3335.9, 3357.0, 3372.9, 3628.0, 3617.0, 3592.5, 3608.1, 3614.1, 3705.2, 3802.7, 3841.2, 3889.7, 3939.3, 3953.0, 4096.2, 4178.9, 4210.5, 4328.6, 4468.9, 4489.9, 4515.3, 4490.6, 4534.9, 4719.3, 4838.3, 4914.2, 4384.0, 4586.8, 4775.9, 4940.4, 4955.5, 4797.5, 4848.2, 5007.9, 5051.8, 5143.8, 5303.1, 5414.9, 5572.2, 5558.5, 5471.0, 5489.8, 5630.5, 5698.3, 5740.3, 6027.3, 6142.9, 6300.5, 6272.0, 6413.2, 6501.7, 6480.5, 6474.5, 6662.5, 6784.5, 6942.7, 7140.1, 7316.8, 7475.3, 7580.2, 7787.6, 7768.6, 7819.1, 7858.6, 8072.2, 8013.4, 8166.6, 8628.1, 8807.9, 9123.3, 9179.1, 9168.5, 9276.4, 9462.8, 9655.3, 9777.9, 10005.5, 10062.3, 10219.3, 10381.5, 10556.1, 10550.8, 10536.4, 10554.1, 10760.7, 10947.3, 11043.1, 11084.9, 11050.3, 11175.5, 11418.8, 11457.7, 11600.3, 11798.0, 12061.2, 12298.3, 12240.7, 12419.8, 12717.9, 12747.0], &quot;B3 +天气&quot;]], &quot;L&quot;: 52, &quot;pw&quot;: 432}'
+         aria-label="SA1 累计收益"><line class="grid" x1="52" x2="484" y1="222.0" y2="222.0"/><text class="tick" x="46" y="226.0" text-anchor="end">$0</text><line class="grid" x1="52" x2="484" y1="166.5" y2="166.5"/><text class="tick" x="46" y="170.5" text-anchor="end">$5K</text><line class="grid" x1="52" x2="484" y1="110.9" y2="110.9"/><text class="tick" x="46" y="114.9" text-anchor="end">$10K</text><line class="grid" x1="52" x2="484" y1="55.4" y2="55.4"/><text class="tick" x="46" y="59.4" text-anchor="end">$15K</text><text class="tick" x="52.0" y="242" text-anchor="start">26-04-28</text><text class="tick" x="269.3" y="242" text-anchor="middle">26-07-21</text><text class="tick" x="484.0" y="242" text-anchor="end">26-10-12</text><polyline class="ln base" points="52.0,219.4 54.6,217.5 57.2,215.9 59.8,215.5 62.3,215.5 64.9,215.6 67.5,214.5 70.1,214.1 72.7,213.8 75.3,212.8 77.9,211.4 80.5,212.6 83.0,211.8 85.6,211.7 88.2,211.1 90.8,211.1 93.4,210.3 96.0,209.4 98.6,207.8 101.1,207.4 103.7,210.3 106.3,211.6 108.9,212.2 111.5,211.6 114.1,213.4 116.7,212.8 119.3,212.0 121.8,211.5 124.4,213.2 127.0,214.2 129.6,214.4 132.2,215.1 134.8,214.5 137.4,212.9 140.0,213.8 142.5,213.5 145.1,213.2 147.7,213.2 150.3,213.3 152.9,212.4 155.5,211.7 158.1,212.0 160.6,211.9 163.2,211.6 165.8,212.1 168.4,212.5 171.0,211.2 173.6,210.0 176.2,210.2 178.8,210.0 181.3,209.7 183.9,209.7 186.5,210.3 189.1,209.5 191.7,205.6 194.3,206.1 196.9,205.7 199.4,205.1 202.0,204.4 204.6,203.3 207.2,203.6 209.8,203.6 212.4,202.8 215.0,204.5 217.6,203.9 220.1,204.3 222.7,201.8 225.3,201.8 227.9,202.4 230.5,202.0 233.1,200.0 235.7,199.5 238.3,199.8 240.8,200.8 243.4,200.8 246.0,200.9 248.6,200.0 251.2,198.8 253.8,198.3 256.4,198.2 258.9,197.2 261.5,197.1 264.1,196.0 266.7,195.2 269.3,195.0 271.9,193.7 274.5,192.3 277.1,191.8 279.6,190.6 282.2,190.6 284.8,191.3 287.4,190.0 290.0,187.4 292.6,188.0 295.2,187.6 297.7,186.3 300.3,184.7 302.9,182.8 305.5,182.7 308.1,182.8 310.7,183.0 313.3,183.4 315.9,183.0 318.4,182.4 321.0,180.6 323.6,181.6 326.2,181.7 328.8,181.0 331.4,181.9 334.0,181.6 336.6,181.8 339.1,180.9 341.7,180.8 344.3,178.1 346.9,177.8 349.5,177.8 352.1,177.7 354.7,176.1 357.2,175.9 359.8,175.7 362.4,177.7 365.0,179.7 367.6,178.5 370.2,177.7 372.8,175.7 375.4,174.5 377.9,173.4 380.5,173.4 383.1,171.5 385.7,171.7 388.3,171.2 390.9,170.4 393.5,167.9 396.0,166.8 398.6,165.3 401.2,163.2 403.8,163.9 406.4,161.4 409.0,160.3 411.6,159.8 414.2,159.0 416.7,155.9 419.3,153.7 421.9,152.6 424.5,150.3 427.1,149.1 429.7,147.4 432.3,145.9 434.9,144.0 437.4,143.6 440.0,142.7 442.6,142.1 445.2,139.9 447.8,137.8 450.4,136.4 453.0,135.8 455.5,137.5 458.1,136.6 460.7,134.6 463.3,136.8 465.9,135.1 468.5,133.0 471.1,131.7 473.7,135.6 476.2,134.6 478.8,132.4 481.4,133.0 484.0,133.0"/><polyline class="ln s1" points="52.0,220.1 54.6,218.8 57.2,218.0 59.8,217.9 62.3,218.0 64.9,217.8 67.5,216.8 70.1,217.7 72.7,217.5 75.3,216.8 77.9,215.3 80.5,215.0 83.0,214.2 85.6,213.5 88.2,215.4 90.8,215.0 93.4,213.9 96.0,213.1 98.6,211.2 101.1,211.0 103.7,214.1 106.3,214.5 108.9,212.5 111.5,212.6 114.1,211.7 116.7,210.4 119.3,210.0 121.8,210.1 124.4,212.2 127.0,212.7 129.6,212.5 132.2,212.6 134.8,212.0 137.4,210.3 140.0,210.7 142.5,210.1 145.1,209.0 147.7,208.2 150.3,208.1 152.9,206.9 155.5,206.4 158.1,205.1 160.6,205.0 163.2,204.7 165.8,205.0 168.4,205.2 171.0,204.2 173.6,202.9 176.2,203.2 178.8,202.4 181.3,202.5 183.9,202.3 186.5,201.4 189.1,199.9 191.7,156.5 194.3,156.4 196.9,155.9 199.4,154.3 202.0,154.7 204.6,154.3 207.2,154.7 209.8,154.3 212.4,150.5 215.0,151.2 217.6,150.3 220.1,149.5 222.7,147.7 225.3,148.8 227.9,148.5 230.5,148.1 233.1,148.4 235.7,118.8 238.3,117.7 240.8,117.9 243.4,117.3 246.0,117.2 248.6,116.1 251.2,114.3 253.8,113.3 256.4,113.0 258.9,112.1 261.5,111.0 264.1,109.4 266.7,108.7 269.3,108.6 271.9,107.5 274.5,106.1 277.1,105.4 279.6,104.7 282.2,104.7 284.8,104.1 287.4,101.7 290.0,100.5 292.6,98.9 295.2,106.0 297.7,103.7 300.3,102.0 302.9,100.2 305.5,100.0 308.1,99.9 310.7,100.6 313.3,99.4 315.9,98.9 318.4,98.1 321.0,96.4 323.6,95.2 326.2,93.4 328.8,93.3 331.4,93.2 334.0,92.7 336.6,91.4 339.1,90.4 341.7,89.9 344.3,87.5 346.9,86.1 349.5,84.4 352.1,83.8 354.7,82.3 357.2,81.3 359.8,81.3 362.4,82.4 365.0,81.1 367.6,79.9 370.2,78.3 372.8,76.2 375.4,74.2 377.9,72.1 380.5,70.9 383.1,68.6 385.7,68.7 388.3,68.1 390.9,67.1 393.5,64.7 396.0,62.8 398.6,61.1 401.2,56.9 403.8,54.9 406.4,52.7 409.0,51.6 411.6,51.7 414.2,50.8 416.7,48.7 419.3,46.4 421.9,44.5 424.5,42.2 427.1,41.4 429.7,39.7 432.3,38.0 434.9,36.0 437.4,35.3 440.0,35.0 442.6,34.8 445.2,32.4 447.8,30.3 450.4,29.4 453.0,28.7 455.5,29.9 458.1,29.0 460.7,26.2 463.3,28.2 465.9,27.0 468.5,24.8 471.1,21.6 473.7,20.0 476.2,19.5 478.8,17.9 481.4,14.0 484.0,14.0"/><polyline class="ln s2" points="52.0,220.1 54.6,218.3 57.2,217.8 59.8,217.8 62.3,217.8 64.9,217.7 67.5,216.7 70.1,217.1 72.7,216.9 75.3,216.2 77.9,214.7 80.5,214.4 83.0,213.5 85.6,212.9 88.2,214.7 90.8,214.2 93.4,213.2 96.0,212.3 98.6,210.5 101.1,210.2 103.7,213.4 106.3,213.7 108.9,211.7 111.5,211.8 114.1,210.9 116.7,209.6 119.3,209.2 121.8,209.3 124.4,211.4 127.0,211.9 129.6,212.1 132.2,212.2 134.8,211.5 137.4,210.0 140.0,210.5 142.5,209.8 145.1,208.7 147.7,208.0 150.3,207.9 152.9,206.7 155.5,206.1 158.1,204.9 160.6,204.8 163.2,204.7 165.8,204.8 168.4,205.1 171.0,204.1 173.6,202.8 176.2,203.2 178.8,202.3 181.3,202.4 183.9,202.2 186.5,201.3 189.1,200.4 191.7,157.0 194.3,156.3 196.9,154.9 199.4,154.8 202.0,155.2 204.6,154.9 207.2,155.2 209.8,154.8 212.4,150.3 215.0,151.0 217.6,150.2 220.1,149.6 222.7,147.3 225.3,148.5 227.9,148.2 230.5,147.8 233.1,148.0 235.7,118.4 238.3,118.5 240.8,118.5 243.4,117.8 246.0,117.8 248.6,116.7 251.2,114.9 253.8,114.0 256.4,113.6 258.9,112.7 261.5,111.8 264.1,110.3 266.7,109.5 269.3,109.4 271.9,108.3 274.5,106.9 277.1,106.2 279.6,105.6 282.2,105.5 284.8,105.2 287.4,102.7 290.0,101.9 292.6,101.5 295.2,106.7 297.7,104.4 300.3,102.7 302.9,100.9 305.5,100.6 308.1,101.0 310.7,101.8 313.3,100.7 315.9,100.4 318.4,99.6 321.0,97.8 323.6,96.6 326.2,95.0 328.8,94.9 331.4,96.2 334.0,95.7 336.6,94.3 339.1,93.4 341.7,92.9 344.3,90.4 346.9,89.1 349.5,87.5 352.1,86.9 354.7,85.4 357.2,84.3 359.8,84.2 362.4,84.3 365.0,83.0 367.6,81.7 370.2,80.1 372.8,78.0 375.4,76.1 377.9,74.2 380.5,75.2 383.1,72.5 385.7,72.6 388.3,72.0 390.9,71.6 393.5,69.1 396.0,69.8 398.6,68.1 401.2,62.0 403.8,60.0 406.4,56.0 409.0,55.0 411.6,54.8 414.2,53.9 416.7,49.9 419.3,47.4 421.9,46.0 424.5,43.5 427.1,43.0 429.7,41.2 432.3,39.6 434.9,37.7 437.4,37.0 440.0,36.1 442.6,35.9 445.2,33.6 447.8,31.4 450.4,30.5 453.0,30.8 455.5,31.9 458.1,31.1 460.7,28.4 463.3,30.4 465.9,29.2 468.5,27.0 471.1,23.9 473.7,21.3 476.2,20.4 478.8,18.3 481.4,15.1 484.0,14.8"/><polyline class="ln s3" points="52.0,219.4 54.6,217.6 57.2,216.4 59.8,216.1 62.3,216.2 64.9,216.1 67.5,214.8 70.1,215.2 72.7,215.0 75.3,214.4 77.9,212.6 80.5,212.3 83.0,211.8 85.6,211.0 88.2,212.5 90.8,212.1 93.4,211.0 96.0,210.1 98.6,208.3 101.1,208.2 103.7,208.8 106.3,209.2 108.9,207.0 111.5,207.7 114.1,209.2 116.7,208.0 119.3,207.7 121.8,207.7 124.4,206.8 127.0,207.7 129.6,207.8 132.2,208.7 134.8,208.2 137.4,206.4 140.0,206.6 142.5,206.1 145.1,205.3 147.7,204.4 150.3,204.2 152.9,203.0 155.5,202.9 158.1,202.1 160.6,202.2 163.2,201.0 165.8,201.2 168.4,201.3 171.0,200.1 173.6,198.9 176.2,199.2 178.8,198.5 181.3,198.9 183.9,198.7 186.5,198.6 189.1,197.8 191.7,191.1 194.3,193.8 196.9,193.8 199.4,193.6 202.0,192.7 204.6,192.3 207.2,192.5 209.8,191.9 212.4,187.4 215.0,188.1 217.6,187.3 220.1,186.8 222.7,184.5 225.3,185.6 227.9,185.0 230.5,184.7 233.1,184.5 235.7,181.7 238.3,181.8 240.8,182.1 243.4,181.9 246.0,181.9 248.6,180.9 251.2,179.8 253.8,179.3 256.4,178.8 258.9,178.3 261.5,178.1 264.1,176.5 266.7,175.6 269.3,175.2 271.9,173.9 274.5,172.4 277.1,172.1 279.6,171.9 282.2,172.1 284.8,171.6 287.4,169.6 290.0,168.3 292.6,167.4 295.2,173.3 297.7,171.1 300.3,169.0 302.9,167.1 305.5,167.0 308.1,168.7 310.7,168.2 313.3,166.4 315.9,165.9 318.4,164.9 321.0,163.1 323.6,161.9 326.2,160.1 328.8,160.3 331.4,161.2 334.0,161.0 336.6,159.5 339.1,158.7 341.7,158.3 344.3,155.1 346.9,153.8 349.5,152.0 352.1,152.3 354.7,150.8 357.2,149.8 359.8,150.0 362.4,150.1 365.0,148.0 367.6,146.7 370.2,144.9 372.8,142.7 375.4,140.7 377.9,139.0 380.5,137.8 383.1,135.5 385.7,135.7 388.3,135.2 390.9,134.7 393.5,132.4 396.0,133.0 398.6,131.3 401.2,126.2 403.8,124.2 406.4,120.7 409.0,120.1 411.6,120.2 414.2,119.0 416.7,116.9 419.3,114.8 421.9,113.4 424.5,110.9 427.1,110.3 429.7,108.5 432.3,106.7 434.9,104.8 437.4,104.8 440.0,105.0 442.6,104.8 445.2,102.5 447.8,100.4 450.4,99.4 453.0,98.9 455.5,99.3 458.1,97.9 460.7,95.2 463.3,94.8 465.9,93.2 468.5,91.0 471.1,88.1 473.7,85.4 476.2,86.1 478.8,84.1 481.4,80.8 484.0,80.4"/><circle class="end s1" cx="484.0" cy="14.0" r="4"/><line class="cross" x1="0" x2="0" y1="14" y2="222" style="display:none"/><rect class="hitarea" x="52" y="14" width="432" height="208"/></svg>
+  </div>
+  <div class="panel">
+    <div class="phead"><span class="pname">TAS1</span><span class="chip neutral"><span aria-hidden="true">—</span>不用</span>
+      <span class="pnote">加天气比 价格 + AEMO 累计 <b>−$583</b></span></div>
+    <svg class="cum" viewBox="0 0 500 250" role="img" data-cum='{&quot;dates&quot;: [&quot;2026-04-28&quot;, &quot;2026-04-29&quot;, &quot;2026-04-30&quot;, &quot;2026-05-01&quot;, &quot;2026-05-02&quot;, &quot;2026-05-03&quot;, &quot;2026-05-04&quot;, &quot;2026-05-05&quot;, &quot;2026-05-06&quot;, &quot;2026-05-07&quot;, &quot;2026-05-08&quot;, &quot;2026-05-09&quot;, &quot;2026-05-10&quot;, &quot;2026-05-11&quot;, &quot;2026-05-12&quot;, &quot;2026-05-13&quot;, &quot;2026-05-14&quot;, &quot;2026-05-15&quot;, &quot;2026-05-16&quot;, &quot;2026-05-17&quot;, &quot;2026-05-18&quot;, &quot;2026-05-19&quot;, &quot;2026-05-20&quot;, &quot;2026-05-21&quot;, &quot;2026-05-22&quot;, &quot;2026-05-23&quot;, &quot;2026-05-24&quot;, &quot;2026-05-25&quot;, &quot;2026-05-26&quot;, &quot;2026-05-27&quot;, &quot;2026-05-28&quot;, &quot;2026-05-29&quot;, &quot;2026-05-30&quot;, &quot;2026-05-31&quot;, &quot;2026-06-01&quot;, &quot;2026-06-02&quot;, &quot;2026-06-03&quot;, &quot;2026-06-04&quot;, &quot;2026-06-05&quot;, &quot;2026-06-06&quot;, &quot;2026-06-07&quot;, &quot;2026-06-08&quot;, &quot;2026-06-09&quot;, &quot;2026-06-10&quot;, &quot;2026-06-11&quot;, &quot;2026-06-12&quot;, &quot;2026-06-13&quot;, &quot;2026-06-14&quot;, &quot;2026-06-15&quot;, &quot;2026-06-16&quot;, &quot;2026-06-17&quot;, &quot;2026-06-18&quot;, &quot;2026-06-19&quot;, &quot;2026-06-20&quot;, &quot;2026-06-21&quot;, &quot;2026-06-22&quot;, &quot;2026-06-23&quot;, &quot;2026-06-24&quot;, &quot;2026-06-25&quot;, &quot;2026-06-26&quot;, &quot;2026-06-27&quot;, &quot;2026-06-28&quot;, &quot;2026-06-29&quot;, &quot;2026-06-30&quot;, &quot;2026-07-01&quot;, &quot;2026-07-02&quot;, &quot;2026-07-03&quot;, &quot;2026-07-04&quot;, &quot;2026-07-05&quot;, &quot;2026-07-06&quot;, &quot;2026-07-07&quot;, &quot;2026-07-08&quot;, &quot;2026-07-09&quot;, &quot;2026-07-10&quot;, &quot;2026-07-11&quot;, &quot;2026-07-12&quot;, &quot;2026-07-13&quot;, &quot;2026-07-14&quot;, &quot;2026-07-15&quot;, &quot;2026-07-16&quot;, &quot;2026-07-17&quot;, &quot;2026-07-18&quot;, &quot;2026-07-19&quot;, &quot;2026-07-20&quot;, &quot;2026-07-21&quot;, &quot;2026-07-22&quot;, &quot;2026-07-23&quot;, &quot;2026-07-24&quot;, &quot;2026-07-25&quot;, &quot;2026-07-26&quot;, &quot;2026-07-27&quot;, &quot;2026-07-28&quot;, &quot;2026-07-29&quot;, &quot;2026-07-30&quot;, &quot;2026-07-31&quot;, &quot;2026-08-01&quot;, &quot;2026-08-02&quot;, &quot;2026-08-03&quot;, &quot;2026-08-04&quot;, &quot;2026-08-05&quot;, &quot;2026-08-06&quot;, &quot;2026-08-07&quot;, &quot;2026-08-08&quot;, &quot;2026-08-09&quot;, &quot;2026-08-10&quot;, &quot;2026-08-11&quot;, &quot;2026-08-12&quot;, &quot;2026-08-13&quot;, &quot;2026-08-14&quot;, &quot;2026-08-15&quot;, &quot;2026-08-16&quot;, &quot;2026-08-17&quot;, &quot;2026-08-18&quot;, &quot;2026-08-19&quot;, &quot;2026-08-20&quot;, &quot;2026-08-21&quot;, &quot;2026-08-22&quot;, &quot;2026-08-23&quot;, &quot;2026-08-24&quot;, &quot;2026-08-25&quot;, &quot;2026-08-26&quot;, &quot;2026-08-27&quot;, &quot;2026-08-28&quot;, &quot;2026-08-29&quot;, &quot;2026-08-30&quot;, &quot;2026-08-31&quot;, &quot;2026-09-01&quot;, &quot;2026-09-02&quot;, &quot;2026-09-03&quot;, &quot;2026-09-04&quot;, &quot;2026-09-05&quot;, &quot;2026-09-06&quot;, &quot;2026-09-07&quot;, &quot;2026-09-08&quot;, &quot;2026-09-09&quot;, &quot;2026-09-10&quot;, &quot;2026-09-11&quot;, &quot;2026-09-12&quot;, &quot;2026-09-13&quot;, &quot;2026-09-14&quot;, &quot;2026-09-15&quot;, &quot;2026-09-16&quot;, &quot;2026-09-17&quot;, &quot;2026-09-18&quot;, &quot;2026-09-19&quot;, &quot;2026-09-20&quot;, &quot;2026-09-21&quot;, &quot;2026-09-22&quot;, &quot;2026-09-23&quot;, &quot;2026-09-24&quot;, &quot;2026-09-25&quot;, &quot;2026-09-26&quot;, &quot;2026-09-27&quot;, &quot;2026-09-28&quot;, &quot;2026-09-29&quot;, &quot;2026-09-30&quot;, &quot;2026-10-01&quot;, &quot;2026-10-02&quot;, &quot;2026-10-03&quot;, &quot;2026-10-04&quot;, &quot;2026-10-05&quot;, &quot;2026-10-06&quot;, &quot;2026-10-07&quot;, &quot;2026-10-08&quot;, &quot;2026-10-09&quot;, &quot;2026-10-10&quot;, &quot;2026-10-11&quot;, &quot;2026-10-12&quot;], &quot;series&quot;: [[&quot;一周前同期&quot;, [-1.3, -33.7, -33.7, -56.0, -104.3, -159.8, -159.8, -196.1, -209.2, -219.4, -219.4, -219.4, -262.3, -309.5, -309.5, -342.6, -342.6, -342.6, -342.6, -342.6, -342.6, -342.6, -342.6, -370.0, -382.5, -406.2, -443.7, -472.3, -517.3, -517.3, -508.2, -537.1, -547.7, -547.7, -547.7, -566.7, -598.4, -626.6, -626.6, -662.5, -704.6, -726.9, -726.9, -726.9, -726.9, -726.9, -772.5, -812.4, -812.4, -827.3, -827.3, -777.4, -716.9, -682.6, 831.2, 964.7, 964.7, 981.5, 963.2, 920.5, 874.5, 833.7, 846.2, 891.3, 992.8, 1015.2, 1132.4, 1119.4, 1119.4, 1158.8, 1172.1, 1332.5, 1406.1, 1324.4, 1311.7, 1358.7, 1476.9, 1562.3, 1683.5, 1701.5, 1798.4, 1822.2, 1858.3, 1952.9, 1945.3, 2059.0, 2146.0, 2192.6, 2258.1, 2336.3, 2229.1, 2274.5, 2431.5, 2626.0, 2674.7, 2756.5, 2818.6, 2848.0, 2930.5, 3065.6, 3137.8, 3122.8, 3158.1, 3205.7, 3228.5, 3207.0, 3327.6, 3369.0, 3485.3, 3479.3, 3469.4, 3525.8, 3571.9, 3656.0, 3656.0, 3687.2, 3811.8, 3930.2, 4065.4, 4074.6, 4114.8, 3969.9, 4039.4, 4174.2, 4329.6, 4472.0, 4517.9, 4597.0, 4702.4, 4730.5, 4766.3, 4874.1, 5066.9, 5185.1, 5321.3, 5345.7, 5349.6, 5461.3, 5543.6, 5563.3, 5641.8, 5733.7, 5878.9, 5966.3, 6072.4, 6088.6, 6239.6, 6371.6, 6529.0, 6585.9, 6669.1, 6627.9, 6772.0, 6897.5, 7040.7, 7147.8, 7084.6, 7089.7, 7220.1, 7394.8, 7365.1, 7531.3, 7668.2, 7401.8, 7441.6, 7653.7, 7762.8, 7762.8], &quot;B0 naive&quot;], [&quot;价格模型&quot;, [4.8, -10.8, -17.2, -45.7, -78.7, -126.8, -126.8, -164.1, -164.1, -186.0, -186.0, -227.9, -227.9, -227.9, -227.9, -227.9, -227.9, -233.4, -241.3, -241.3, -241.3, -270.7, -270.7, -270.7, -270.7, -270.7, -270.7, -270.7, -270.7, -261.7, -263.8, -263.8, -263.8, -263.8, -263.8, -263.8, -263.8, -263.8, -263.8, -263.8, -321.9, -321.9, -321.9, -347.0, -347.0, -372.3, -398.6, -404.3, -424.9, -474.0, -488.6, -437.3, -375.0, -363.6, -357.8, -364.1, -346.8, -318.7, -348.7, -305.6, -356.9, -392.0, -392.0, -346.1, -238.0, -245.3, -129.1, -92.1, -86.8, -42.9, 32.8, 454.0, 488.2, 408.3, 418.6, 487.2, 678.2, 763.9, 863.1, 873.4, 902.8, 972.0, 1045.5, 1098.8, 1104.7, 1158.4, 1151.1, 1222.4, 1293.1, 1312.4, 1258.7, 1341.0, 1475.6, 1620.8, 1758.3, 1854.0, 1883.8, 1996.7, 2019.9, 2125.1, 2199.5, 2196.4, 2235.1, 2318.1, 2303.0, 2369.4, 2462.5, 2520.4, 2562.3, 2567.9, 2671.1, 2750.8, 2807.4, 2872.5, 2854.9, 2838.1, 2950.3, 3070.3, 3176.3, 3178.3, 3256.2, 3428.7, 3536.0, 3673.4, 3835.5, 3977.9, 4080.8, 4137.3, 4266.1, 4132.0, 4176.4, 4244.9, 4436.8, 4583.9, 4734.1, 4866.8, 5014.2, 5138.1, 5194.4, 5243.5, 5321.8, 5390.7, 5540.5, 5619.2, 5742.6, 5863.2, 6014.7, 6148.3, 6322.5, 6461.2, 6544.4, 6547.6, 6678.9, 6819.3, 6930.9, 7014.3, 6963.6, 6928.7, 7032.5, 7208.3, 7181.4, 7316.9, 7514.6, 7664.7, 7719.1, 7932.5, 8044.8, 8044.8], &quot;B1 自回归&quot;], [&quot;价格 + AEMO&quot;, [-7.4, 12.2, 28.5, 5.6, -13.6, -51.1, -90.6, -127.0, -180.0, -180.0, -190.5, -190.5, -190.5, -219.5, -219.5, -219.5, -248.9, -245.5, -256.1, -278.5, -318.6, -356.8, -380.2, -413.0, -426.5, -426.5, -426.5, -462.6, -462.6, -496.8, -499.8, -499.8, -491.1, -523.9, -523.9, -523.9, -523.9, -523.9, -523.9, -586.6, -632.6, -632.6, -632.6, -639.0, -635.8, -657.2, -616.9, -622.5, -643.2, -664.1, -629.1, -588.9, -517.9, -464.6, -440.7, -295.6, -264.4, -227.7, -227.1, -218.6, -270.0, -303.8, -294.8, -274.4, -198.5, -201.3, -85.4, -39.2, 16.5, 58.4, 121.1, 226.8, 391.4, 336.1, 385.6, 449.6, 640.7, 736.4, 819.3, 801.0, 903.1, 972.7, 1054.1, 1138.5, 1142.1, 1100.5, 1174.7, 1252.2, 1309.1, 1345.6, 1291.9, 1370.7, 1505.9, 1751.3, 1739.1, 1856.4, 1876.6, 1980.1, 1957.4, 2010.3, 2069.4, 2137.6, 2153.4, 2272.9, 2292.2, 2312.3, 2434.1, 2509.8, 2532.3, 2537.9, 2641.1, 2739.6, 2739.5, 2833.2, 2837.9, 2841.4, 2952.8, 3076.8, 3182.8, 3172.3, 3270.4, 3344.8, 3452.1, 3589.6, 3751.7, 3826.5, 3870.2, 3919.5, 3987.1, 4031.8, 4068.1, 4137.2, 4329.1, 4476.3, 4608.3, 4746.5, 4893.9, 5017.9, 5074.1, 5135.3, 5213.7, 5282.6, 5380.9, 5472.5, 5595.8, 5716.5, 5798.4, 5942.4, 6117.9, 6283.1, 6366.3, 6360.8, 6492.5, 6623.1, 6734.6, 6819.3, 6788.8, 6819.8, 6947.1, 7134.4, 7105.1, 7235.1, 7427.2, 7577.3, 7631.8, 7843.6, 7956.4, 7956.4], &quot;B2 +官方&quot;], [&quot;价格 + AEMO + 天气&quot;, [-7.4, -9.7, 20.4, 1.6, -15.6, -55.0, -94.5, -130.8, -183.9, -183.9, -202.4, -202.4, -216.8, -251.8, -251.8, -251.8, -287.5, -278.5, -312.8, -343.3, -361.9, -394.4, -423.5, -453.5, -467.0, -487.8, -487.8, -517.3, -517.3, -554.2, -557.2, -557.2, -569.5, -602.1, -602.1, -610.4, -631.5, -631.5, -631.5, -713.1, -773.0, -773.0, -803.0, -816.3, -813.1, -839.4, -794.6, -802.9, -830.9, -861.5, -798.7, -763.3, -674.8, -621.5, -609.3, -489.9, -458.7, -486.9, -495.6, -478.2, -507.7, -541.5, -531.5, -531.6, -423.6, -426.3, -310.5, -258.9, -242.0, -200.0, -175.5, -69.8, 94.8, 74.3, 107.1, 171.0, 362.1, 457.9, 557.0, 536.2, 599.3, 610.4, 646.4, 730.8, 731.5, 690.0, 764.2, 832.3, 897.9, 923.3, 869.6, 961.4, 1129.2, 1395.1, 1382.8, 1504.7, 1496.9, 1600.4, 1577.7, 1630.5, 1702.3, 1799.4, 1817.0, 1936.5, 1900.3, 1919.7, 2041.5, 2117.2, 2155.4, 2162.9, 2239.6, 2307.6, 2297.0, 2396.7, 2379.2, 2382.7, 2494.1, 2618.1, 2750.4, 2767.2, 2865.4, 2939.7, 3053.0, 3185.2, 3347.3, 3333.0, 3357.2, 3406.6, 3558.7, 3602.2, 3638.6, 3719.2, 3911.0, 3841.6, 3984.2, 4128.5, 4273.9, 4397.8, 4454.1, 4510.6, 4589.9, 4709.4, 4807.8, 4886.7, 5010.0, 5130.7, 5281.4, 5418.5, 5596.6, 5765.0, 5816.1, 5829.6, 5960.9, 6093.5, 6194.3, 6286.4, 6255.8, 6286.9, 6414.2, 6593.5, 6564.1, 6694.2, 6884.8, 7034.9, 7089.4, 7260.9, 7373.8, 7373.8], &quot;B3 +天气&quot;]], &quot;L&quot;: 52, &quot;pw&quot;: 432}'
+         aria-label="TAS1 累计收益"><line class="grid" x1="52" x2="484" y1="222.0" y2="222.0"/><text class="tick" x="46" y="226.0" text-anchor="end">−$2.5K</text><line class="grid" x1="52" x2="484" y1="172.7" y2="172.7"/><text class="tick" x="46" y="176.7" text-anchor="end">$0</text><line class="grid" x1="52" x2="484" y1="123.4" y2="123.4"/><text class="tick" x="46" y="127.4" text-anchor="end">$2.5K</text><line class="grid" x1="52" x2="484" y1="74.1" y2="74.1"/><text class="tick" x="46" y="78.1" text-anchor="end">$5K</text><line class="grid" x1="52" x2="484" y1="24.7" y2="24.7"/><text class="tick" x="46" y="28.7" text-anchor="end">$7.5K</text><line class="zero" x1="52" x2="484" y1="172.7" y2="172.7"/><text class="tick" x="52.0" y="242" text-anchor="start">26-04-28</text><text class="tick" x="269.3" y="242" text-anchor="middle">26-07-21</text><text class="tick" x="484.0" y="242" text-anchor="end">26-10-12</text><polyline class="ln base" points="52.0,172.7 54.6,173.4 57.2,173.4 59.8,173.8 62.3,174.7 64.9,175.8 67.5,175.8 70.1,176.6 72.7,176.8 75.3,177.0 77.9,177.0 80.5,177.0 83.0,177.9 85.6,178.8 88.2,178.8 90.8,179.4 93.4,179.4 96.0,179.4 98.6,179.4 101.1,179.4 103.7,179.4 106.3,179.4 108.9,179.4 111.5,180.0 114.1,180.2 116.7,180.7 119.3,181.4 121.8,182.0 124.4,182.9 127.0,182.9 129.6,182.7 132.2,183.3 134.8,183.5 137.4,183.5 140.0,183.5 142.5,183.9 145.1,184.5 147.7,185.0 150.3,185.0 152.9,185.8 155.5,186.6 158.1,187.0 160.6,187.0 163.2,187.0 165.8,187.0 168.4,187.0 171.0,187.9 173.6,188.7 176.2,188.7 178.8,189.0 181.3,189.0 183.9,188.0 186.5,186.8 189.1,186.2 191.7,156.3 194.3,153.7 196.9,153.7 199.4,153.3 202.0,153.7 204.6,154.5 207.2,155.4 209.8,156.2 212.4,156.0 215.0,155.1 217.6,153.1 220.1,152.7 222.7,150.3 225.3,150.6 227.9,150.6 230.5,149.8 233.1,149.6 235.7,146.4 238.3,145.0 240.8,146.6 243.4,146.8 246.0,145.9 248.6,143.6 251.2,141.9 253.8,139.5 256.4,139.1 258.9,137.2 261.5,136.7 264.1,136.0 266.7,134.2 269.3,134.3 271.9,132.1 274.5,130.4 277.1,129.4 279.6,128.1 282.2,126.6 284.8,128.7 287.4,127.8 290.0,124.7 292.6,120.9 295.2,119.9 297.7,118.3 300.3,117.1 302.9,116.5 305.5,114.9 308.1,112.2 310.7,110.8 313.3,111.1 315.9,110.4 318.4,109.5 321.0,109.0 323.6,109.4 326.2,107.0 328.8,106.2 331.4,103.9 334.0,104.1 336.6,104.3 339.1,103.1 341.7,102.2 344.3,100.6 346.9,100.6 349.5,100.0 352.1,97.5 354.7,95.2 357.2,92.5 359.8,92.3 362.4,91.5 365.0,94.4 367.6,93.0 370.2,90.3 372.8,87.3 375.4,84.5 377.9,83.6 380.5,82.0 383.1,79.9 385.7,79.4 388.3,78.7 390.9,76.5 393.5,72.7 396.0,70.4 398.6,67.7 401.2,67.2 403.8,67.2 406.4,65.0 409.0,63.3 411.6,62.9 414.2,61.4 416.7,59.6 419.3,56.7 421.9,55.0 424.5,52.9 427.1,52.6 429.7,49.6 432.3,47.0 434.9,43.9 437.4,42.8 440.0,41.1 442.6,41.9 445.2,39.1 447.8,36.6 450.4,33.8 453.0,31.7 455.5,32.9 458.1,32.8 460.7,30.3 463.3,26.8 465.9,27.4 468.5,24.1 471.1,21.4 473.7,26.7 476.2,25.9 478.8,21.7 481.4,19.6 484.0,19.6"/><polyline class="ln s1" points="52.0,172.6 54.6,172.9 57.2,173.0 59.8,173.6 62.3,174.2 64.9,175.2 67.5,175.2 70.1,175.9 72.7,175.9 75.3,176.4 77.9,176.4 80.5,177.2 83.0,177.2 85.6,177.2 88.2,177.2 90.8,177.2 93.4,177.2 96.0,177.3 98.6,177.4 101.1,177.4 103.7,177.4 106.3,178.0 108.9,178.0 111.5,178.0 114.1,178.0 116.7,178.0 119.3,178.0 121.8,178.0 124.4,178.0 127.0,177.8 129.6,177.9 132.2,177.9 134.8,177.9 137.4,177.9 140.0,177.9 142.5,177.9 145.1,177.9 147.7,177.9 150.3,177.9 152.9,177.9 155.5,179.0 158.1,179.0 160.6,179.0 163.2,179.5 165.8,179.5 168.4,180.0 171.0,180.5 173.6,180.7 176.2,181.1 178.8,182.0 181.3,182.3 183.9,181.3 186.5,180.1 189.1,179.9 191.7,179.7 194.3,179.9 196.9,179.5 199.4,179.0 202.0,179.6 204.6,178.7 207.2,179.7 209.8,180.4 212.4,180.4 215.0,179.5 217.6,177.4 220.1,177.5 222.7,175.2 225.3,174.5 227.9,174.4 230.5,173.5 233.1,172.0 235.7,163.7 238.3,163.1 240.8,164.6 243.4,164.4 246.0,163.1 248.6,159.3 251.2,157.6 253.8,155.7 256.4,155.5 258.9,154.9 261.5,153.5 264.1,152.1 266.7,151.0 269.3,150.9 271.9,149.8 274.5,150.0 277.1,148.6 279.6,147.2 282.2,146.8 284.8,147.9 287.4,146.2 290.0,143.6 292.6,140.7 295.2,138.0 297.7,136.1 300.3,135.5 302.9,133.3 305.5,132.8 308.1,130.8 310.7,129.3 313.3,129.4 315.9,128.6 318.4,127.0 321.0,127.3 323.6,125.9 326.2,124.1 328.8,123.0 331.4,122.1 334.0,122.0 336.6,120.0 339.1,118.4 341.7,117.3 344.3,116.0 346.9,116.4 349.5,116.7 352.1,114.5 354.7,112.1 357.2,110.0 359.8,110.0 362.4,108.5 365.0,105.1 367.6,102.9 370.2,100.2 372.8,97.0 375.4,94.2 377.9,92.2 380.5,91.1 383.1,88.5 385.7,91.2 388.3,90.3 390.9,89.0 393.5,85.2 396.0,82.3 398.6,79.3 401.2,76.7 403.8,73.8 406.4,71.3 409.0,70.2 411.6,69.3 414.2,67.7 416.7,66.4 419.3,63.4 421.9,61.8 424.5,59.4 427.1,57.0 429.7,54.0 432.3,51.4 434.9,48.0 437.4,45.2 440.0,43.6 442.6,43.5 445.2,40.9 447.8,38.2 450.4,36.0 453.0,34.3 455.5,35.3 458.1,36.0 460.7,34.0 463.3,30.5 465.9,31.0 468.5,28.4 471.1,24.5 473.7,21.5 476.2,20.4 478.8,16.2 481.4,14.0 484.0,14.0"/><polyline class="ln s2" points="52.0,172.8 54.6,172.4 57.2,172.1 59.8,172.6 62.3,173.0 64.9,173.7 67.5,174.5 70.1,175.2 72.7,176.2 75.3,176.2 77.9,176.4 80.5,176.4 83.0,176.4 85.6,177.0 88.2,177.0 90.8,177.0 93.4,177.6 96.0,177.5 98.6,177.7 101.1,178.2 103.7,179.0 106.3,179.7 108.9,180.2 111.5,180.8 114.1,181.1 116.7,181.1 119.3,181.1 121.8,181.8 124.4,181.8 127.0,182.5 129.6,182.5 132.2,182.5 134.8,182.4 137.4,183.0 140.0,183.0 142.5,183.0 145.1,183.0 147.7,183.0 150.3,183.0 152.9,184.3 155.5,185.2 158.1,185.2 160.6,185.2 163.2,185.3 165.8,185.2 168.4,185.7 171.0,184.9 173.6,185.0 176.2,185.4 178.8,185.8 181.3,185.1 183.9,184.3 186.5,182.9 189.1,181.9 191.7,181.4 194.3,178.5 196.9,177.9 199.4,177.2 202.0,177.2 204.6,177.0 207.2,178.0 209.8,178.7 212.4,178.5 215.0,178.1 217.6,176.6 220.1,176.7 222.7,174.4 225.3,173.5 227.9,172.4 230.5,171.5 233.1,170.3 235.7,168.2 238.3,165.0 240.8,166.1 243.4,165.1 246.0,163.8 248.6,160.0 251.2,158.2 253.8,156.5 256.4,156.9 258.9,154.9 261.5,153.5 264.1,151.9 266.7,150.2 269.3,150.2 271.9,151.0 274.5,149.5 277.1,148.0 279.6,146.9 282.2,146.1 284.8,147.2 287.4,145.6 290.0,143.0 292.6,138.1 295.2,138.4 297.7,136.1 300.3,135.7 302.9,133.6 305.5,134.1 308.1,133.0 310.7,131.9 313.3,130.5 315.9,130.2 318.4,127.9 321.0,127.5 323.6,127.1 326.2,124.7 328.8,123.2 331.4,122.7 334.0,122.6 336.6,120.6 339.1,118.6 341.7,118.6 344.3,116.8 346.9,116.7 349.5,116.6 352.1,114.4 354.7,112.0 357.2,109.9 359.8,110.1 362.4,108.2 365.0,106.7 367.6,104.6 370.2,101.9 372.8,98.7 375.4,97.2 377.9,96.3 380.5,95.4 383.1,94.0 385.7,93.2 388.3,92.4 390.9,91.1 393.5,87.3 396.0,84.4 398.6,81.8 401.2,79.1 403.8,76.2 406.4,73.7 409.0,72.6 411.6,71.4 414.2,69.8 416.7,68.5 419.3,66.5 421.9,64.7 424.5,62.3 427.1,59.9 429.7,58.3 432.3,55.5 434.9,52.0 437.4,48.8 440.0,47.1 442.6,47.2 445.2,44.6 447.8,42.0 450.4,39.8 453.0,38.2 455.5,38.8 458.1,38.2 460.7,35.7 463.3,32.0 465.9,32.5 468.5,30.0 471.1,26.2 473.7,23.2 476.2,22.1 478.8,18.0 481.4,15.7 484.0,15.7"/><polyline class="ln s3" points="52.0,172.8 54.6,172.9 57.2,172.3 59.8,172.7 62.3,173.0 64.9,173.8 67.5,174.6 70.1,175.3 72.7,176.3 75.3,176.3 77.9,176.7 80.5,176.7 83.0,177.0 85.6,177.7 88.2,177.7 90.8,177.7 93.4,178.4 96.0,178.2 98.6,178.9 101.1,179.5 103.7,179.8 106.3,180.5 108.9,181.0 111.5,181.6 114.1,181.9 116.7,182.3 119.3,182.3 121.8,182.9 124.4,182.9 127.0,183.6 129.6,183.7 132.2,183.7 134.8,183.9 137.4,184.6 140.0,184.6 142.5,184.7 145.1,185.1 147.7,185.1 150.3,185.1 152.9,186.8 155.5,187.9 158.1,187.9 160.6,188.5 163.2,188.8 165.8,188.7 168.4,189.2 171.0,188.4 173.6,188.5 176.2,189.1 178.8,189.7 181.3,188.4 183.9,187.7 186.5,186.0 189.1,184.9 191.7,184.7 194.3,182.4 196.9,181.7 199.4,182.3 202.0,182.5 204.6,182.1 207.2,182.7 209.8,183.4 212.4,183.2 215.0,183.2 217.6,181.0 220.1,181.1 222.7,178.8 225.3,177.8 227.9,177.5 230.5,176.6 233.1,176.1 235.7,174.1 238.3,170.8 240.8,171.2 243.4,170.6 246.0,169.3 248.6,165.5 251.2,163.7 253.8,161.7 256.4,162.1 258.9,160.9 261.5,160.6 264.1,159.9 266.7,158.3 269.3,158.3 271.9,159.1 274.5,157.6 277.1,156.3 279.6,155.0 282.2,154.5 284.8,155.5 287.4,153.7 290.0,150.4 292.6,145.2 295.2,145.4 297.7,143.0 300.3,143.2 302.9,141.1 305.5,141.6 308.1,140.5 310.7,139.1 313.3,137.2 315.9,136.8 318.4,134.5 321.0,135.2 323.6,134.8 326.2,132.4 328.8,130.9 331.4,130.2 334.0,130.0 336.6,128.5 339.1,127.2 341.7,127.4 344.3,125.4 346.9,125.8 349.5,125.7 352.1,123.5 354.7,121.0 357.2,118.4 359.8,118.1 362.4,116.2 365.0,114.7 367.6,112.5 370.2,109.9 372.8,106.7 375.4,106.9 377.9,106.5 380.5,105.5 383.1,102.5 385.7,101.6 388.3,100.9 390.9,99.3 393.5,95.5 396.0,96.9 398.6,94.1 401.2,91.3 403.8,88.4 406.4,85.9 409.0,84.8 411.6,83.7 414.2,82.1 416.7,79.8 419.3,77.9 421.9,76.3 424.5,73.9 427.1,71.5 429.7,68.5 432.3,65.8 434.9,62.3 437.4,59.0 440.0,58.0 442.6,57.7 445.2,55.1 447.8,52.5 450.4,50.5 453.0,48.7 455.5,49.3 458.1,48.7 460.7,46.2 463.3,42.6 465.9,43.2 468.5,40.6 471.1,36.9 473.7,33.9 476.2,32.8 478.8,29.5 481.4,27.2 484.0,27.2"/><circle class="end base" cx="484.0" cy="19.6" r="4"/><line class="cross" x1="0" x2="0" y1="14" y2="222" style="display:none"/><rect class="hitarea" x="52" y="14" width="432" height="208"/></svg>
+  </div></div>
+  <details class="tv"><summary>表格视图（期末累计）</summary>
+    <table class="dt"><thead><tr><th>区</th><th class='num'>一周前同期</th><th class='num'>价格模型</th><th class='num'>价格 + AEMO</th><th class='num'>价格 + AEMO + 天气</th></tr></thead>
+    <tbody><tr><td>NSW1</td><td class='num'>$8,217</td><td class='num'>$9,474</td><td class='num'>$10,092</td><td class='num'>$10,061</td></tr><tr><td>QLD1</td><td class='num'>$16,654</td><td class='num'>$18,842</td><td class='num'>$18,718</td><td class='num'>$18,705</td></tr><tr><td>VIC1</td><td class='num'>$13,512</td><td class='num'>$12,952</td><td class='num'>$14,081</td><td class='num'>$13,349</td></tr><tr><td>SA1</td><td class='num'>$8,010</td><td class='num'>$18,729</td><td class='num'>$18,661</td><td class='num'>$12,747</td></tr><tr><td>TAS1</td><td class='num'>$7,763</td><td class='num'>$8,045</td><td class='num'>$7,956</td><td class='num'>$7,374</td></tr></tbody></table></details>
+</figure>
+
+
+<h2>另一种用法：赌 AEMO 预调度的偏差</h2>
+<p class="lead2">电池只吃<b>日内排序</b>（哪个小时最便宜、哪个最贵），而天气——尤其是风——主要移动的是
+<b>整天的价格水平</b>。所以单独量一次水平信号：每个小时，我们的预测比 AEMO 预调度高就做多 1 MW、
+低就做空 1 MW，按实际电价结算。NEM 没有日前市场，这不是一张能直接下的单；
+它衡量的是"我们对 AEMO 的修正值多少钱"，现实里对应调整对冲头寸、报价，或在期货 / 互换上表达看法。</p>
+<p class="lead2"><b>先看第一列。</b>前一天下午的预调度系统性偏高（按报价排序、不含之后的重新报价，尖峰常常不兑现），
+所以什么模型都不用、一直做空它就"赚"很多——那是预调度的口径，不是信息，第二列起才是模型的本事。
+金额按 1 MW 计，每天 24 MWh；头寸放大多少倍，数字就放大多少倍。</p>
+<div class="card"><div class="scroll"><table class="act">
+<thead><tr><th>区</th><th>天气</th><th class="num">一直做空 AEMO</th><th class="num">价格 + AEMO 模型比它多</th>
+<th class="num">再加天气每天</th><th class="num">去掉尖峰日</th></tr></thead>
+<tbody><tr>
+  <td class="rg">NSW1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="num" data-l="一直做空 AEMO"><span class="big2">+$6,196</span>
+      <span class="hint">/ 天 · 预调度偏高的口径差</span></td>
+  <td class="num" data-l="价格 + AEMO 比它多"><span class="big2">+$367</span>
+      <span class="hint">[+$295, +$447] · 命中 75%</span></td>
+  <td class="num" data-l="再加天气每天"><span class="big2">−$13.7</span>
+      <span class="hint">[−$37, +$3]</span></td>
+  <td class="num" data-l="去掉尖峰日">−$9.0
+      <span class="hint">最好/最差各 2% 的日子不算</span></td>
+</tr><tr>
+  <td class="rg">QLD1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="num" data-l="一直做空 AEMO"><span class="big2">+$2,230</span>
+      <span class="hint">/ 天 · 预调度偏高的口径差</span></td>
+  <td class="num" data-l="价格 + AEMO 比它多"><span class="big2">+$295</span>
+      <span class="hint">[+$237, +$357] · 命中 74%</span></td>
+  <td class="num" data-l="再加天气每天"><span class="big2">−$8.1</span>
+      <span class="hint">[−$22, +$3]</span></td>
+  <td class="num" data-l="去掉尖峰日">−$6.8
+      <span class="hint">最好/最差各 2% 的日子不算</span></td>
+</tr><tr>
+  <td class="rg">VIC1</td>
+  <td class="st"><span class="chip good"><span aria-hidden="true">✓</span>用</span></td>
+  <td class="num" data-l="一直做空 AEMO"><span class="big2">+$4,535</span>
+      <span class="hint">/ 天 · 预调度偏高的口径差</span></td>
+  <td class="num" data-l="价格 + AEMO 比它多"><span class="big2">+$500</span>
+      <span class="hint">[+$207, +$776] · 命中 67%</span></td>
+  <td class="num" data-l="再加天气每天"><span class="big2">+$33.6</span>
+      <span class="hint">[+$13, +$59]</span></td>
+  <td class="num" data-l="去掉尖峰日">+$29.6
+      <span class="hint">最好/最差各 2% 的日子不算</span></td>
+</tr><tr>
+  <td class="rg">SA1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="num" data-l="一直做空 AEMO"><span class="big2">+$7,026</span>
+      <span class="hint">/ 天 · 预调度偏高的口径差</span></td>
+  <td class="num" data-l="价格 + AEMO 比它多"><span class="big2">+$519</span>
+      <span class="hint">[+$184, +$879] · 命中 70%</span></td>
+  <td class="num" data-l="再加天气每天"><span class="big2">−$10.4</span>
+      <span class="hint">[−$40, +$17]</span></td>
+  <td class="num" data-l="去掉尖峰日">−$9.5
+      <span class="hint">最好/最差各 2% 的日子不算</span></td>
+</tr><tr>
+  <td class="rg">TAS1</td>
+  <td class="st"><span class="chip neutral"><span aria-hidden="true">—</span>不用</span></td>
+  <td class="num" data-l="一直做空 AEMO"><span class="big2">+$3,828</span>
+      <span class="hint">/ 天 · 预调度偏高的口径差</span></td>
+  <td class="num" data-l="价格 + AEMO 比它多"><span class="big2">+$273</span>
+      <span class="hint">[+$172, +$404] · 命中 72%</span></td>
+  <td class="num" data-l="再加天气每天"><span class="big2">+$1.1</span>
+      <span class="hint">[−$9, +$15]</span></td>
+  <td class="num" data-l="去掉尖峰日">+$1.2
+      <span class="hint">最好/最差各 2% 的日子不算</span></td>
+</tr></tbody></table></div></div>
+
+<figure class="fig" id="fig-bias">
+  <figcaption><h3>赌 AEMO 偏差时，加上天气每天多赚还是少赚？</h3><p>点 = 168 天里的日均差额（1 MW，相对不用天气的价格 + AEMO 模型），横线 = 95% 区间。空心点 / 箭头 = 超出刻度，看右侧数字。</p></figcaption>
+  <div class="forest" role="img" aria-label="赌 AEMO 偏差时，加上天气每天多赚还是少赚？">
+    <div class="fr fhead"><span class="fl"></span>
+      <span class="ftrack"><span class="fdir l">← 少赚</span><span class="fdir r">多赚 →</span></span>
+      <span class="fv"></span></div>
+    
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;NSW1&lt;/b&gt;&lt;br&gt;日均 −$13.67&lt;br&gt;95% 区间 [−$36.7, +$2.8]">
+      <span class="fl">NSW1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:13.28%;width:39.50%"></i>
+        <i class="fd" style="left:36.33%"></i></span>
+      <span class="fv"><b>−$13.67</b><small>[−$36.7, +$2.8]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;QLD1&lt;/b&gt;&lt;br&gt;日均 −$8.05&lt;br&gt;95% 区间 [−$22.4, +$3.5]">
+      <span class="fl">QLD1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:27.65%;width:25.84%"></i>
+        <i class="fd" style="left:41.95%"></i></span>
+      <span class="fv"><b>−$8.05</b><small>[−$22.4, +$3.5]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;VIC1&lt;/b&gt;&lt;br&gt;日均 +$33.61&lt;br&gt;95% 区间 [+$13.2, +$59.0]">
+      <span class="fl">VIC1</span>
+      <span class="ftrack good"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:63.20%;width:36.80%"><i class="fa r"></i></i>
+        <i class="fd" style="left:83.61%"></i></span>
+      <span class="fv"><b>+$33.61</b><small>[+$13.2, +$59.0]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;SA1&lt;/b&gt;&lt;br&gt;日均 −$10.43&lt;br&gt;95% 区间 [−$39.8, +$17.1]">
+      <span class="fl">SA1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:10.16%;width:56.90%"></i>
+        <i class="fd" style="left:39.57%"></i></span>
+      <span class="fv"><b>−$10.43</b><small>[−$39.8, +$17.1]</small></span>
+    </div>
+    <div class="fr" tabindex="0" data-tip="&lt;b&gt;TAS1&lt;/b&gt;&lt;br&gt;日均 +$1.08&lt;br&gt;95% 区间 [−$9.4, +$14.7]">
+      <span class="fl">TAS1</span>
+      <span class="ftrack neutral"><i class="fg" style="left:0.00%"></i><i class="fg" style="left:25.00%"></i><i class="fg" style="left:50.00%"></i><i class="fg" style="left:75.00%"></i><i class="fg" style="left:100.00%"></i><i class="f0" style="left:50.00%"></i>
+        <i class="fw" style="left:40.58%;width:24.09%"></i>
+        <i class="fd" style="left:51.08%"></i></span>
+      <span class="fv"><b>+$1.08</b><small>[−$9.4, +$14.7]</small></span>
+    </div>
+    <div class="fr faxis"><span class="fl"></span><span class="ftrack"><span class="ft" style="left:0.00%">−$50</span><span class="ft" style="left:25.00%">−$25</span><span class="ft" style="left:50.00%">$0</span><span class="ft" style="left:75.00%">$25</span><span class="ft" style="left:100.00%">$50</span></span><span class="fv"></span></div>
+  </div>
+  <details class="tv"><summary>表格视图</summary>
+    <table class="dt"><thead><tr><th>区</th><th class="num">日均</th><th class="num">95% 区间</th></tr></thead>
+    <tbody><tr><td>NSW1</td><td class='num'>−$13.67</td><td class='num'>[−$36.7, +$2.8]</td></tr><tr><td>QLD1</td><td class='num'>−$8.05</td><td class='num'>[−$22.4, +$3.5]</td></tr><tr><td>VIC1</td><td class='num'>+$33.61</td><td class='num'>[+$13.2, +$59.0]</td></tr><tr><td>SA1</td><td class='num'>−$10.43</td><td class='num'>[−$39.8, +$17.1]</td></tr><tr><td>TAS1</td><td class='num'>+$1.08</td><td class='num'>[−$9.4, +$14.7]</td></tr></tbody></table></details>
+</figure>
+
+<h2>怎么读这一页</h2>
+<div class="how">
+  <div><b>四个模型</b>，一个比一个多看一样东西：一周前同期 → 价格模型（最近电价）→
+    价格 + AEMO（再加官方预调度）→ 价格 + AEMO + 天气。天气的价值 = 最后一步多赚的钱。</div>
+  <div><b>电池规则</b>：每天 13:30 只用预测排好明天，先充 2 小时、后放
+    2 小时，算上 85% 往返效率和每 MWh $5 的损耗；预计不赚钱的日子不动。
+    然后按实际电价结算。</div>
+  <div><b>"排电池用"</b>选的是：收益不显著低于最好那个模型的、<b>最简单</b>的那个。
+    多看一样东西，必须用显著更多的钱来换。</div>
+  <div><b>天气"用"</b>要同时满足：样本外 ≥ 90 天、预测更准、准得不是运气、
+    而且每天多赚的钱 95% 区间整段大于 0。任何一条不过就是"不用"。</div>
+</div>
+
+<div class="next"><span>统计检验、误差解剖、哪些天气变量有用——都在第二页。</span>
+  <a href="method.html">方法与证据 →</a></div>
+
+<footer>数据：AEMO NEMWeb（电价、预调度）、Open-Meteo（ECMWF 预报、ERA5）。
+  所有特征都只用决策时刻之前已公布的信息。· <a href="https://github.com/Eric-S108/nem-weather-desk">https://github.com/Eric-S108/nem-weather-desk</a></footer>
+</div>
+<script>
+(function(){
+  var tip=document.createElement('div');tip.className='tip';document.body.appendChild(tip);
+  function show(html,x,y){tip.innerHTML=html;tip.style.display='block';
+    var w=tip.offsetWidth,h=tip.offsetHeight,vx=window.innerWidth,vy=window.innerHeight;
+    tip.style.left=Math.min(x+14,vx-w-8)+'px';tip.style.top=Math.min(y+14,vy-h-8)+'px';}
+  function hide(){tip.style.display='none';}
+  document.querySelectorAll('.fr[data-tip]').forEach(function(g){
+    g.addEventListener('mousemove',function(e){show(g.getAttribute('data-tip'),e.clientX,e.clientY);});
+    g.addEventListener('mouseleave',hide);
+    g.addEventListener('focus',function(){var r=g.getBoundingClientRect();show(g.getAttribute('data-tip'),r.left+20,r.top);});
+    g.addEventListener('blur',hide);
+  });
+  var cls={'B0 naive':'base','B1 自回归':'s1','B2 +官方':'s2','B3 +天气':'s3'};
+  document.querySelectorAll('svg.cum').forEach(function(svg){
+    var d=JSON.parse(svg.getAttribute('data-cum')),hit=svg.querySelector('.hitarea'),
+        cross=svg.querySelector('.cross'),n=d.dates.length;
+    hit.addEventListener('mousemove',function(e){
+      var pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+      var p=pt.matrixTransform(svg.getScreenCTM().inverse());
+      var i=Math.round((p.x-d.L)/d.pw*(n-1));i=Math.max(0,Math.min(n-1,i));
+      var x=d.L+i/(n-1)*d.pw;cross.setAttribute('x1',x);cross.setAttribute('x2',x);cross.style.display='';
+      var h='<b>'+d.dates[i]+'</b> 累计';
+      d.series.forEach(function(s){var v=s[1][i];
+        h+='<br><span class="k" style="background:var(--'+cls[s[2]]+')"></span>'+s[0]+'：'+
+           (v<0?'−$':'$')+Math.abs(Math.round(v)).toLocaleString();});
+      show(h,e.clientX,e.clientY);});
+    hit.addEventListener('mouseleave',function(){cross.style.display='none';hide();});
+  });
+})();
+</script>
 </body>
 </html>

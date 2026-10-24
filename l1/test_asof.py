@@ -1298,3 +1298,114 @@ def test_desk_labels_significant_loss_correctly():
     import desk
     _, _, why = desk.verdict(_region_ok(168, gain_ci=(-8.9, -0.4)))
     assert "显著亏钱" in why and "跨 0" not in why, why
+
+
+def test_recommended_model_is_simplest_not_significantly_worse():
+    """交易台推荐的排程模型：不显著差于最好那个的、最简单的那个。
+    多一层特征要用显著更高的收益来换，均值高一点点不算。"""
+    import ladder as LD
+    rng = np.random.default_rng(8)
+    days = 120
+    t = pd.to_datetime([pd.Timestamp("2025-01-01", tz="UTC") + pd.Timedelta(days=d, hours=h)
+                        for d in range(days) for h in range(24)])
+    hod = np.array([(x + pd.Timedelta(hours=10)).hour for x in t])
+    shape = 40 * np.sin((hod - 8) / 24 * 2 * np.pi)
+    y = 90 + shape + rng.normal(scale=6, size=len(t))
+    flat = np.full(len(t), 90.0) + rng.normal(scale=1, size=len(t))   # 一周前同期：几乎没形状
+    good = 90 + shape + rng.normal(scale=4, size=len(t))              # 价格模型：形状对
+    tiny = good + rng.normal(scale=0.3, size=len(t))                  # 再加两层：几乎一样
+    res = {"status": "ok", "_y": y, "_t": t.to_numpy(),
+           "_pred": {"B0 naive": flat, "B1 自回归": good, "B2 +官方": tiny, "B3 +天气": tiny + 0.01}}
+    ec = LD.economics(res)
+    assert ec["recommended"] == "B1 自回归", ec["recommended"]
+    assert len(ec["daily"]["dates"]) == ec["days"] == len(ec["daily"]["B1 自回归"])
+
+
+def test_trader_page_two_pages_plain_words(tmp_path):
+    """首页给交易员：完整文档、导航到第二页、不出现 rMAE / GW 术语、不带本机路径；
+    "亏钱"状态要带图标和文字；老格式（没有逐日序列）也不能渲染崩。
+    desk.main 一次写出 index.html（交易台）和 method.html（方法与证据）。"""
+    import json as _json
+    import desk
+    import trader
+    loss = _region_ok(168, gain_ci=(-8.9, -0.4))
+    loss["economics"]["rows"][0]["gain"] = -4.4
+    good = _region_ok(168)
+    good["economics"]["recommended"] = "B3 +天气"
+    good["economics"]["daily"] = {"dates": ["2026-01-01", "2026-01-02", "2026-01-03"],
+                                  "perfect": [200, 210, 190], "B0 naive": [50, 60, 40],
+                                  "B1 自回归": [90, 95, 80], "B2 +官方": [100, 99, 90],
+                                  "B3 +天气": [110, 101, 95]}
+    data = {"generated_at": "2026-10-24T00:00:00+00:00", "hours": "all", "decide_at": "13:30",
+            "is_fixture": False, "train_days": 180, "step_days": 7, "embargo_days": 3,
+            "data_dir": "/Users/someone/secret/data",
+            "battery": {"mw": 1.0, "hours": 2.0, "eta": 0.85, "cost": 5.0},
+            "regions": {"VIC1": loss, "SA1": good, "TAS1": _region_ok(40),
+                        "QLD1": {"status": "error", "error": "boom"}}}
+    page = trader.render_trader(data)
+    assert page.lstrip().lower().startswith("<!doctype html>")
+    assert 'href="method.html"' in page and "/Users/" not in page
+    body = page.split("<body>", 1)[1]
+    assert "rMAE" not in body and "GW p" not in body
+    assert "✕" in body and "亏钱" in body and "样本不足" in body
+    assert "少赚" in trader.plain_reason(loss)
+    src = tmp_path / "ladder.json"
+    src.write_text(_json.dumps(data, ensure_ascii=False))
+    out = tmp_path / "docs" / "index.html"
+    out.parent.mkdir()
+    assert desk.main(["--in", str(src), "--out", str(out)]) == 0
+    m = (tmp_path / "docs" / "method.html").read_text()
+    assert 'href="index.html"' in m and "Giacomini" in m
+    assert "交易台" in out.read_text()
+
+
+def _toy_frame(days=150, wind_matters=True, seed=3):
+    rng = np.random.default_rng(seed)
+    t = pd.date_range("2025-01-01", periods=days * 24, freq="h", tz="UTC")
+    n = len(t)
+    d = pd.DataFrame({"t": t, "hod": t.hour})
+    for c in ["p_last", "p_d1", "p_d2", "p_w1", "p_mean24", "aemo"]:
+        d[c] = 80 + rng.normal(scale=10, size=n)
+    for c in ["ghi", "wind", "temp"]:
+        d[c] = rng.uniform(0, 1, size=n)
+    d["rrp"] = (60 + 0.5 * d["p_last"] + (60 * d["wind"] if wind_matters else 0)
+                + rng.normal(scale=3, size=n))
+    return d
+
+
+def test_nested_selection_picks_from_training_window_only():
+    """嵌套选特征：只看训练窗（前段拟合、末段验证）。
+    风速真有用时挑出风速、不带上噪声变量；天气全是噪声时一个都不挑。"""
+    import ladder as LD
+    base = LD.AR_COLS + LD.OFF_COLS
+    got = LD.select_features(_toy_frame(wind_matters=True), base, LD._fit_predict)
+    assert got == ["wind"], got
+    got = LD.select_features(_toy_frame(wind_matters=False, seed=4), base, LD._fit_predict)
+    assert got == [], got
+
+
+def test_bias_trade_direction_and_settlement():
+    """赌 AEMO 偏差：预测高于预调度做多、低于做空，按 (实际 − 预调度) 结算。
+    完全知道实际价的模型每小时都赚 |实际 − 预调度|，命中率 100%；
+    方向全反的模型等额亏损。"""
+    import ladder as LD
+    rng = np.random.default_rng(5)
+    days = 60
+    t = pd.date_range("2025-03-01", periods=days * 24, freq="h", tz="UTC")
+    a = 90 + rng.normal(scale=20, size=len(t))
+    y = a + rng.normal(scale=15, size=len(t))
+    res = {"status": "ok", "_y": y, "_t": t.to_numpy(), "_aemo": a,
+           "_pred": {"B1 自回归": 2 * a - y, "B2 +官方": a + 0.0, "B3 +天气": y.copy()}}
+    bt = LD.bias_trade(res)
+    rows = {r["tier"]: r for r in bt["rows"]}
+    assert bt["status"] == "ok" and bt["ref"] == "B2 +官方"
+    perfect = np.abs(y - a).sum() / bt["days"]          # 按 NEM 交易日分组
+    assert abs(rows["B3 +天气"]["daily"] - perfect) < 0.05
+    assert rows["B3 +天气"]["hit"] == 1.0
+    assert abs(rows["B1 自回归"]["daily"] + perfect) < 0.05
+    assert rows["B2 +官方"]["daily"] == 0.0          # 和预调度一样 = 不下注
+    # 基线"一直做空预调度"：结算 = 预调度 − 实际；模型的价值要和它比
+    assert abs(rows["做空 AEMO"]["daily"] - (a - y).sum() / bt["days"]) < 0.05
+    assert "vs_short" in rows["B3 +天气"] and "vs_short" not in rows["做空 AEMO"]
+    assert rows["B3 +天气"]["gain_ci"][0] > 0
+    assert LD.bias_trade({"status": "ok", "_aemo": None, "_pred": {}})["status"] == "unavailable"

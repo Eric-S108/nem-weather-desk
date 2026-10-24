@@ -86,7 +86,7 @@ def verdict(r: dict) -> tuple[str, str, str]:
     tail = "" if r.get("has_official") else "但**没有扣掉 AEMO 预调度**，见下方警示。"
     return "yes", "可用", (
         f"在 {b3['vs_prev']} 之上 rMAE 改善 {b3['gain_rmae']:.4f}，GW p={p:.4f}，"
-        f"套利日收益多 ${erow['gain']:.2f}/MWh。{tail}")
+        f"电池日收益多 ${erow['gain']:.2f}/天。{tail}")
 
 
 def _n(v, fmt="{:.3f}", dash="—"):
@@ -97,7 +97,8 @@ def card(region: str, r: dict) -> str:
     lvl, tag, why = verdict(r)
     ec = r.get("economics") or {}
     erow = next((x for x in ec.get("rows", []) if x["tier"] == "B3 +天气"), None)
-    big = f"${erow['gain']:+.2f}" if erow and "gain" in erow else "—"
+    g_ = erow.get("gain") if erow else None
+    big = "—" if g_ is None else ("+" if g_ > 0 else "−" if g_ < 0 else "") + f"${abs(g_):.2f}"
     sub = ("每天 · 1 MW / 2 MWh 电池" if erow and "gain" in erow else "没有可用估计")
     b3 = next((x for x in (r.get("tiers") or []) if x["tier"] == "B3 +天气"), None)
     rmae = _n(b3.get("gain_rmae") if b3 else None, "{:+.4f}")
@@ -217,6 +218,63 @@ def var_table(r: dict) -> str:
       <tbody>{''.join(rows)}</tbody></table></div>"""
 
 
+def nested_table(r: dict) -> str:
+    nd = r.get("nested")
+    if not nd:
+        return ""
+    en = (r.get("economics") or {}).get("nested") or {}
+    fq = "".join(f"<tr><td>{html.escape(k)}</td><td class='num'>{v:.0%}</td></tr>"
+                 for k, v in nd["freq"].items())
+    cb = "、".join(f"{html.escape(k)} ×{v}" for k, v in list(nd["combos"].items())[:4])
+    gi = en.get("gain_ci")
+    money = ("—" if not gi else
+             f"{en['gain']:+.2f} $/天，95% 区间 [{gi[0]:.1f}, {gi[1]:.1f}]")
+    return f"""<p class="cap"><b>上面那张表是在测试集上比出来的，只能当诊断，不能拿来决定留哪个变量</b>——
+      那等于偷看了答案。真正的取舍在这里：每个滚动窗口<b>只用训练段</b>挑一次——
+      训练窗前段拟合、最后 {nd['val_days']} 天验证，枚举天气变量的全部组合（含"不用"），
+      验证误差在最好的 {nd['tol']:.1%} 以内时取变量更少的那个。挑完用整段训练窗重拟合，再预测测试段。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>相对 {html.escape(nd['vs'])}</th>
+      <th>rMAE</th><th>增量</th><th>GW p</th><th>电池日收益增量</th></tr></thead>
+      <tbody><tr class="hl"><td class="tier">{html.escape(nd['name'])}</td>
+      <td class="num">{nd['rmae']:.3f}</td><td class="num">{nd['gain_rmae']:+.4f}</td>
+      <td class="num">{_n(nd.get('gw_p'), '{:.3f}')}</td><td class="num">{money}</td></tr></tbody></table></div>
+      <p class="cap">{nd['windows']} 个窗口里各变量被选中的比例：</p>
+      <div class="tblwrap"><table class="lad var"><tbody>{fq}</tbody></table></div>
+      <p class="cap">最常见的组合：{cb}。</p>"""
+
+
+def bias_table(r: dict) -> str:
+    bt = r.get("bias") or {}
+    if bt.get("status") != "ok":
+        return '<p class="cap">没有 AEMO 预调度，做不了这一项。</p>'
+    rows = []
+    for x in bt["rows"]:
+        g = ("—" if "gain" not in x else
+             f"{x['gain']:+.1f} [{x['gain_ci'][0]:.1f}, {x['gain_ci'][1]:.1f}]")
+        tr = "—" if "gain_trim" not in x else f"{x['gain_trim']:+.1f}"
+        vs = ("—" if "vs_short" not in x else
+              f"{x['vs_short']:+.0f} [{x['vs_short_ci'][0]:.0f}, {x['vs_short_ci'][1]:.0f}]")
+        hi = ' class="hl"' if x["tier"] == "B3 +天气" else ""
+        rows.append(f"""<tr{hi}><td class="tier">{html.escape(x['tier'])}</td>
+          <td class="num">{x['daily']:.1f}</td>
+          <td class="num">[{x['ci'][0]:.0f}, {x['ci'][1]:.0f}]</td>
+          <td class="num">{x['median_day']:.1f}</td>
+          <td class="num">{'—' if x['hit'] is None else format(x['hit'], '.1%')}</td>
+          <td class="num">{vs}</td><td class="num">{g}</td><td class="num">{tr}</td></tr>""")
+    return f"""<p class="cap">电池只吃<b>日内排序</b>，而天气（尤其风）主要移动的是<b>整天的水平</b>。
+      这一项量水平信号：每个小时，预测高于 AEMO 预调度就做多 1 MW、低于就做空，
+      按 (实际 − 预调度) 结算。它回答"我们对 AEMO 的修正，方向对不对、值多少钱"。
+      NEM 没有日前市场，预调度不是成交价，所以这是<b>信号价值</b>，
+      现实里对应调整对冲头寸 / 报价或在期货、互换上表达看法。
+      电价重尾，均值会被几个尖峰日支配，所以另给日中位数、方向命中率（|实际 − 预调度| &lt; $1 的小时不计），
+      以及去掉最好、最差各 2% 日子后的增量。
+      第一行"做空 AEMO"是基线：不看任何模型、每小时都做空预调度。前一天的预调度系统性偏高，
+      光这一条就"赚"很多，那是口径偏差，不是信息；模型要和它比。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>层</th><th>日均 $</th><th>95% 区间</th>
+      <th>日中位 $</th><th>命中率</th><th>相对一直做空</th><th>相对 {html.escape(bt['ref'])}</th><th>去尖峰后</th></tr></thead>
+      <tbody>{''.join(rows)}</tbody></table></div>"""
+
+
 def diag_table(r: dict) -> str:
     dg = r.get("diag") or {}
     if dg.get("status") != "ok":
@@ -280,14 +338,14 @@ def section(region: str, r: dict) -> str:
       <h4>一、基准阶梯</h4>{ladder_table(r)}{RMDAE_NOTE}
       <h4>二、经济评估</h4>{econ_table(r)}
       <h4>三、误差解剖</h4>{diag_table(r)}
-      <h4>四、特征取舍</h4>{var_table(r)}
+      <h4>四、特征取舍</h4>{var_table(r)}{nested_table(r)}
+      <h4>五、赌 AEMO 预调度的偏差</h4>{bias_table(r)}
     </section>"""
 
 
 CSS = """
 :root{--bg:#f7f6f3;--fg:#16181c;--dim:#6b7280;--line:#e2e0da;--card:#fff;
  --ac:#0f5d70;--ok:#0f7a4f;--no:#9a3412;--none:#6b7280;--hl:#eef6f8}
-:root:not([data-theme=light]) @media(prefers-color-scheme:dark){}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){
  --bg:#0e1113;--fg:#e8e6e1;--dim:#9aa1a9;--line:#242a2e;--card:#161a1d;
  --ac:#4fb3c9;--ok:#3fbf87;--no:#e08a5a;--none:#8b939b;--hl:#12262c}}
@@ -297,7 +355,12 @@ CSS = """
 body{margin:0;background:var(--bg);color:var(--fg);
  font:15px/1.6 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
  -webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 24px 80px}
+.pnav{display:flex;gap:18px;align-items:center;font-size:14px;margin-bottom:22px;
+ padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pnav a{color:var(--ac);text-decoration:none}.pnav a:hover{text-decoration:underline}
+.pnav .on{color:var(--fg);font-weight:600}
+@media(max-width:640px){.wrap{padding:16px 16px 60px}}
 header{border-bottom:2px solid var(--fg);padding-bottom:18px;margin-bottom:28px}
 h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em;font-weight:700}
 .tagline{color:var(--dim);margin:0;font-size:14px}
@@ -474,7 +537,7 @@ def render(data: dict) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NEM 天气交易台</title>
+<title>NEM 天气交易台 · 方法与证据</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Serif+4:ital@1&display=swap" rel="stylesheet">
@@ -482,8 +545,9 @@ def render(data: dict) -> str:
 </head>
 <body>
 <div class="wrap">
+<nav class="pnav"><a href="index.html">← 交易台</a><span class="on">方法与证据</span><a href="{REPO_URL}">代码</a></nav>
 <header>
-  <h1>NEM 天气交易台</h1>
+  <h1>方法与证据</h1>
   <p class="tagline">天气预报在价格自回归与 AEMO 官方预调度之上，还剩多少可交易的增量</p>
   {fix}
   <div class="stamp">{stamp}</div>
@@ -506,15 +570,22 @@ the economic value of reducing prediction errors.”<br>
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="把 ladder.json 渲染成交易台")
     ap.add_argument("--in", dest="src", default="ladder.json")
-    ap.add_argument("--out", default="交易台.html")
+    ap.add_argument("--out", default="index.html",
+                    help="第一页（交易台）；第二页 method.html 写在同一目录")
     a = ap.parse_args(argv)
     with open(a.src) as f:
         data = json.load(f)
+    import os
+    import trader
+    method = os.path.join(os.path.dirname(os.path.abspath(a.out)), "method.html")
     with open(a.out, "w") as f:
+        f.write(trader.render_trader(data))
+    with open(method, "w") as f:
         f.write(render(data))
     regs = data.get("regions", {})
     ok = [k for k, v in regs.items() if verdict(v)[0] == "yes"]
-    print(f"→ {a.out}")
+    print(f"→ {a.out}（交易台）")
+    print(f"→ {method}（方法与证据）")
     print(f"  {len(regs)} 个区，{len(ok)} 个判为可用" + (f"：{'、'.join(ok)}" if ok else ""))
     return 0
 

@@ -55,7 +55,27 @@ bash run_desk.sh
 bash publish.sh
 ```
 
-`run_desk.sh` 跑回归测试 → 五个区的基准阶梯 → 生成 `docs/index.html`。
+`run_desk.sh` 跑回归测试 → 五个区的基准阶梯 → 生成两页：
+`docs/index.html` 给交易员（每个区用不用天气、用哪个模型排电池、一天赚多少、累计曲线），
+`docs/method.html` 放方法与统计证据（rMAE、GW 检验、误差解剖、特征取舍）。
+
+两种用法分开评估：
+
+- **排电池**（1 MW / 2 MWh，先充后放）只吃日内排序；
+- **赌 AEMO 预调度的偏差**：每小时预测高于预调度做多 1 MW、低于做空，按实际价结算。
+  吃的是整天的价格水平。基线是"一直做空预调度"——前一天的预调度系统性偏高，
+  这一条本身就"赚"很多，但那是口径差，不是信息；模型要和它比。
+
+天气变量的取舍用**嵌套选择**：每个滚动窗口只用训练段（前段拟合、最后 28 天验证）
+挑一次，测试段完全不可见。第二页那张逐变量对比表是在测试集上算的，只作诊断。
+
+单次运行有时长限制的机器上，可以一个区一个区跑再合并：
+
+```
+python l1/ladder.py --region VIC1 --hours all --out VIC1.json
+python l1/ladder.py --merge NSW1.json QLD1.json VIC1.json SA1.json TAS1.json --hours all --out docs/ladder.json
+python l1/desk.py --in docs/ladder.json --out docs/index.html
+```
 默认读 `~/aus-weather-quant/data`，可用 `WQ_DATA_DIR` 改。
 
 ### 补数据（要联网，在本机跑）
@@ -82,7 +102,8 @@ python ingest.py --backfill-truth --start 2026-08-20 --end 2026-10-17
 | 文件 | 作用 |
 |---|---|
 | `l1/ladder.py` | 核心：基准阶梯、GW 检验、储能经济评估、误差解剖、特征取舍 |
-| `l1/desk.py` | 把 `ladder.json` 渲染成交易台 |
+| `l1/desk.py` | 把 `ladder.json` 渲染成两页；第二页“方法与证据”在这里 |
+| `l1/trader.py` | 第一页“交易台”：结论、行动表、森林图、累计收益 |
 | `l1/aemo.py` | NEMWeb：电价、需求、预调度 |
 | `l1/ingest.py` `l1/openmeteo.py` | Open-Meteo：天气预报与再分析 |
 | `l1/store.py` `l1/features.py` `l1/realdata.py` | 时点存储与 as-of 读取 |
