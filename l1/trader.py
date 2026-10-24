@@ -381,6 +381,91 @@ def bias_section(ok: list[dict], days: int) -> str:
 {fig}"""
 
 
+# ------------------------------------------------------------------ 前推纸面交易
+def paper_section(pp: dict | None, rb: dict | None) -> str:
+    if not pp:
+        return ""
+    regs = pp.get("regions") or {}
+    lt = pp.get("latest")
+    focus = [k for k, v in ((rb or {}).get("regions") or {}).items()
+             if (v.get("checks") or {}).get("holm")] or ["VIC1"]
+    n_set = max((v.get("n", 0) for v in regs.values()), default=0)
+    start = pp.get("start")
+    if not start:
+        return ("<h2>前推纸面交易（实盘检验）</h2><p class=\"lead2\">还没有开始。装好定时任务后，"
+                "每天 13:05–13:29（NEM）自动给次日出信号、提交到 GitHub，第二天按实际电价结算，结果显示在这里。</p>")
+    head = (f"从 {start} 开始，每天 13:30（NEM）之前自动给次日出信号并提交到 GitHub，"
+            f"提交时间就是信号先于结果存在的证据。已结算 <b>{n_set}</b> 天。")
+    if n_set < 20:
+        head += " 样本还很少，先看方向，不看显著性；至少要攒到 60 天以上再下结论。"
+    rows = []
+    for k, v in regs.items():
+        if not v.get("n"):
+            continue
+        rows.append(f"""<tr><td class="rg">{_esc(k)}</td>
+  <td class="num" data-l="已结算">{v['n']} 天</td>
+  <td class="num" data-l="价格+AEMO 比一直做空">{_money((v.get('bias_b2') or 0) - (v.get('short') or 0), True)}</td>
+  <td class="num" data-l="加天气累计"><span class="big2">{_money(v.get('w_gain_total'), True)}</span>
+    <span class="hint">每天 {_money(v.get('w_gain_per_day'), True, 1)} · 赢 {'—' if v.get('w_gain_win_days') is None else f"{v['w_gain_win_days']:.0%}"} 的天</span></td>
+  <td class="num" data-l="电池（价格模型）">{_money(v.get('batt_b1'), True)}<span class="hint">上限 {_money(v.get('batt_perfect'))}</span></td>
+</tr>""")
+    table = "" if not rows else f"""<div class="card"><div class="scroll"><table class="act">
+<thead><tr><th>区</th><th class="num">已结算</th><th class="num">价格+AEMO 比一直做空</th>
+<th class="num">加天气累计（偏差交易）</th><th class="num">电池（价格模型）</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div></div>"""
+    strip = ""
+    if lt:
+        for k in focus:
+            x = (lt.get("regions") or {}).get(k)
+            if not x:
+                continue
+            cells_h, cells_a, cells_p, cells_d = [], [], [], []
+            for h, a, b2, b3 in zip(x["hour"], x["aemo"], x["b2"], x["b3"]):
+                up = b3 > a
+                flip = (b3 > a) != (b2 > a)
+                cells_h.append(f"<th>{h:02d}</th>")
+                cells_a.append(f"<td>{a:,.0f}</td>")
+                cells_p.append(f"<td>{b3:,.0f}</td>")
+                cells_d.append(f'<td class="dir {"up" if up else "dn"}{" flip" if flip else ""}">'
+                               f'{"多" if up else "空"}{"*" if flip else ""}</td>')
+            late = "（晚于决策时刻生成，不计成绩）" if lt.get("late") else ""
+            strip += f"""
+<div class="fig"><figcaption><h3>{_esc(k)} · {lt['target_day']} 的信号</h3>
+<p>生成于 {_esc(lt.get('generated_at_utc'))} UTC{late}。每小时：AEMO 预调度价、我们的预测（价格 + AEMO + 天气）、方向。
+带 * 的小时 = 天气把方向翻过来了（不加天气时方向相反）。挑中的天气变量：{_esc(x.get('sel'))}。</p></figcaption>
+<div class="scroll"><table class="strip"><thead><tr><th>时（NEM）</th>{''.join(cells_h)}</tr></thead>
+<tbody><tr><th>AEMO $</th>{''.join(cells_a)}</tr><tr><th>我们 $</th>{''.join(cells_p)}</tr>
+<tr><th>方向</th>{''.join(cells_d)}</tr></tbody></table></div></div>"""
+    cum = ""
+    for k in focus:
+        v = regs.get(k) or {}
+        if len(v.get("w_gain_cum") or []) >= 2:
+            ys = v["w_gain_cum"]
+            lo, hi = min(ys + [0.0]), max(ys + [0.0])
+            W, H, Lp, T = 500, 140, 52, 12
+            pw, ph = W - Lp - 16, H - T - 26
+            X = lambda i: Lp + i / (len(ys) - 1) * pw                 # noqa: E731
+            Y = lambda q: T + (1 - (q - lo) / ((hi - lo) or 1)) * ph   # noqa: E731
+            pts = " ".join(f"{X(i):.1f},{Y(q):.1f}" for i, q in enumerate(ys))
+            cum += f"""<div class="fig"><figcaption><h3>{_esc(k)} · 实盘里加天气的累计增量（偏差交易，1 MW）</h3></figcaption>
+<svg class="spark" viewBox="0 0 {W} {H}" role="img" aria-label="累计增量">
+<line class="zero" x1="{Lp}" x2="{W - 16}" y1="{Y(0):.1f}" y2="{Y(0):.1f}"/>
+<text class="tick" x="{Lp - 6}" y="{Y(0) + 4:.1f}" text-anchor="end">$0</text>
+<text class="tick" x="{Lp - 6}" y="{Y(ys[-1]) + 4:.1f}" text-anchor="end">{_compact(ys[-1])}</text>
+<polyline class="ln s3" points="{pts}"/>
+<text class="tick" x="{Lp}" y="{H - 6}">{v['w_gain_dates'][0][5:]}</text>
+<text class="tick" x="{W - 16}" y="{H - 6}" text-anchor="end">{v['w_gain_dates'][-1][5:]}</text></svg></div>"""
+    fails = pp.get("failures") or []
+    fail = ""
+    if fails:
+        f0 = fails[-1]
+        fail = f'<p class="lead2">最近一次没出成：{_esc(f0["target_day"])} {_esc(f0["region"])} —— {_esc(str(f0["status"])[:120])}</p>'
+    return f"""
+<h2>前推纸面交易（实盘检验）</h2>
+<p class="lead2">{head}</p>
+{table}{strip}{cum}{fail}"""
+
+
 # ------------------------------------------------------------------ 稳健性检查单
 CHECKS = [
     ("holm", "校正后仍显著", "5 个区一起检验，做了多重比较校正"),
@@ -503,6 +588,14 @@ table.act .model{font-weight:600}
 table.act .hint{display:block;font-size:12px;color:var(--muted);font-weight:400}
 table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
 .big2{font-size:18px;font-weight:650}
+svg.spark{max-width:620px}
+table.strip{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.strip th,table.strip td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+table.strip thead th{color:var(--muted);font-weight:600}
+table.strip tbody th{text-align:left;color:var(--ink2);font-weight:600;position:sticky;left:0;background:var(--surface)}
+table.strip td.dir{font-weight:700;text-align:center}
+table.strip td.dir.up{color:var(--ink)}table.strip td.dir.dn{color:var(--muted)}
+table.strip td.dir.flip{background:var(--chipbg-warning)}
 table.chk th.ck{white-space:normal;text-align:center;min-width:76px;line-height:1.3}
 table.chk td.ck{text-align:center}
 .tk{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;
@@ -773,6 +866,7 @@ def render_trader(data: dict) -> str:
 
 {bias_section(ok, days)}
 {robust_checks(data.get("robust"))}
+{paper_section(data.get("paper"), data.get("robust"))}
 
 <h2>怎么读这一页</h2>
 <div class="how">

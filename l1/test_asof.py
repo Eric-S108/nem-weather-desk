@@ -1441,3 +1441,70 @@ def test_robust_holm_and_month_breakdown():
     assert abs(sum(m["share"] for m in ms) - 1) < 1e-9
     assert RB.leave_one_out(dates, x) == {"month": "2026-01", "per_day": -0.5}
     assert RB.boot_p(np.r_[np.full(60, 5.0)] + np.random.default_rng(0).normal(size=60)) < 0.01
+
+
+def _paper_frame(days=260, seed=9):
+    d = _toy_frame(days=days, wind_matters=True, seed=seed)
+    d["t"] = d["t"].dt.tz_localize(None)
+    d["naive"] = d["rrp"].shift(168)
+    return d
+
+
+def test_paper_signal_never_sees_unpublished_prices():
+    """纸面交易出信号：决策时刻 τ 之后才发布的电价（包括目标日本身），
+    改成什么都不能影响信号。训练窗末端的禁运带同理。"""
+    import paper as P
+    d = _paper_frame()
+    target = (d["t"].max() + P.NEM).normalize() - pd.Timedelta(days=1)
+    s1, why = P.signal_from_frame(d, target)
+    assert why == "ok" and len(s1) == 24, why
+    tau = P.tau_for(target)
+    d2 = d.copy()
+    late = d2["t"] + P.L.PRICE_PUBLISH > tau
+    d2.loc[late, "rrp"] = 1e6
+    s2, _ = P.signal_from_frame(d2, target)
+    cols = [c for c in s1.columns if c.startswith("p_")]
+    pd.testing.assert_frame_equal(s1[cols], s2[cols])
+    # 反过来证明测试有牙：改动训练窗里的价格，信号必须变
+    d3 = d.copy()
+    early = (d3["t"] + P.NEM).dt.floor("D") < target - pd.Timedelta(days=10)
+    d3.loc[early, "rrp"] = d3.loc[early, "rrp"] * 3
+    s3, _ = P.signal_from_frame(d3, target)
+    assert not np.allclose(s1["p_b2"], s3["p_b2"])
+
+
+def test_paper_signal_refuses_incomplete_target_day():
+    import paper as P
+    d = _paper_frame()
+    target = (d["t"].max() + P.NEM).normalize() - pd.Timedelta(days=1)
+    m = (d["t"] + P.NEM).dt.floor("D") == target
+    d.loc[d.index[m][:3], "aemo"] = np.nan
+    s, why = P.signal_from_frame(d, target)
+    assert s is None and "aemo" in why
+
+
+def test_paper_settle_and_first_signal_is_final(tmp_path, monkeypatch):
+    """结算：完全知道实际价的模型，偏差交易赚满 |实际 − 预调度|，电池等于完美预知。
+    同一目标日已有正式信号时，再出一次不能覆盖（事后不能改）。"""
+    import paper as P
+    t = pd.date_range("2026-09-30 14:00", periods=24, freq="h")       # NEM 10-01 全天
+    rng = np.random.default_rng(1)
+    y = 80 + 40 * np.sin(np.arange(24) / 24 * 2 * np.pi) + rng.normal(scale=5, size=24)
+    a = y + rng.normal(scale=20, size=24)
+    sig = pd.DataFrame({"target_day": "2026-10-01", "region": "VIC1",
+                        "t_utc": t.strftime("%Y-%m-%d %H:%M"), "hour_nem": range(24),
+                        "aemo": a, "p_b0": a, "p_b1": a, "p_b2": a + 0.0, "p_b3": y, "p_b3sel": y,
+                        "status": "ok", "late": False})
+    st = P.settle(None, sig, prices={"VIC1": pd.Series(y, index=t)})
+    r = st["days"][0]
+    assert r["settled"]
+    assert abs(r["bias_b3"] - np.abs(y - a).sum()) < 0.05
+    assert r["bias_b2"] == 0.0
+    assert r["batt_b3"] == r["batt_perfect"]
+    monkeypatch.setattr(P, "PAPER_DIR", str(tmp_path))
+    monkeypatch.setattr(P, "SIGNALS", str(tmp_path / "signals.csv"))
+    P.append_signals(sig.copy())
+    s2 = sig.copy(); s2["p_b3"] = 0.0
+    P.append_signals(s2)
+    got = pd.read_csv(tmp_path / "signals.csv")
+    assert len(got) == 24 and np.allclose(got["p_b3"], y, atol=0.01)

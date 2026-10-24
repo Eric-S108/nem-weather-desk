@@ -169,7 +169,8 @@ def load_backtest(con, site_id: str, start=None, end=None, lead_day: int = 1,
                   lead_tol_h: int = 12, strict: bool = False,
                   final_only: bool = True, models=None,
                   min_lead_h: float | None = None,
-                  decide_at: str | None = None) -> Panel:
+                  decide_at: str | None = None,
+                  require_truth: bool = True) -> Panel:
     """按固定预报时效装配回测面板。
 
     lead_day=1 表示取"目标时刻前约 24h 发出"的那一版，容差 ±lead_tol_h。
@@ -301,13 +302,17 @@ def load_backtest(con, site_id: str, start=None, end=None, lead_day: int = 1,
 
     n_t, n_f = len(tw_), len(fw)
     # ② 只保留所有模型 + 真值都齐的时刻，DM / MCS 才是同一样本
-    idx = tw_.dropna(subset=need_t).index.intersection(fw.dropna(subset=need_f).index)
+    if require_truth:
+        idx = tw_.dropna(subset=need_t).index.intersection(fw.dropna(subset=need_f).index)
+    else:
+        # 实时出信号用：目标小时还没有真值，只要预报齐就保留（真值留 NaN）
+        idx = fw.dropna(subset=need_f).index
     idx = idx.sort_values()
     if len(idx) < 24 * 30:
         raise ValueError(f"{site_id}: 完整重合样本只有 {len(idx)} 小时（<30 天），不足以回测。"
                          f"真值 {n_t} / 预报 {n_f}。")
 
-    tw_, fw, lw = tw_.loc[idx], fw.loc[idx], lw.loc[idx]
+    tw_, fw, lw = tw_.reindex(idx), fw.loc[idx], lw.loc[idx]
     t_utc = idx.to_numpy()
     hod, doy, cz, cs = _time_cols(t_utc, s[3], s[4])
 

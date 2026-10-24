@@ -647,6 +647,10 @@ def main(argv=None) -> int:
     if os.path.exists(rp) and "robust" not in data:
         with open(rp) as f:
             data["robust"] = json.load(f)
+    pp = os.path.join(os.path.dirname(os.path.abspath(a.src)), "paper", "summary.json")
+    if os.path.exists(pp) and "paper" not in data:
+        with open(pp) as f:
+            data["paper"] = json.load(f)
     method = os.path.join(os.path.dirname(os.path.abspath(a.out)), "method.html")
     with open(a.out, "w") as f:
         f.write(trader.render_trader(data))

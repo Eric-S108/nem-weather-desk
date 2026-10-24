@@ -68,6 +68,14 @@ table.act .model{font-weight:600}
 table.act .hint{display:block;font-size:12px;color:var(--muted);font-weight:400}
 table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
 .big2{font-size:18px;font-weight:650}
+svg.spark{max-width:620px}
+table.strip{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.strip th,table.strip td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+table.strip thead th{color:var(--muted);font-weight:600}
+table.strip tbody th{text-align:left;color:var(--ink2);font-weight:600;position:sticky;left:0;background:var(--surface)}
+table.strip td.dir{font-weight:700;text-align:center}
+table.strip td.dir.up{color:var(--ink)}table.strip td.dir.dn{color:var(--muted)}
+table.strip td.dir.flip{background:var(--chipbg-warning)}
 table.chk th.ck{white-space:normal;text-align:center;min-width:76px;line-height:1.3}
 table.chk td.ck{text-align:center}
 .tk{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;
@@ -481,6 +489,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
     <span class="hint">0/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span><span class="hint">0/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr><tr><td class="rg">TAS1</td>
   <td class="num" data-l="加天气每天"><span class="big2">+$1.1</span>
     <span class="hint">1/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span><span class="hint">1/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr></tbody></table></div></div>
+<h2>前推纸面交易（实盘检验）</h2><p class="lead2">还没有开始。装好定时任务后，每天 13:05–13:29（NEM）自动给次日出信号、提交到 GitHub，第二天按实际电价结算，结果显示在这里。</p>
 
 <h2>怎么读这一页</h2>
 <div class="how">

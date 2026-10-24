@@ -121,8 +121,11 @@ def ar_features(s: pd.Series, t, decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame
     })
 
 
+WX_MODELS = ["ecmwf_ifs025"]     # 天气只用 ECMWF：历史回填只有它齐全，实时也只抓它，两边口径一致
+
+
 def build(con, region: str, site_id: str, hours=None,
-          decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
+          decide_at: str = DECIDE_AT_NEM, live: bool = False) -> pd.DataFrame:
     """装配阶梯用的特征表。目标落在 NEM 日 D，**每一列在 D−1 天 decide_at 都已可见**：
 
       价格滞后   决策时刻前已结算的小时（结算价要过 1h10m 才发布）
@@ -130,7 +133,12 @@ def build(con, region: str, site_id: str, hours=None,
       官方预测   known_at ≤ 决策时刻的预调度里最新的一版
       naive     t − 168h
     """
-    p = R.fill_persist_head(R.load_backtest(con, site_id, decide_at=decide_at))
+    # live=True：实时出信号用。目标小时（明天）还没有气象真值，不能要求真值齐全；
+    # 其余口径和回测完全一样——同一个决策时刻、同一套 as-of 规则、同一组特征。
+    p = R.load_backtest(con, site_id, decide_at=decide_at, models=WX_MODELS,
+                        require_truth=not live)
+    if not live:
+        p = R.fill_persist_head(p)
     q = p.preds["qra"]
     d = pd.DataFrame({"t": pd.to_datetime(p.t), "hod": p.hod,
                       "ghi_raw": q["ghi"], "wind_raw": q["wind100"],

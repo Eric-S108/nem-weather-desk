@@ -98,6 +98,28 @@ python ingest.py --backfill-truth --start 2026-08-20 --end 2026-10-17
 预调度归档每天一个大文件、只滚动保留约 13 个月；中途断了直接重跑同一条命令，
 已完成的日子会跳过。
 
+
+## 前推纸面交易
+
+回测之外唯一不能作弊的检验：每天 13:05–13:29（NEM）自动补数据、给**次日** 24 小时出信号，
+写进 `docs/paper/signals.csv` 并提交到 GitHub——提交时间就是信号先于结果存在的证据。
+同一次运行里把已有实际价的日子结算掉（`docs/paper/summary.json`），交易台第一页显示累计结果。
+
+安装一次即可（之后每 10 分钟被调用一次，窗口外直接退出）：
+
+```
+bash paper_install.sh
+```
+
+手动操作：
+
+```
+python l1/paper.py --status
+python l1/paper.py --signal --refresh --push
+```
+
+第一版信号就是正式版，同一天再出一次不会覆盖；决策时刻之后才生成的信号标为 late，不计成绩。
+
 ---
 
 ## 目录
@@ -107,6 +129,7 @@ python ingest.py --backfill-truth --start 2026-08-20 --end 2026-10-17
 | `l1/ladder.py` | 核心：基准阶梯、GW 检验、储能经济评估、误差解剖、特征取舍 |
 | `l1/desk.py` | 把 `ladder.json` 渲染成两页；第二页“方法与证据”在这里 |
 | `l1/trader.py` | 第一页“交易台”：结论、行动表、森林图、累计收益 |
+| `l1/paper.py` | 前推纸面交易：每日出信号、结算、写 summary |
 | `l1/robust.py` | 稳健性检验：按月拆分、Holm 多重比较、按天下注、换训练窗（共同样本段） |
 | `l1/aemo.py` | NEMWeb：电价、需求、预调度 |
 | `l1/ingest.py` `l1/openmeteo.py` | Open-Meteo：天气预报与再分析 |
