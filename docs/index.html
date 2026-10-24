@@ -68,6 +68,14 @@ table.act .model{font-weight:600}
 table.act .hint{display:block;font-size:12px;color:var(--muted);font-weight:400}
 table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
 .big2{font-size:18px;font-weight:650}
+table.chk th.ck{white-space:normal;text-align:center;min-width:76px;line-height:1.3}
+table.chk td.ck{text-align:center}
+.tk{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;
+ font-weight:700;font-size:13px}
+.tk.good{background:var(--chipbg-good);color:var(--good-ink)}
+.tk.critical{background:var(--chipbg-critical);color:var(--critical)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+table.chk td.ck .hint{display:block;font-size:11.5px;color:var(--muted)}
 @media (max-width:700px){
  table.act{min-width:0}table.act thead{display:none}
  table.act,table.act tbody{display:block}
@@ -78,6 +86,12 @@ table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
  table.act td.rg{grid-column:1/3;align-self:center}
  table.act td.st{grid-column:3;justify-self:end}
  table.act td.mdl,table.act td.why{grid-column:1/-1}
+ table.chk tr{grid-template-columns:1fr 1fr}
+ table.chk td.rg{grid-column:1}
+ table.chk td.num{grid-column:2;text-align:right}
+ table.chk td.ck{text-align:left;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+ table.chk td.ck::before{margin:0;flex:1 1 auto}
+ table.chk td.ck .hint{display:inline;flex-basis:100%;text-align:right}
  table.act td.why{max-width:none}
  table.act td.num{text-align:left;white-space:normal}
  table.act td[data-l]::before{content:attr(data-l);display:block;font-size:11.5px;color:var(--muted);
@@ -183,7 +197,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
     <a href="https://github.com/Eric-S108/nem-weather-desk">代码</a></nav>
 </div>
 <div class="asof">样本外 2026-04-28 → 2026-10-12（168 天）· 每天 13:30（NEM）定次日 24 小时计划 ·
-  1 MW / 2 MWh 电池 · 生成于 2026-10-24 12:17 UTC</div>
+  1 MW / 2 MWh 电池 · 生成于 2026-10-24 12:57 UTC</div>
 
 
 <section class="hero">
@@ -451,6 +465,22 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
     <table class="dt"><thead><tr><th>区</th><th class="num">日均</th><th class="num">95% 区间</th></tr></thead>
     <tbody><tr><td>NSW1</td><td class='num'>−$13.67</td><td class='num'>[−$36.7, +$2.8]</td></tr><tr><td>QLD1</td><td class='num'>−$8.05</td><td class='num'>[−$22.4, +$3.5]</td></tr><tr><td>VIC1</td><td class='num'>+$33.61</td><td class='num'>[+$13.2, +$59.0]</td></tr><tr><td>SA1</td><td class='num'>−$10.43</td><td class='num'>[−$39.8, +$17.1]</td></tr><tr><td>TAS1</td><td class='num'>+$1.08</td><td class='num'>[−$9.4, +$14.7]</td></tr></tbody></table></details>
 </figure>
+
+<h2>这个信号靠得住吗</h2>
+<p class="lead2"><b>VIC1</b> 是唯一校正后仍显著的区，5/6 项通过。没过的是：按天下注也成立。天气改变的是<b>哪几个小时</b>预调度会错，而不是对<b>整天</b>的判断——要用它，需要能按小时调整的头寸（灵活负荷、调峰机组的报价、按小时的对冲），日基荷合约吃不到。</p>
+<div class="card"><div class="scroll"><table class="act chk">
+<thead><tr><th>区</th><th class="num">加天气每天</th><th class="ck" title="5 个区一起检验，做了多重比较校正">校正后仍显著</th><th class="ck" title="至少 70% 的月份是正的">多数月份为正</th><th class="ck" title="不是一个月撑起来的">去掉最好的月仍为正</th><th class="ck" title="90 / 120 / 180 天，同一段样本">换训练窗都为正</th><th class="ck" title="最好的 5 天占总增量不到一半">不靠少数几天</th><th class="ck" title="一天押一次全天均价，更接近能交易的单">按天下注也成立</th></tr></thead>
+<tbody><tr><td class="rg">NSW1</td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$13.7</span>
+    <span class="hint">0/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span><span class="hint">0/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr><tr><td class="rg">QLD1</td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$8.1</span>
+    <span class="hint">0/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span><span class="hint">0/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr><tr><td class="rg">VIC1</td>
+  <td class="num" data-l="加天气每天"><span class="big2">+$33.6</span>
+    <span class="hint">5/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span><span class="hint">2/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr><tr><td class="rg">SA1</td>
+  <td class="num" data-l="加天气每天"><span class="big2">−$10.4</span>
+    <span class="hint">0/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span><span class="hint">0/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr><tr><td class="rg">TAS1</td>
+  <td class="num" data-l="加天气每天"><span class="big2">+$1.1</span>
+    <span class="hint">1/6 项通过</span></td><td class="ck" data-l="校正后仍显著"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="多数月份为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="去掉最好的月仍为正"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="换训练窗都为正"><span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span><span class="hint">1/3 显著</span></td><td class="ck" data-l="不靠少数几天"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td><td class="ck" data-l="按天下注也成立"><span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span></td></tr></tbody></table></div></div>
 
 <h2>怎么读这一页</h2>
 <div class="how">

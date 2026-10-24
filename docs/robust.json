@@ -1,0 +1,1239 @@
+{
+ "train_days": 180,
+ "regions": {
+  "NSW1": {
+   "ref": "B2 +官方",
+   "days": 168,
+   "weather": {
+    "per_day": -13.67,
+    "p": 0.178,
+    "win_days": 0.411,
+    "top5_share": null,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 70.58,
+      "share": -0.092,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": 14.41,
+      "share": -0.195,
+      "pos": true
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": -76.46,
+      "share": 0.999,
+      "pos": false
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": -18.66,
+      "share": 0.252,
+      "pos": false
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": -10.72,
+      "share": 0.145,
+      "pos": false
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": -2.85,
+      "share": 0.037,
+      "pos": false
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 27.88,
+      "share": -0.146,
+      "pos": true
+     }
+    ],
+    "pos_months": 3,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-05",
+     "per_day": -20.03
+    },
+    "p_holm": 0.712
+   },
+   "nested": {
+    "per_day": -1.5,
+    "p": 0.831,
+    "win_days": 0.232,
+    "top5_share": null,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 70.58,
+      "share": -0.841,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": 32.86,
+      "share": -4.048,
+      "pos": true
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": -45.6,
+      "share": 5.436,
+      "pos": false
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": 0.6,
+      "share": -0.074,
+      "pos": true
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": -4.28,
+      "share": 0.527,
+      "pos": false
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": 0.0,
+      "share": -0.0,
+      "pos": false
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 0.0,
+      "share": -0.0,
+      "pos": false
+     }
+    ],
+    "pos_months": 3,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-05",
+     "per_day": -9.27
+    },
+    "p_holm": 1.0
+   },
+   "baseload": {
+    "per_day": -7.4,
+    "ci": [
+     -26.21,
+     8.8
+    ],
+    "p": 0.4175,
+    "flips": 14,
+    "hit": 0.7798,
+    "ref_hit": 0.7798,
+    "nested": {
+     "per_day": 2.81,
+     "ci": [
+      -8.26,
+      15.42
+     ]
+    },
+    "p_holm": 1.0
+   },
+   "checks": {
+    "holm": false,
+    "months": false,
+    "leave_out": false,
+    "windows": false,
+    "windows_sig": 0,
+    "windows_n": 3,
+    "not_concentrated": false,
+    "baseload": false
+   }
+  },
+  "QLD1": {
+   "ref": "B2 +官方",
+   "days": 168,
+   "weather": {
+    "per_day": -8.05,
+    "p": 0.223,
+    "win_days": 0.393,
+    "top5_share": null,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 46.25,
+      "share": -0.103,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": 16.38,
+      "share": -0.375,
+      "pos": true
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": 6.35,
+      "share": -0.141,
+      "pos": true
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": -42.93,
+      "share": 0.984,
+      "pos": false
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": -5.34,
+      "share": 0.122,
+      "pos": false
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": -21.85,
+      "share": 0.485,
+      "pos": false
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": -3.16,
+      "share": 0.028,
+      "pos": false
+     }
+    ],
+    "pos_months": 3,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-05",
+     "per_day": -13.58
+    },
+    "p_holm": 0.712
+   },
+   "nested": {
+    "per_day": -7.58,
+    "p": 0.11875,
+    "win_days": 0.226,
+    "top5_share": null,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 31.33,
+      "share": -0.074,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": -3.79,
+      "share": 0.092,
+      "pos": false
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": -5.49,
+      "share": 0.129,
+      "pos": false
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": -15.01,
+      "share": 0.365,
+      "pos": false
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": -9.54,
+      "share": 0.232,
+      "pos": false
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": -12.66,
+      "share": 0.298,
+      "pos": false
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 4.59,
+      "share": -0.043,
+      "pos": true
+     }
+    ],
+    "pos_months": 2,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-10",
+     "per_day": -8.52
+    },
+    "p_holm": 0.432
+   },
+   "baseload": {
+    "per_day": -4.31,
+    "ci": [
+     -16.68,
+     6.59
+    ],
+    "p": 0.45725,
+    "flips": 8,
+    "hit": 0.7262,
+    "ref_hit": 0.7262,
+    "nested": {
+     "per_day": -0.65,
+     "ci": [
+      -5.05,
+      4.42
+     ]
+    },
+    "p_holm": 1.0
+   },
+   "checks": {
+    "holm": false,
+    "months": false,
+    "leave_out": false,
+    "windows": false,
+    "windows_sig": 0,
+    "windows_n": 3,
+    "not_concentrated": false,
+    "baseload": false
+   }
+  },
+  "VIC1": {
+   "ref": "B2 +官方",
+   "days": 168,
+   "weather": {
+    "per_day": 33.61,
+    "p": 0.00225,
+    "win_days": 0.512,
+    "top5_share": 0.466,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 61.29,
+      "share": 0.033,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": 40.11,
+      "share": 0.22,
+      "pos": true
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": 88.96,
+      "share": 0.473,
+      "pos": true
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": 1.34,
+      "share": 0.007,
+      "pos": true
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": 43.62,
+      "share": 0.24,
+      "pos": true
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": 6.72,
+      "share": 0.036,
+      "pos": true
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": -3.8,
+      "share": -0.008,
+      "pos": false
+     }
+    ],
+    "pos_months": 6,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-06",
+     "per_day": 21.57
+    },
+    "p_holm": 0.0112
+   },
+   "nested": {
+    "per_day": 32.8,
+    "p": 0.00175,
+    "win_days": 0.5,
+    "top5_share": 0.402,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 44.47,
+      "share": 0.024,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": 17.93,
+      "share": 0.101,
+      "pos": true
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": 85.26,
+      "share": 0.464,
+      "pos": true
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": 54.2,
+      "share": 0.305,
+      "pos": true
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": 19.28,
+      "share": 0.108,
+      "pos": true
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": 4.61,
+      "share": 0.025,
+      "pos": true
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": -12.72,
+      "share": -0.028,
+      "pos": false
+     }
+    ],
+    "pos_months": 6,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-06",
+     "per_day": 21.4
+    },
+    "p_holm": 0.0088
+   },
+   "baseload": {
+    "per_day": 7.89,
+    "ci": [
+     -18.96,
+     36.17
+    ],
+    "p": 0.5765,
+    "flips": 11,
+    "hit": 0.7262,
+    "ref_hit": 0.7202,
+    "nested": {
+     "per_day": 7.55,
+     "ci": [
+      -14.75,
+      32.19
+     ]
+    },
+    "p_holm": 1.0
+   },
+   "checks": {
+    "holm": true,
+    "months": true,
+    "leave_out": true,
+    "windows": true,
+    "windows_sig": 2,
+    "windows_n": 3,
+    "not_concentrated": true,
+    "baseload": false
+   }
+  },
+  "SA1": {
+   "ref": "B2 +官方",
+   "days": 168,
+   "weather": {
+    "per_day": -10.43,
+    "p": 0.47525,
+    "win_days": 0.363,
+    "top5_share": null,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 81.0,
+      "share": -0.139,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": -31.28,
+      "share": 0.554,
+      "pos": false
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": 14.71,
+      "share": -0.252,
+      "pos": true
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": 14.92,
+      "share": -0.264,
+      "pos": true
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": -52.71,
+      "share": 0.933,
+      "pos": false
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": -36.62,
+      "share": 0.627,
+      "pos": false
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 66.96,
+      "share": -0.459,
+      "pos": true
+     }
+    ],
+    "pos_months": 4,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-10",
+     "per_day": -16.38
+    },
+    "p_holm": 0.9505
+   },
+   "nested": {
+    "per_day": 8.57,
+    "p": 0.60875,
+    "win_days": 0.369,
+    "top5_share": 2.648,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 55.87,
+      "share": 0.116,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": -31.86,
+      "share": -0.686,
+      "pos": false
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": 30.61,
+      "share": 0.638,
+      "pos": true
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": 51.91,
+      "share": 1.118,
+      "pos": true
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": -37.46,
+      "share": -0.807,
+      "pos": false
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": -16.17,
+      "share": -0.337,
+      "pos": false
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 114.85,
+      "share": 0.958,
+      "pos": true
+     }
+    ],
+    "pos_months": 4,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-07",
+     "per_day": -1.24
+    },
+    "p_holm": 1.0
+   },
+   "baseload": {
+    "per_day": -10.53,
+    "ci": [
+     -38.28,
+     14.69
+    ],
+    "p": 0.43375,
+    "flips": 13,
+    "hit": 0.7738,
+    "ref_hit": 0.8036,
+    "nested": {
+     "per_day": -5.67,
+     "ci": [
+      -36.86,
+      22.65
+     ]
+    },
+    "p_holm": 1.0
+   },
+   "checks": {
+    "holm": false,
+    "months": false,
+    "leave_out": false,
+    "windows": false,
+    "windows_sig": 0,
+    "windows_n": 3,
+    "not_concentrated": false,
+    "baseload": false
+   }
+  },
+  "TAS1": {
+   "ref": "B2 +官方",
+   "days": 168,
+   "weather": {
+    "per_day": 1.08,
+    "p": 0.86125,
+    "win_days": 0.298,
+    "top5_share": 6.863,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 6.39,
+      "share": 0.105,
+      "pos": true
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": -4.48,
+      "share": -0.762,
+      "pos": false
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": -3.79,
+      "share": -0.625,
+      "pos": false
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": -11.97,
+      "share": -2.038,
+      "pos": false
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": 0.82,
+      "share": 0.14,
+      "pos": true
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": 2.88,
+      "share": 0.474,
+      "pos": true
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 56.22,
+      "share": 3.706,
+      "pos": true
+     }
+    ],
+    "pos_months": 4,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-10",
+     "per_day": -3.16
+    },
+    "p_holm": 0.9505
+   },
+   "nested": {
+    "per_day": 8.75,
+    "p": 0.108,
+    "win_days": 0.202,
+    "top5_share": 0.845,
+    "months": [
+     {
+      "month": "2026-04",
+      "days": 3,
+      "per_day": 0.0,
+      "share": 0.0,
+      "pos": false
+     },
+     {
+      "month": "2026-05",
+      "days": 31,
+      "per_day": 4.32,
+      "share": 0.091,
+      "pos": true
+     },
+     {
+      "month": "2026-06",
+      "days": 30,
+      "per_day": 2.29,
+      "share": 0.047,
+      "pos": true
+     },
+     {
+      "month": "2026-07",
+      "days": 31,
+      "per_day": 3.22,
+      "share": 0.068,
+      "pos": true
+     },
+     {
+      "month": "2026-08",
+      "days": 31,
+      "per_day": 1.91,
+      "share": 0.04,
+      "pos": true
+     },
+     {
+      "month": "2026-09",
+      "days": 30,
+      "per_day": 14.44,
+      "share": 0.295,
+      "pos": true
+     },
+     {
+      "month": "2026-10",
+      "days": 12,
+      "per_day": 56.22,
+      "share": 0.459,
+      "pos": true
+     }
+    ],
+    "pos_months": 6,
+    "n_months": 7,
+    "leave_one_month_out": {
+     "month": "2026-10",
+     "per_day": 5.09
+    },
+    "p_holm": 0.432
+   },
+   "baseload": {
+    "per_day": 11.79,
+    "ci": [
+     -0.25,
+     30.75
+    ],
+    "p": 0.1135,
+    "flips": 7,
+    "hit": 0.7619,
+    "ref_hit": 0.7321,
+    "nested": {
+     "per_day": 11.21,
+     "ci": [
+      0.0,
+      30.63
+     ]
+    },
+    "p_holm": 0.5675
+   },
+   "checks": {
+    "holm": false,
+    "months": false,
+    "leave_out": false,
+    "windows": true,
+    "windows_sig": 1,
+    "windows_n": 3,
+    "not_concentrated": false,
+    "baseload": false
+   }
+  }
+ },
+ "windows": {
+  "90": {
+   "NSW1": {
+    "days": 258,
+    "gain": -2.8,
+    "ci": [
+     -20.28,
+     17.74
+    ],
+    "common": {
+     "days": 168,
+     "gain": -16.6,
+     "ci": [
+      -31.13,
+      -5.18
+     ]
+    },
+    "nested": 1.72,
+    "nested_ci": [
+     -7.81,
+     10.1
+    ],
+    "rmae_gain": -0.0039,
+    "gw_p": 0.4458,
+    "battery": 0.31,
+    "battery_ci": [
+     -20.52,
+     15.61
+    ]
+   },
+   "QLD1": {
+    "days": 258,
+    "gain": -9.44,
+    "ci": [
+     -23.83,
+     1.89
+    ],
+    "common": {
+     "days": 168,
+     "gain": -10.27,
+     "ci": [
+      -31.49,
+      4.01
+     ]
+    },
+    "nested": -4.91,
+    "nested_ci": [
+     -15.57,
+     4.04
+    ],
+    "rmae_gain": 0.0048,
+    "gw_p": 0.3918,
+    "battery": 1.89,
+    "battery_ci": [
+     -0.69,
+     4.68
+    ]
+   },
+   "VIC1": {
+    "days": 258,
+    "gain": 26.11,
+    "ci": [
+     6.42,
+     43.24
+    ],
+    "common": {
+     "days": 168,
+     "gain": 24.02,
+     "ci": [
+      1.91,
+      46.81
+     ]
+    },
+    "nested": 28.39,
+    "nested_ci": [
+     12.31,
+     44.56
+    ],
+    "rmae_gain": 0.0173,
+    "gw_p": 0.0051,
+    "battery": -2.59,
+    "battery_ci": [
+     -6.3,
+     0.75
+    ]
+   },
+   "SA1": {
+    "days": 258,
+    "gain": 35.13,
+    "ci": [
+     9.73,
+     65.74
+    ],
+    "common": {
+     "days": 168,
+     "gain": 14.14,
+     "ci": [
+      -13.45,
+      41.8
+     ]
+    },
+    "nested": 30.4,
+    "nested_ci": [
+     8.53,
+     56.43
+    ],
+    "rmae_gain": 0.0432,
+    "gw_p": 0.0155,
+    "battery": 5.4,
+    "battery_ci": [
+     -2.19,
+     13.34
+    ]
+   },
+   "TAS1": {
+    "days": 258,
+    "gain": 12.99,
+    "ci": [
+     1.27,
+     24.87
+    ],
+    "common": {
+     "days": 168,
+     "gain": 19.67,
+     "ci": [
+      5.32,
+      34.96
+     ]
+    },
+    "nested": 15.22,
+    "nested_ci": [
+     6.54,
+     25.45
+    ],
+    "rmae_gain": 0.0074,
+    "gw_p": 0.2468,
+    "battery": 1.78,
+    "battery_ci": [
+     -6.39,
+     15.9
+    ]
+   }
+  },
+  "120": {
+   "NSW1": {
+    "days": 228,
+    "gain": -1.53,
+    "ci": [
+     -16.23,
+     12.7
+    ],
+    "common": {
+     "days": 168,
+     "gain": -13.86,
+     "ci": [
+      -27.28,
+      -3.87
+     ]
+    },
+    "nested": -4.47,
+    "nested_ci": [
+     -15.69,
+     6.23
+    ],
+    "rmae_gain": 0.0031,
+    "gw_p": 0.6106,
+    "battery": 6.25,
+    "battery_ci": [
+     -5.41,
+     17.4
+    ]
+   },
+   "QLD1": {
+    "days": 228,
+    "gain": -3.26,
+    "ci": [
+     -13.87,
+     6.34
+    ],
+    "common": {
+     "days": 168,
+     "gain": -4.17,
+     "ci": [
+      -17.56,
+      7.34
+     ]
+    },
+    "nested": -3.28,
+    "nested_ci": [
+     -11.5,
+     3.54
+    ],
+    "rmae_gain": 0.0049,
+    "gw_p": 0.3984,
+    "battery": 0.11,
+    "battery_ci": [
+     -2.06,
+     2.61
+    ]
+   },
+   "VIC1": {
+    "days": 228,
+    "gain": 14.39,
+    "ci": [
+     -4.87,
+     33.61
+    ],
+    "common": {
+     "days": 168,
+     "gain": 14.74,
+     "ci": [
+      -7.52,
+      38.0
+     ]
+    },
+    "nested": 11.5,
+    "nested_ci": [
+     -5.03,
+     28.03
+    ],
+    "rmae_gain": 0.0158,
+    "gw_p": 0.0136,
+    "battery": -4.36,
+    "battery_ci": [
+     -9.04,
+     -0.09
+    ]
+   },
+   "SA1": {
+    "days": 228,
+    "gain": 18.7,
+    "ci": [
+     -11.58,
+     43.02
+    ],
+    "common": {
+     "days": 168,
+     "gain": 6.26,
+     "ci": [
+      -23.86,
+      35.11
+     ]
+    },
+    "nested": 21.25,
+    "nested_ci": [
+     -7.85,
+     44.98
+    ],
+    "rmae_gain": 0.0543,
+    "gw_p": 0.0201,
+    "battery": -8.5,
+    "battery_ci": [
+     -32.74,
+     8.6
+    ]
+   },
+   "TAS1": {
+    "days": 228,
+    "gain": 11.2,
+    "ci": [
+     -0.23,
+     23.3
+    ],
+    "common": {
+     "days": 168,
+     "gain": 12.94,
+     "ci": [
+      -1.39,
+      29.69
+     ]
+    },
+    "nested": 8.51,
+    "nested_ci": [
+     -0.49,
+     18.89
+    ],
+    "rmae_gain": 0.0093,
+    "gw_p": 0.0969,
+    "battery": -0.87,
+    "battery_ci": [
+     -3.58,
+     2.25
+    ]
+   }
+  },
+  "180": {
+   "NSW1": {
+    "days": 168,
+    "gain": -13.67,
+    "ci": [
+     -36.72,
+     2.78
+    ],
+    "common": {
+     "days": 168,
+     "gain": -13.67,
+     "ci": [
+      -36.72,
+      2.78
+     ]
+    },
+    "nested": -1.5,
+    "nested_ci": [
+     -18.04,
+     9.95
+    ],
+    "rmae_gain": -0.0081,
+    "gw_p": 0.2968,
+    "battery": -0.19,
+    "battery_ci": [
+     -5.31,
+     4.63
+    ]
+   },
+   "QLD1": {
+    "days": 168,
+    "gain": -8.05,
+    "ci": [
+     -22.35,
+     3.49
+    ],
+    "common": {
+     "days": 168,
+     "gain": -8.05,
+     "ci": [
+      -22.35,
+      3.49
+     ]
+    },
+    "nested": -7.58,
+    "nested_ci": [
+     -18.12,
+     1.03
+    ],
+    "rmae_gain": 0.0014,
+    "gw_p": 0.8072,
+    "battery": -0.08,
+    "battery_ci": [
+     -1.97,
+     2.0
+    ]
+   },
+   "VIC1": {
+    "days": 168,
+    "gain": 33.61,
+    "ci": [
+     13.2,
+     59.05
+    ],
+    "common": {
+     "days": 168,
+     "gain": 33.61,
+     "ci": [
+      13.2,
+      59.05
+     ]
+    },
+    "nested": 32.8,
+    "nested_ci": [
+     14.93,
+     53.65
+    ],
+    "rmae_gain": 0.0177,
+    "gw_p": 0.0136,
+    "battery": -4.36,
+    "battery_ci": [
+     -8.95,
+     -0.39
+    ]
+   },
+   "SA1": {
+    "days": 168,
+    "gain": -10.43,
+    "ci": [
+     -39.84,
+     17.06
+    ],
+    "common": {
+     "days": 168,
+     "gain": -10.43,
+     "ci": [
+      -39.84,
+      17.06
+     ]
+    },
+    "nested": 8.57,
+    "nested_ci": [
+     -24.13,
+     38.66
+    ],
+    "rmae_gain": 0.0213,
+    "gw_p": 0.0133,
+    "battery": -35.2,
+    "battery_ci": [
+     -92.08,
+     4.21
+    ]
+   },
+   "TAS1": {
+    "days": 168,
+    "gain": 1.08,
+    "ci": [
+     -9.42,
+     14.67
+    ],
+    "common": {
+     "days": 168,
+     "gain": 1.08,
+     "ci": [
+      -9.42,
+      14.67
+     ]
+    },
+    "nested": 8.75,
+    "nested_ci": [
+     0.06,
+     20.91
+    ],
+    "rmae_gain": 0.012,
+    "gw_p": 0.0216,
+    "battery": -3.47,
+    "battery_ci": [
+     -7.15,
+     0.14
+    ]
+   }
+  }
+ },
+ "common_start": "2026-04-28"
+}

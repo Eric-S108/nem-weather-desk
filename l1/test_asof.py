@@ -1409,3 +1409,35 @@ def test_bias_trade_direction_and_settlement():
     assert "vs_short" in rows["B3 +天气"] and "vs_short" not in rows["做空 AEMO"]
     assert rows["B3 +天气"]["gain_ci"][0] > 0
     assert LD.bias_trade({"status": "ok", "_aemo": None, "_pred": {}})["status"] == "unavailable"
+
+
+def test_bias_baseload_bets_once_per_day():
+    """日级版本：一天只押一次方向，按全天均价结算。
+    知道实际全天均价的模型每天都赚 |均价差| × 小时数，命中率 100%。"""
+    import ladder as LD
+    rng = np.random.default_rng(6)
+    t = pd.date_range("2025-03-01 14:00", periods=60 * 24, freq="h", tz="UTC")  # NEM 00:00 起
+    a = 90 + rng.normal(scale=20, size=len(t))
+    y = a + rng.normal(scale=15, size=len(t)) + np.repeat(rng.normal(scale=10, size=60), 24)
+    res = {"status": "ok", "_y": y, "_t": t.to_numpy(), "_aemo": a,
+           "_pred": {"B1 自回归": a + 0.0, "B2 +官方": a + 0.0, "B3 +天气": y.copy()}}
+    bl = LD.bias_trade(res)["baseload"]
+    rows = {r["tier"]: r for r in bl["rows"]}
+    gap = np.abs((y - a).reshape(60, 24).mean(1)) * 24
+    assert abs(rows["B3 +天气"]["daily"] - gap.mean()) < 0.05
+    assert rows["B3 +天气"]["hit"] == 1.0 and rows["B3 +天气"]["gain_ci"][0] > 0
+    assert len(bl["daily"]["B3 +天气"]) == 60
+
+
+def test_robust_holm_and_month_breakdown():
+    """Holm 校正单调且不小于原 p；按月拆分加总回到整体。"""
+    import robust as RB
+    adj = RB.holm({"A": 0.01, "B": 0.04, "C": 0.03, "D": None})
+    assert adj == {"A": 0.03, "C": 0.06, "B": 0.06, "D": None}
+    dates = [f"2026-0{m}-{d:02d}" for m in (1, 2) for d in range(1, 11)]
+    x = np.r_[np.ones(10), -np.ones(10) * 0.5]
+    ms = RB.monthly(dates, x)
+    assert [m["per_day"] for m in ms] == [1.0, -0.5]
+    assert abs(sum(m["share"] for m in ms) - 1) < 1e-9
+    assert RB.leave_one_out(dates, x) == {"month": "2026-01", "per_day": -0.5}
+    assert RB.boot_p(np.r_[np.full(60, 5.0)] + np.random.default_rng(0).normal(size=60)) < 0.01

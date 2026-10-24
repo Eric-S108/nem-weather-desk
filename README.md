@@ -76,6 +76,9 @@ python l1/ladder.py --region VIC1 --hours all --out VIC1.json
 python l1/ladder.py --merge NSW1.json QLD1.json VIC1.json SA1.json TAS1.json --hours all --out docs/ladder.json
 python l1/desk.py --in docs/ladder.json --out docs/index.html
 ```
+
+`run_desk.sh` 默认还会用 90 天、120 天训练窗各跑一遍，给稳健性检验用（多花几分钟）；
+不需要时用 `ALT_WINDOWS= bash run_desk.sh` 跳过。
 默认读 `~/aus-weather-quant/data`，可用 `WQ_DATA_DIR` 改。
 
 ### 补数据（要联网，在本机跑）
@@ -104,6 +107,7 @@ python ingest.py --backfill-truth --start 2026-08-20 --end 2026-10-17
 | `l1/ladder.py` | 核心：基准阶梯、GW 检验、储能经济评估、误差解剖、特征取舍 |
 | `l1/desk.py` | 把 `ladder.json` 渲染成两页；第二页“方法与证据”在这里 |
 | `l1/trader.py` | 第一页“交易台”：结论、行动表、森林图、累计收益 |
+| `l1/robust.py` | 稳健性检验：按月拆分、Holm 多重比较、按天下注、换训练窗（共同样本段） |
 | `l1/aemo.py` | NEMWeb：电价、需求、预调度 |
 | `l1/ingest.py` `l1/openmeteo.py` | Open-Meteo：天气预报与再分析 |
 | `l1/store.py` `l1/features.py` `l1/realdata.py` | 时点存储与 as-of 读取 |

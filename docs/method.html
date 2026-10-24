@@ -111,7 +111,7 @@ code{font:12.5px "IBM Plex Mono",ui-monospace,monospace;background:var(--hl);
   <h1>方法与证据</h1>
   <p class="tagline">天气预报在价格自回归与 AEMO 官方预调度之上，还剩多少可交易的增量</p>
   
-  <div class="stamp">生成于 2026-10-24 12:17 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</div>
+  <div class="stamp">生成于 2026-10-24 12:57 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</div>
 </header>
 <div class="q"><p>“Statistical error measures … may not necessarily reflect
 the economic value of reducing prediction errors.”<br>
@@ -159,6 +159,25 @@ the economic value of reducing prediction errors.”<br>
       <div class="mini">rMAE 增量 +0.0120</div>
       <p class="why">日收益增量区间 [-7.2, 0.1] 跨 0。</p>
     </a></div>
+<section class="reg" id="robust">
+      <h2>稳健性：偏差交易里天气多赚的钱，是真的吗</h2>
+      <p class="lede">数字都是"加天气（B3）比不加（B2）每天多赚的 $"，1 MW，赌 AEMO 预调度偏差的小时版。</p>
+      <h4>一、按月拆开 + 多重比较</h4>
+      <p class="cap">p 是移动块自助（5 天一块）的双侧 p；5 个区各检验一次，Holm 校正后的 p 才能直接和 0.05 比。
+        "前 5 天占"= 最好的 5 天贡献了总增量的多少，越高越靠少数尖峰日；"去掉最好的月"= 拿掉贡献最大的那个月后剩下的日均。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>26-04</th><th>26-05</th><th>26-06</th><th>26-07</th><th>26-08</th><th>26-09</th><th>26-10</th><th>全段</th><th>p</th><th>Holm p</th>
+        <th>前 5 天占</th><th>去掉最好的月</th></tr></thead><tbody><tr><td class='tier'>NSW1</td><td class='num'>+71</td><td class='num'>+14</td><td class='num'>-76</td><td class='num'>-19</td><td class='num'>-11</td><td class='num'>-3</td><td class='num'>+28</td><td class='num'>-13.7</td><td class='num'>0.178</td><td class='num'>0.712</td><td class='num'>—</td><td class='num'>-20.0<br><small>去 2026-05</small></td></tr><tr><td class='tier'>QLD1</td><td class='num'>+46</td><td class='num'>+16</td><td class='num'>+6</td><td class='num'>-43</td><td class='num'>-5</td><td class='num'>-22</td><td class='num'>-3</td><td class='num'>-8.1</td><td class='num'>0.223</td><td class='num'>0.712</td><td class='num'>—</td><td class='num'>-13.6<br><small>去 2026-05</small></td></tr><tr><td class='tier'>VIC1</td><td class='num'>+61</td><td class='num'>+40</td><td class='num'>+89</td><td class='num'>+1</td><td class='num'>+44</td><td class='num'>+7</td><td class='num'>-4</td><td class='num'>+33.6</td><td class='num'>0.002</td><td class='num'>0.011</td><td class='num'>47%</td><td class='num'>+21.6<br><small>去 2026-06</small></td></tr><tr><td class='tier'>SA1</td><td class='num'>+81</td><td class='num'>-31</td><td class='num'>+15</td><td class='num'>+15</td><td class='num'>-53</td><td class='num'>-37</td><td class='num'>+67</td><td class='num'>-10.4</td><td class='num'>0.475</td><td class='num'>0.951</td><td class='num'>—</td><td class='num'>-16.4<br><small>去 2026-10</small></td></tr><tr><td class='tier'>TAS1</td><td class='num'>+6</td><td class='num'>-4</td><td class='num'>-4</td><td class='num'>-12</td><td class='num'>+1</td><td class='num'>+3</td><td class='num'>+56</td><td class='num'>+1.1</td><td class='num'>0.861</td><td class='num'>0.951</td><td class='num'>&gt;100%</td><td class='num'>-3.2<br><small>去 2026-10</small></td></tr></tbody></table></div>
+      <h4>二、按天下注</h4>
+      <p class="cap">一天只押一次方向：明天全天均价比预调度的全天均价高还是低，按实际全天均价结算。
+        这更接近能交易的东西（日基荷互换、调整次日对冲量）。"方向改了"= 加上天气后有多少天押的方向和不加时不同。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>加天气 $/天</th><th>95% 区间</th>
+        <th>Holm p</th><th>方向改了（天）</th><th>命中率</th></tr></thead><tbody><tr><td class='tier'>NSW1</td><td class='num'>-7.4</td><td class='num'>[-26.2, 8.8]</td><td class='num'>1.000</td><td class='num'>14</td><td class='num'>78% → 78%</td></tr><tr><td class='tier'>QLD1</td><td class='num'>-4.3</td><td class='num'>[-16.7, 6.6]</td><td class='num'>1.000</td><td class='num'>8</td><td class='num'>73% → 73%</td></tr><tr><td class='tier'>VIC1</td><td class='num'>+7.9</td><td class='num'>[-19.0, 36.2]</td><td class='num'>1.000</td><td class='num'>11</td><td class='num'>72% → 73%</td></tr><tr><td class='tier'>SA1</td><td class='num'>-10.5</td><td class='num'>[-38.3, 14.7]</td><td class='num'>1.000</td><td class='num'>13</td><td class='num'>80% → 77%</td></tr><tr><td class='tier'>TAS1</td><td class='num'>+11.8</td><td class='num'>[-0.2, 30.8]</td><td class='num'>0.568</td><td class='num'>7</td><td class='num'>73% → 76%</td></tr></tbody></table></div>
+      <h4>三、换训练窗长度</h4>
+      <p class="cap">训练窗越短，样本外开始得越早；直接比全段等于同时换了样本。这里只比<b>共同样本段</b>（2026-04-28 起），
+        只有参数在变。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>训练 90 天</th><th>训练 120 天</th><th>训练 180 天</th></tr></thead>
+        <tbody><tr><td class='tier'>NSW1</td><td class='num'>-16.6<br><small>[-31, -5]</small></td><td class='num'>-13.9<br><small>[-27, -4]</small></td><td class='num'>-13.7<br><small>[-37, 3]</small></td></tr><tr><td class='tier'>QLD1</td><td class='num'>-10.3<br><small>[-31, 4]</small></td><td class='num'>-4.2<br><small>[-18, 7]</small></td><td class='num'>-8.1<br><small>[-22, 3]</small></td></tr><tr><td class='tier'>VIC1</td><td class='num'>+24.0<br><small>[2, 47]</small></td><td class='num'>+14.7<br><small>[-8, 38]</small></td><td class='num'>+33.6<br><small>[13, 59]</small></td></tr><tr><td class='tier'>SA1</td><td class='num'>+14.1<br><small>[-13, 42]</small></td><td class='num'>+6.3<br><small>[-24, 35]</small></td><td class='num'>-10.4<br><small>[-40, 17]</small></td></tr><tr><td class='tier'>TAS1</td><td class='num'>+19.7<br><small>[5, 35]</small></td><td class='num'>+12.9<br><small>[-1, 30]</small></td><td class='num'>+1.1<br><small>[-9, 15]</small></td></tr></tbody></table></div>
+    </section>
 <section id="r-NSW1" class="reg">
       <h2>NSW1 <span class="chip no">不可用</span></h2>
       <p class="lede">rMAE 没改善（-0.0081）；GW p=0.297 不显著；日收益增量区间 [-5.3, 4.6] 跨 0。</p>
@@ -1103,7 +1122,7 @@ the economic value of reducing prediction errors.”<br>
 <li><a href="https://arxiv.org/html/2510.03657">Optimising Battery Energy Storage System
   Trading via Energy Market Operator Price Forecast</a> —— 经济评估用储能套利的依据。</li>
 </ul>
-<p style="margin-top:20px">生成于 2026-10-24 12:17 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</p>
+<p style="margin-top:20px">生成于 2026-10-24 12:57 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</p>
 <p>代码与方法：<a href="https://github.com/Eric-S108/nem-weather-desk">https://github.com/Eric-S108/nem-weather-desk</a></p>
 </footer>
 </div>

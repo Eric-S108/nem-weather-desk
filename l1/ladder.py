@@ -751,7 +751,43 @@ def bias_trade(res: dict) -> dict:
     for k_, v in series.items():
         daily[k_] = [round(float(x), 2) for x in v]
     return {"status": "ok", "days": int(len(udays)), "hours": int(len(y)),
-            "ref": ref, "mw": BATT_POWER_MW, "rows": rows, "daily": daily}
+            "ref": ref, "mw": BATT_POWER_MW, "rows": rows, "daily": daily,
+            "baseload": _bias_baseload(res, inv, len(udays), names, ref)}
+
+
+def _bias_baseload(res: dict, inv: np.ndarray, nd: int, names: list[str], ref: str) -> dict:
+    """同一个问题换成**按天**下注：一天只押一次方向——明天全天均价比预调度的全天均价高还是低，
+    1 MW 全天（每个可交易小时 1 MWh），按实际全天均价结算。
+
+    这更接近能真正做的东西（日基荷互换、调整次日对冲量），也更难被个别小时的尖峰撑起来：
+    小时级的命中可能只是"某几个小时方向对"，日级要的是整天的水平判断对。
+    """
+    y, a = res["_y"], res["_aemo"]
+    cnt = np.bincount(inv, minlength=nd).astype(float)
+    ybar = np.bincount(inv, weights=y, minlength=nd) / cnt
+    abar = np.bincount(inv, weights=a, minlength=nd) / cnt
+    series, rows = {}, []
+    for n in [BIAS_SHORT] + names:
+        if n == BIAS_SHORT:
+            sgn = -np.ones(nd)
+        else:
+            pbar = np.bincount(inv, weights=res["_pred"][n], minlength=nd) / cnt
+            sgn = np.sign(pbar - abar)
+        g = sgn * (ybar - abar) * cnt * BATT_POWER_MW
+        series[n] = g
+        hit = (np.sign(ybar - abar) == sgn)[sgn != 0]
+        rows.append({"tier": n, "daily": round(float(g.mean()), 2),
+                     "ci": [round(v, 2) for v in (_block_boot(g) or [float("nan")] * 2)],
+                     "hit": round(float(hit.mean()), 4) if len(hit) else None})
+    for r_ in rows:
+        if r_["tier"] in ("B3 +天气", NESTED_NAME) and ref in series:
+            dg = series[r_["tier"]] - series[ref]
+            r_["vs"] = ref
+            r_["gain"] = round(float(dg.mean()), 2)
+            r_["gain_ci"] = [round(v, 2) for v in (_block_boot(dg) or [float("nan")] * 2)]
+            r_["flips"] = int((np.sign(series[r_["tier"]]) != np.sign(series[ref])).sum())
+    out = {"rows": rows, "daily": {k: [round(float(x), 2) for x in v] for k, v in series.items()}}
+    return out
 
 
 def _meta(a) -> dict:

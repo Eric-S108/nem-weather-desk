@@ -381,6 +381,63 @@ def bias_section(ok: list[dict], days: int) -> str:
 {fig}"""
 
 
+# ------------------------------------------------------------------ 稳健性检查单
+CHECKS = [
+    ("holm", "校正后仍显著", "5 个区一起检验，做了多重比较校正"),
+    ("months", "多数月份为正", "至少 70% 的月份是正的"),
+    ("leave_out", "去掉最好的月仍为正", "不是一个月撑起来的"),
+    ("windows", "换训练窗都为正", "90 / 120 / 180 天，同一段样本"),
+    ("not_concentrated", "不靠少数几天", "最好的 5 天占总增量不到一半"),
+    ("baseload", "按天下注也成立", "一天押一次全天均价，更接近能交易的单"),
+]
+
+
+def _tick(ok: bool) -> str:
+    return ('<span class="tk good" title="通过"><span aria-hidden="true">✓</span><span class="sr">通过</span></span>'
+            if ok else
+            '<span class="tk critical" title="没通过"><span aria-hidden="true">✕</span><span class="sr">没通过</span></span>')
+
+
+def robust_checks(rb: dict | None) -> str:
+    if not rb or not rb.get("regions"):
+        return ""
+    rows, good = [], []
+    for k, v in rb["regions"].items():
+        c, w = v.get("checks"), v.get("weather")
+        if not c or not w:
+            continue
+        n_pass = sum(1 for key, *_ in CHECKS if c.get(key))
+        if c.get("holm"):
+            good.append((k, n_pass, c))
+        cells = "".join(
+            f'<td class="ck" data-l="{label}">{_tick(bool(c.get(key)))}'
+            + (f'<span class="hint">{c["windows_sig"]}/{c["windows_n"]} 显著</span>' if key == "windows" else "")
+            + "</td>" for key, label, _ in CHECKS)
+        rows.append(f"""<tr><td class="rg">{_esc(k)}</td>
+  <td class="num" data-l="加天气每天"><span class="big2">{_money(w['per_day'], True, 1)}</span>
+    <span class="hint">{n_pass}/{len(CHECKS)} 项通过</span></td>{cells}</tr>""")
+    if good:
+        k, n, c = max(good, key=lambda x: x[1])
+        miss = [label for key, label, _ in CHECKS if not c.get(key)]
+        say = (f"<b>{k}</b> 是唯一校正后仍显著的区，{n}/{len(CHECKS)} 项通过。"
+               + (f"没过的是：{'、'.join(miss)}。" if miss else ""))
+        if not c.get("not_concentrated"):
+            say += "钱主要来自少数几个高价日，平常日子的增量很小。"
+        if not c.get("baseload"):
+            say += ("天气改变的是<b>哪几个小时</b>预调度会错，而不是对<b>整天</b>的判断——"
+                    "要用它，需要能按小时调整的头寸（灵活负荷、调峰机组的报价、按小时的对冲），"
+                    "日基荷合约吃不到。")
+    else:
+        say = "做了多重比较校正后，没有一个区的天气增量还显著。"
+    head = "".join(f'<th class="ck" title="{_esc(tip)}">{label}</th>' for _, label, tip in CHECKS)
+    return f"""
+<h2>这个信号靠得住吗</h2>
+<p class="lead2">{say}</p>
+<div class="card"><div class="scroll"><table class="act chk">
+<thead><tr><th>区</th><th class="num">加天气每天</th>{head}</tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div></div>"""
+
+
 # ------------------------------------------------------------------ 页面
 CSS = """
 :root{
@@ -446,6 +503,14 @@ table.act .model{font-weight:600}
 table.act .hint{display:block;font-size:12px;color:var(--muted);font-weight:400}
 table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
 .big2{font-size:18px;font-weight:650}
+table.chk th.ck{white-space:normal;text-align:center;min-width:76px;line-height:1.3}
+table.chk td.ck{text-align:center}
+.tk{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;
+ font-weight:700;font-size:13px}
+.tk.good{background:var(--chipbg-good);color:var(--good-ink)}
+.tk.critical{background:var(--chipbg-critical);color:var(--critical)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+table.chk td.ck .hint{display:block;font-size:11.5px;color:var(--muted)}
 @media (max-width:700px){
  table.act{min-width:0}table.act thead{display:none}
  table.act,table.act tbody{display:block}
@@ -456,6 +521,12 @@ table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
  table.act td.rg{grid-column:1/3;align-self:center}
  table.act td.st{grid-column:3;justify-self:end}
  table.act td.mdl,table.act td.why{grid-column:1/-1}
+ table.chk tr{grid-template-columns:1fr 1fr}
+ table.chk td.rg{grid-column:1}
+ table.chk td.num{grid-column:2;text-align:right}
+ table.chk td.ck{text-align:left;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+ table.chk td.ck::before{margin:0;flex:1 1 auto}
+ table.chk td.ck .hint{display:inline;flex-basis:100%;text-align:right}
  table.act td.why{max-width:none}
  table.act td.num{text-align:left;white-space:normal}
  table.act td[data-l]::before{content:attr(data-l);display:block;font-size:11.5px;color:var(--muted);
@@ -701,6 +772,7 @@ def render_trader(data: dict) -> str:
 {cumulative(ok, decide_at, bt.get('mw', 1), bt.get('mw', 1) * bt.get('hours', 2))}
 
 {bias_section(ok, days)}
+{robust_checks(data.get("robust"))}
 
 <h2>怎么读这一页</h2>
 <div class="how">

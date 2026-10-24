@@ -275,6 +275,70 @@ def bias_table(r: dict) -> str:
       <tbody>{''.join(rows)}</tbody></table></div>"""
 
 
+def robust_section(rb: dict | None) -> str:
+    """偏差交易里天气增量的稳健性：按月、多重比较、按天下注、换训练窗。"""
+    if not rb or not rb.get("regions"):
+        return ""
+    regs = rb["regions"]
+    months = sorted({m["month"] for v in regs.values() if v.get("weather")
+                     for m in v["weather"]["months"]})
+    head = "".join(f"<th>{m[2:]}</th>" for m in months)
+    mrows = []
+    for k, v in regs.items():
+        w = v.get("weather")
+        if not w:
+            continue
+        cell = {m["month"]: m for m in w["months"]}
+        tds = "".join(
+            f"<td class='num'>{cell[m]['per_day']:+.0f}</td>" if m in cell else "<td>—</td>"
+            for m in months)
+        lo = w["leave_one_month_out"]
+        mrows.append(f"<tr><td class='tier'>{k}</td>{tds}<td class='num'>{w['per_day']:+.1f}</td>"
+                     f"<td class='num'>{_n(w['p'], '{:.3f}')}</td><td class='num'>{_n(w['p_holm'], '{:.3f}')}</td>"
+                     f"<td class='num'>{'—' if w['top5_share'] is None else ('&gt;100%' if w['top5_share'] > 1 else format(w['top5_share'], '.0%'))}</td>"
+                     f"<td class='num'>{lo['per_day']:+.1f}<br><small>去 {lo['month']}</small></td></tr>")
+    brows = []
+    for k, v in regs.items():
+        b = v.get("baseload")
+        if not b:
+            continue
+        brows.append(f"<tr><td class='tier'>{k}</td><td class='num'>{b['per_day']:+.1f}</td>"
+                     f"<td class='num'>[{b['ci'][0]:.1f}, {b['ci'][1]:.1f}]</td>"
+                     f"<td class='num'>{_n(b['p_holm'], '{:.3f}')}</td><td class='num'>{b['flips']}</td>"
+                     f"<td class='num'>{b['ref_hit']:.0%} → {b['hit']:.0%}</td></tr>")
+    tds = sorted(rb.get("windows", {}), key=int)
+    whead = "".join(f"<th>训练 {t} 天</th>" for t in tds)
+    wrows = []
+    for k in regs:
+        cells = []
+        for t in tds:
+            x = (rb["windows"][t] or {}).get(k)
+            c = (x or {}).get("common")
+            cells.append("<td>—</td>" if not c else
+                         f"<td class='num'>{c['gain']:+.1f}<br><small>[{c['ci'][0]:.0f}, {c['ci'][1]:.0f}]</small></td>")
+        wrows.append(f"<tr><td class='tier'>{k}</td>{''.join(cells)}</tr>")
+    start = rb.get("common_start") or ""
+    return f"""<section class="reg" id="robust">
+      <h2>稳健性：偏差交易里天气多赚的钱，是真的吗</h2>
+      <p class="lede">数字都是"加天气（B3）比不加（B2）每天多赚的 $"，1 MW，赌 AEMO 预调度偏差的小时版。</p>
+      <h4>一、按月拆开 + 多重比较</h4>
+      <p class="cap">p 是移动块自助（5 天一块）的双侧 p；5 个区各检验一次，Holm 校正后的 p 才能直接和 0.05 比。
+        "前 5 天占"= 最好的 5 天贡献了总增量的多少，越高越靠少数尖峰日；"去掉最好的月"= 拿掉贡献最大的那个月后剩下的日均。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th>{head}<th>全段</th><th>p</th><th>Holm p</th>
+        <th>前 5 天占</th><th>去掉最好的月</th></tr></thead><tbody>{''.join(mrows)}</tbody></table></div>
+      <h4>二、按天下注</h4>
+      <p class="cap">一天只押一次方向：明天全天均价比预调度的全天均价高还是低，按实际全天均价结算。
+        这更接近能交易的东西（日基荷互换、调整次日对冲量）。"方向改了"= 加上天气后有多少天押的方向和不加时不同。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>加天气 $/天</th><th>95% 区间</th>
+        <th>Holm p</th><th>方向改了（天）</th><th>命中率</th></tr></thead><tbody>{''.join(brows)}</tbody></table></div>
+      <h4>三、换训练窗长度</h4>
+      <p class="cap">训练窗越短，样本外开始得越早；直接比全段等于同时换了样本。这里只比<b>共同样本段</b>（{start} 起），
+        只有参数在变。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th>{whead}</tr></thead>
+        <tbody>{''.join(wrows)}</tbody></table></div>
+    </section>"""
+
+
 def diag_table(r: dict) -> str:
     dg = r.get("diag") or {}
     if dg.get("status") != "ok":
@@ -558,6 +622,7 @@ the economic value of reducing prediction errors.”<br>
 不只是误差。</p></div>
 <p class="lede">{head}</p>
 <div class="grid">{cards}</div>
+{robust_section(data.get("robust"))}
 {secs}
 {FOOT.format(decide_at=html.escape(str(data.get('decide_at', '13:30'))), stamp=stamp,
              embargo=data.get('embargo_days', 3), train=data.get('train_days', 180),
@@ -577,6 +642,11 @@ def main(argv=None) -> int:
         data = json.load(f)
     import os
     import trader
+    # 稳健性检验（robust.py 的输出）放在 ladder.json 旁边，有就一起渲染
+    rp = os.path.join(os.path.dirname(os.path.abspath(a.src)), "robust.json")
+    if os.path.exists(rp) and "robust" not in data:
+        with open(rp) as f:
+            data["robust"] = json.load(f)
     method = os.path.join(os.path.dirname(os.path.abspath(a.out)), "method.html")
     with open(a.out, "w") as f:
         f.write(trader.render_trader(data))
