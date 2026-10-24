@@ -845,7 +845,10 @@ def _all_regions(a) -> int:
                 dg = diagnose(res) if res.get("status") == "ok" else {"status": "skip"}
                 pub = {k: v for k, v in res.items() if not k.startswith("_")}
                 bt = bias_trade(res) if res.get("status") == "ok" else {"status": "skip"}
-                out["regions"][region] = {**pub, "economics": ec, "diag": dg, "bias": bt}
+                import products as PR
+                pr = PR.products(res) if res.get("status") == "ok" else {"status": "skip"}
+                out["regions"][region] = {**pub, "economics": ec, "diag": dg, "bias": bt,
+                                          "products": pr}
                 if res.get("status") == "ok":
                     sp = res.get("official_span")
                     if sp:
@@ -1080,13 +1083,27 @@ def main(argv=None) -> int:
                   f"（GW p={wx['gw_p']:.4f}）。这才是天气的交易价值。")
     print()
 
+    import products as PR
+    prd = PR.products(res)
+    if prd.get("status") == "ok":
+        print("\n  能下单的产品（按现货价结算，已扣交易成本；$/天，1 MW）")
+        for k, it in prd["items"].items():
+            rr = {r["model"]: r for r in it["rows"]}
+            w = rr.get("B3 +天气", {})
+            b2 = rr.get("B2 +官方", {})
+            print(f"  {it['name']:<10s} 完美 {it['perfect']:>8.1f}  推荐 {it['recommended']:<10s}"
+                  + "  ".join(f"{m} {rr[m]['daily']:.1f}" for m in PR.MODEL_ORDER if m in rr))
+            if "vs_b2" in w:
+                print(f"      加天气 {w['vs_b2']:+.2f} {w['vs_b2_ci']}   价格+AEMO 比 AEMO 直用 "
+                      f"{b2.get('vs_aemo', float('nan')):+.2f} {b2.get('vs_aemo_ci')}")
+
     if a.out:
         pub = {k: v for k, v in res.items() if not k.startswith("_")}
         with open(a.out, "w") as f:
             json.dump({"region": a.region, "hours": a.hours,
                        "generated_at": pd.Timestamp.now("UTC").isoformat(),
                        **pub, "economics": ec, "diag": dg,
-                       "bias": bias_trade(res)}, f,
+                       "bias": bias_trade(res), "products": prd}, f,
                       ensure_ascii=False, indent=1, default=str)
         print(f"→ {a.out}")
     return 0

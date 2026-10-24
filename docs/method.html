@@ -111,7 +111,7 @@ code{font:12.5px "IBM Plex Mono",ui-monospace,monospace;background:var(--hl);
   <h1>方法与证据</h1>
   <p class="tagline">天气预报在价格自回归与 AEMO 官方预调度之上，还剩多少可交易的增量</p>
   
-  <div class="stamp">生成于 2026-10-24 12:57 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</div>
+  <div class="stamp">生成于 2026-10-24 13:57 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</div>
 </header>
 <div class="q"><p>“Statistical error measures … may not necessarily reflect
 the economic value of reducing prediction errors.”<br>
@@ -159,6 +159,22 @@ the economic value of reducing prediction errors.”<br>
       <div class="mini">rMAE 增量 +0.0120</div>
       <p class="why">日收益增量区间 [-7.2, 0.1] 跨 0。</p>
     </a></div>
+<section class="reg" id="products">
+      <h2>能下单的产品：按现货价结算、已扣交易成本</h2>
+      <p class="lede">ASX 的 NEM 电力合约只有月度/季度/年度，没有日度或周度合约，日前信号在交易所上表达不出来。
+        这里把预测变成按现货价结算的实物决策，单位 $/天、1 MW。</p>
+      <p class="cap">成本：AEMO 市场费用 $0.55/MWh（双向）；储能往返效率 85%、衰减 $15/MWh 放电量；
+        调峰机组边际成本 $130/MWh、启动 $60/MW/次、最小连续运行 3 小时；
+        可调负荷每天 8 MWh、最大 1 MW，和全天平均用电比。
+        "AEMO 直用"= 不建模型、直接按预调度排计划，是最重要的对照。区间为 5 天移动块自助 95% 区间。</p>
+      <h4>储能套利：1 MW / 2 MWh，每天先充后放一个循环</h4>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>B0 naive</th><th>AEMO 直用</th><th>B1 自回归</th><th>B2 +官方</th><th>B3 +天气</th><th>B3 选特征</th><th>完美预知</th>
+      <th>B3 − B2</th><th>B2 − AEMO 直用</th><th>推荐</th></tr></thead><tbody><tr><td class='tier'>NSW1</td><td class='num'>32.1</td><td class='num'>63.0</td><td class='num'>39.2</td><td class='num'>42.9</td><td class='num'>42.7</td><td class='num'>43.8</td><td class='num'>107.9</td><td class='num'>-0.2<br><small>[-5.2, 4.6]</small></td><td class='num'>-20.1<br><small>[-33.4, -2.1]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>QLD1</td><td class='num'>82.2</td><td class='num'>95.1</td><td class='num'>95.3</td><td class='num'>94.5</td><td class='num'>94.5</td><td class='num'>94.1</td><td class='num'>123.8</td><td class='num'>-0.1<br><small>[-2.0, 1.9]</small></td><td class='num'>-0.5<br><small>[-4.6, 3.6]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>VIC1</td><td class='num'>62.2</td><td class='num'>74.9</td><td class='num'>60.0</td><td class='num'>66.6</td><td class='num'>62.2</td><td class='num'>65.2</td><td class='num'>134.5</td><td class='num'>-4.4<br><small>[-8.9, -0.5]</small></td><td class='num'>-8.3<br><small>[-17.5, -1.2]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>SA1</td><td class='num'>31.0</td><td class='num'>97.4</td><td class='num'>94.6</td><td class='num'>94.0</td><td class='num'>58.6</td><td class='num'>60.4</td><td class='num'>283.7</td><td class='num'>-35.4<br><small>[-94.4, 4.5]</small></td><td class='num'>-3.4<br><small>[-35.6, 33.0]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>TAS1</td><td class='num'>25.4</td><td class='num'>27.9</td><td class='num'>38.5</td><td class='num'>36.2</td><td class='num'>33.1</td><td class='num'>36.1</td><td class='num'>114.6</td><td class='num'>-3.0<br><small>[-6.9, 0.7]</small></td><td class='num'>+8.3<br><small>[-0.5, 15.6]</small></td><td>B1 自回归</td></tr></tbody></table></div><h4>可调负荷：每天用够 8 MWh、最大 1 MW，挑便宜的小时</h4>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>B0 naive</th><th>AEMO 直用</th><th>B1 自回归</th><th>B2 +官方</th><th>B3 +天气</th><th>B3 选特征</th><th>完美预知</th>
+      <th>B3 − B2</th><th>B2 − AEMO 直用</th><th>推荐</th></tr></thead><tbody><tr><td class='tier'>NSW1</td><td class='num'>173.4</td><td class='num'>219.2</td><td class='num'>207.6</td><td class='num'>210.8</td><td class='num'>211.4</td><td class='num'>212.9</td><td class='num'>259.3</td><td class='num'>+0.7<br><small>[-5.6, 4.8]</small></td><td class='num'>-8.5<br><small>[-16.7, -0.1]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>QLD1</td><td class='num'>271.4</td><td class='num'>300.9</td><td class='num'>295.1</td><td class='num'>301.7</td><td class='num'>301.8</td><td class='num'>300.9</td><td class='num'>318.7</td><td class='num'>+0.1<br><small>[-1.8, 2.0]</small></td><td class='num'>+0.8<br><small>[-4.5, 5.1]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>VIC1</td><td class='num'>138.8</td><td class='num'>231.8</td><td class='num'>185.4</td><td class='num'>217.6</td><td class='num'>209.1</td><td class='num'>215.9</td><td class='num'>277.9</td><td class='num'>-8.6<br><small>[-16.4, -1.9]</small></td><td class='num'>-14.1<br><small>[-24.8, -4.3]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>SA1</td><td class='num'>195.2</td><td class='num'>304.0</td><td class='num'>243.5</td><td class='num'>260.2</td><td class='num'>260.8</td><td class='num'>263.7</td><td class='num'>390.2</td><td class='num'>+0.6<br><small>[-11.3, 12.1]</small></td><td class='num'>-43.8<br><small>[-64.8, -25.8]</small></td><td>AEMO 直用</td></tr><tr><td class='tier'>TAS1</td><td class='num'>118.3</td><td class='num'>165.6</td><td class='num'>146.4</td><td class='num'>164.3</td><td class='num'>158.1</td><td class='num'>162.1</td><td class='num'>212.0</td><td class='num'>-6.2<br><small>[-12.4, -0.6]</small></td><td class='num'>-1.4<br><small>[-14.8, 9.9]</small></td><td>AEMO 直用</td></tr></tbody></table></div><h4>日前定机组的调峰：1 MW 燃气机组，前一天定好运行小时，开机至少 3 小时</h4>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>B0 naive</th><th>AEMO 直用</th><th>B1 自回归</th><th>B2 +官方</th><th>B3 +天气</th><th>B3 选特征</th><th>完美预知</th>
+      <th>B3 − B2</th><th>B2 − AEMO 直用</th><th>推荐</th></tr></thead><tbody><tr><td class='tier'>NSW1</td><td class='num'>-57.2</td><td class='num'>-25.2</td><td class='num'>-0.7</td><td class='num'>14.6</td><td class='num'>15.4</td><td class='num'>14.1</td><td class='num'>66.1</td><td class='num'>+0.8<br><small>[-0.8, 2.8]</small></td><td class='num'>+39.8<br><small>[27.1, 65.0]</small></td><td>不做</td></tr><tr><td class='tier'>QLD1</td><td class='num'>-30.0</td><td class='num'>-57.2</td><td class='num'>-1.3</td><td class='num'>0.8</td><td class='num'>-0.8</td><td class='num'>-0.1</td><td class='num'>31.9</td><td class='num'>-1.6<br><small>[-3.9, 0.0]</small></td><td class='num'>+58.0<br><small>[43.3, 82.6]</small></td><td>不做</td></tr><tr><td class='tier'>VIC1</td><td class='num'>-100.5</td><td class='num'>-22.2</td><td class='num'>-5.7</td><td class='num'>39.5</td><td class='num'>36.3</td><td class='num'>32.8</td><td class='num'>86.6</td><td class='num'>-3.2<br><small>[-12.7, 5.8]</small></td><td class='num'>+61.6<br><small>[35.0, 85.6]</small></td><td>不做</td></tr><tr><td class='tier'>SA1</td><td class='num'>-187.2</td><td class='num'>221.9</td><td class='num'>56.0</td><td class='num'>84.9</td><td class='num'>94.6</td><td class='num'>216.2</td><td class='num'>397.9</td><td class='num'>+9.8<br><small>[-7.5, 33.6]</small></td><td class='num'>-137.0<br><small>[-591.7, 108.4]</small></td><td>不做</td></tr><tr><td class='tier'>TAS1</td><td class='num'>-29.2</td><td class='num'>-89.4</td><td class='num'>-5.1</td><td class='num'>-8.6</td><td class='num'>-9.8</td><td class='num'>-6.3</td><td class='num'>61.2</td><td class='num'>-1.2<br><small>[-9.6, 4.7]</small></td><td class='num'>+80.8<br><small>[7.5, 139.6]</small></td><td>不做</td></tr></tbody></table></div>
+    </section>
 <section class="reg" id="robust">
       <h2>稳健性：偏差交易里天气多赚的钱，是真的吗</h2>
       <p class="lede">数字都是"加天气（B3）比不加（B2）每天多赚的 $"，1 MW，赌 AEMO 预调度偏差的小时版。</p>
@@ -1122,7 +1138,7 @@ the economic value of reducing prediction errors.”<br>
 <li><a href="https://arxiv.org/html/2510.03657">Optimising Battery Energy Storage System
   Trading via Energy Market Operator Price Forecast</a> —— 经济评估用储能套利的依据。</li>
 </ul>
-<p style="margin-top:20px">生成于 2026-10-24 12:57 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</p>
+<p style="margin-top:20px">生成于 2026-10-24 13:57 UTC · 样本外 2026-04-27 → 2026-10-11 · 评估时段 all · 前一天 13:30 定计划 · 分小时拟合</p>
 <p>代码与方法：<a href="https://github.com/Eric-S108/nem-weather-desk">https://github.com/Eric-S108/nem-weather-desk</a></p>
 </footer>
 </div>

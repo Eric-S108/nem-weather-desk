@@ -1330,6 +1330,16 @@ def test_trader_page_two_pages_plain_words(tmp_path):
     import trader
     loss = _region_ok(168, gain_ci=(-8.9, -0.4))
     loss["economics"]["rows"][0]["gain"] = -4.4
+    loss["products"] = {"status": "ok", "costs": {"fee": 0.55, "eta": 0.85, "degr": 15, "srmc": 130,
+                                                  "start": 60, "min_up": 3},
+                        "sources": {}, "sensitivity": {},
+                        "items": {"battery": {"name": "储能套利", "desc": "1 MW / 2 MWh", "days": 168,
+                                              "perfect": 150.0, "recommended": "B2 +官方", "best": "B2 +官方",
+                                              "rows": [{"model": "AEMO 直用", "daily": 40.0, "ci": [30, 50], "capture": .27},
+                                                       {"model": "B2 +官方", "daily": 60.0, "ci": [50, 70], "capture": .4,
+                                                        "vs_aemo": 20.0, "vs_aemo_ci": [5.0, 35.0]},
+                                                       {"model": "B3 +天气", "daily": 55.0, "ci": [45, 65], "capture": .37,
+                                                        "vs_b2": -5.0, "vs_b2_ci": [-9.0, -1.0]}]}}}
     good = _region_ok(168)
     good["economics"]["recommended"] = "B3 +天气"
     good["economics"]["daily"] = {"dates": ["2026-01-01", "2026-01-02", "2026-01-03"],
@@ -1347,7 +1357,8 @@ def test_trader_page_two_pages_plain_words(tmp_path):
     assert 'href="method.html"' in page and "/Users/" not in page
     body = page.split("<body>", 1)[1]
     assert "rMAE" not in body and "GW p" not in body
-    assert "✕" in body and "亏钱" in body and "样本不足" in body
+    assert "✕" in body and "亏钱" in body
+    assert "能下单的产品" in body and "交易成本假设" in body and "日度或周度" in body
     assert "少赚" in trader.plain_reason(loss)
     src = tmp_path / "ladder.json"
     src.write_text(_json.dumps(data, ensure_ascii=False))
@@ -1501,6 +1512,8 @@ def test_paper_settle_and_first_signal_is_final(tmp_path, monkeypatch):
     assert abs(r["bias_b3"] - np.abs(y - a).sum()) < 0.05
     assert r["bias_b2"] == 0.0
     assert r["batt_b3"] == r["batt_perfect"]
+    assert r["battery_b3"] == r["battery_perfect"] and r["peaker_b3"] == r["peaker_perfect"]
+    assert r["flexload_b3"] >= r["flexload_aemo"]
     monkeypatch.setattr(P, "PAPER_DIR", str(tmp_path))
     monkeypatch.setattr(P, "SIGNALS", str(tmp_path / "signals.csv"))
     P.append_signals(sig.copy())
@@ -1508,3 +1521,76 @@ def test_paper_settle_and_first_signal_is_final(tmp_path, monkeypatch):
     P.append_signals(s2)
     got = pd.read_csv(tmp_path / "signals.csv")
     assert len(got) == 24 and np.allclose(got["p_b3"], y, atol=0.01)
+
+
+def test_peaker_dp_matches_brute_force():
+    """日前定机组的动态规划 = 暴力枚举全部开停组合（满足最小连续运行）的最优解。"""
+    import itertools
+    import products as PR
+    rng = np.random.default_rng(3)
+    for _ in range(30):
+        n, m = 9, 3
+        p = rng.normal(120, 60, size=n)
+        best = 0.0
+        for bits in itertools.product([0, 1], repeat=n):
+            on = np.array(bits, bool)
+            runs, r = [], 0
+            for b in on:
+                if b:
+                    r += 1
+                elif r:
+                    runs.append(r); r = 0
+            if r:
+                runs.append(r)
+            if any(x < m for x in runs):
+                continue
+            v = float(np.sum((p - 130 - 0.55)[on])) - 60 * len(runs)
+            best = max(best, v)
+        on = PR.peaker_plan(p, 130, 0.55, 60, m)
+        got = PR.peaker_day(p, p, {**PR.COSTS, "srmc": 130, "start": 60, "min_up": m})
+        assert abs(got - best) < 1e-6, (got, best)
+
+
+def test_products_cost_accounting():
+    """储能：费用两个方向都收、衰减按放电量；成本越高越少交易，收益单调不增。
+    可调负荷：知道实际价时省钱最多，且永远不比平均用电差。"""
+    import products as PR
+    rng = np.random.default_rng(4)
+    y = 80 + 60 * np.sin(np.arange(24) / 24 * 2 * np.pi) + rng.normal(scale=5, size=24)
+    c = dict(PR.COSTS)
+    v, ci, di = PR.battery_plan(y, 2, c["eta"], PR.battery_cost_per_h(c))
+    expect = c["eta"] * y[di].sum() - y[ci].sum() - 2 * (c["fee"] * 1.85 + c["degr"] * 0.85)
+    assert abs(PR.battery_day(y, y, c) - expect) < 1e-9
+    vals = [PR.battery_day(y, y, {**c, "degr": d}) for d in (0, 15, 50, 500)]
+    assert vals == sorted(vals, reverse=True) and vals[-1] == 0.0
+    perfect = PR.flexload_day(y, y, c)
+    assert perfect >= 0
+    for _ in range(20):
+        assert PR.flexload_day(y + rng.normal(scale=40, size=24), y, c) <= perfect + 1e-9
+
+
+def test_products_summary_compares_against_aemo_as_is():
+    """产品汇总里必须有"AEMO 直接用"这条对照，且推荐规则不偏向复杂模型。"""
+    import products as PR
+    rng = np.random.default_rng(5)
+    days = 60
+    t = pd.date_range("2026-03-01 14:00", periods=days * 24, freq="h")
+    hod = np.arange(len(t)) % 24
+    y = 90 + 50 * np.sin(hod / 24 * 2 * np.pi) + rng.normal(scale=10, size=len(t))
+    a = y + rng.normal(scale=30, size=len(t))
+    res = {"status": "ok", "_y": y, "_t": t.to_numpy(), "_aemo": a,
+           "_pred": {"B0 naive": np.roll(y, 168), "B1 自回归": y + rng.normal(scale=12, size=len(t)),
+                     "B2 +官方": y + rng.normal(scale=12, size=len(t)),
+                     "B3 +天气": y + rng.normal(scale=12, size=len(t))}}
+    out = PR.products(res)
+    assert out["status"] == "ok"
+    for k in ("battery", "flexload", "peaker"):
+        rows = {r["model"]: r for r in out["items"][k]["rows"]}
+        assert "AEMO 直用" in rows and "vs_aemo" in rows["B2 +官方"]
+        assert out["items"][k]["recommended"] in set(rows) | {"不做"}
+    # 最好的预测扣完成本都不显著赚钱时，推荐"不做"，而不是挑一个亏钱的模型
+    peak = out["items"]["peaker"]
+    best = max(peak["rows"], key=lambda r: r["daily"])
+    if best["ci"][0] <= 0:
+        assert peak["recommended"] == "不做"
+    assert len(out["sensitivity"]["battery_degr"]) == 5

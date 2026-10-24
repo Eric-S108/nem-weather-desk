@@ -30,12 +30,19 @@ MODEL_NAME = {
     "B1 自回归": "价格模型",
     "B2 +官方": "价格 + AEMO",
     "B3 +天气": "价格 + AEMO + 天气",
+    "AEMO 直用": "AEMO 预调度直接用",
+    "B3 选特征": "价格 + AEMO + 挑过的天气",
+    "完美预知": "完美预知",
+    "不做": "这个区不做",
 }
 MODEL_HINT = {
     "B0 naive": "直接照抄上周同一天、同一小时的价格",
     "B1 自回归": "只看最近的电价",
     "B2 +官方": "最近电价 + AEMO 官方预调度",
     "B3 +天气": "最近电价 + AEMO 预调度 + 天气预报",
+    "AEMO 直用": "不建模型，直接按官方预测排",
+    "B3 选特征": "天气变量只在训练段里挑",
+    "不做": "最好的预测扣完成本也不显著赚钱",
 }
 SERIES = ["B1 自回归", "B2 +官方", "B3 +天气"]           # 分类色 1–3
 STATUS = {                                               # (类名, 图标, 文字)
@@ -212,7 +219,8 @@ def forest(items: list[dict], key_mean: str, key_ci: str, title: str, sub: str,
     bounds = sorted(abs(v) for x in rows for v in x[key_ci])
     q = bounds[int(0.75 * (len(bounds) - 1))]
     # 刻度按多数区的区间宽度定，个别极端区（点或须超出）截在边上画箭头，数值照写在右侧
-    lim = _nice(max(q * 1.5, 2.0))
+    ms = sorted(abs(x[key_mean]) for x in rows)
+    lim = _nice(max(q * 1.5, ms[int(0.75 * (len(ms) - 1))] * 1.2, 2.0))
     P = lambda v: (max(-lim, min(lim, v)) + lim) / (2 * lim) * 100  # noqa: E731
     ticks = "".join(
         f'<span class="ft" style="left:{P(tv):.2f}%">{_compact(tv) if tv else "$0"}</span>'
@@ -259,14 +267,16 @@ def forest(items: list[dict], key_mean: str, key_ci: str, title: str, sub: str,
 
 
 # ------------------------------------------------------------------ 图 2：累计收益小多图
-def cumulative(items: list[dict], decide_at: str = "13:30", mw: float = 1, mwh: float = 2) -> str:
+def cumulative(items: list[dict], decide_at: str = "13:30", mw: float = 1, mwh: float = 2,
+               base: str = "B0 naive", title: str | None = None, sub: str | None = None,
+               fig_id: str = "fig-cum") -> str:
     panels, tables = [], []
     for x in items:
         dl = x.get("daily")
         if not dl or not dl.get("dates"):
             continue
         dates = dl["dates"]
-        keys = ["B0 naive"] + [k for k in SERIES if k in dl]
+        keys = [base] + [k for k in SERIES if k in dl]
         cum = {}
         for k in keys:
             acc, out = 0.0, []
@@ -293,11 +303,11 @@ def cumulative(items: list[dict], decide_at: str = "13:30", mw: float = 1, mwh: 
             g.append(f'<text class="tick" x="{X(i):.1f}" y="{H - 8}" text-anchor="{anc}">{dates[i][2:]}</text>')
         for k in keys:
             pts = " ".join(f"{X(i):.1f},{Y(v):.1f}" for i, v in enumerate(cum[k]))
-            cls = "base" if k == "B0 naive" else f"s{SERIES.index(k) + 1}"
+            cls = "base" if k == base else f"s{SERIES.index(k) + 1}"
             g.append(f'<polyline class="ln {cls}" points="{pts}"/>')
         rec = x["rec"]
         if rec in cum:
-            cls = "base" if rec == "B0 naive" else f"s{SERIES.index(rec) + 1}"
+            cls = "base" if rec == base else f"s{SERIES.index(rec) + 1}"
             g.append(f'<circle class="end {cls}" cx="{X(n - 1):.1f}" cy="{Y(cum[rec][-1]):.1f}" r="4"/>')
         g.append(f'<line class="cross" x1="0" x2="0" y1="{T}" y2="{T + ph}" style="display:none"/>')
         g.append(f'<rect class="hitarea" x="{L}" y="{T}" width="{pw}" height="{ph}"/>')
@@ -319,24 +329,162 @@ def cumulative(items: list[dict], decide_at: str = "13:30", mw: float = 1, mwh: 
         tables.append("<tr><td>{}</td>{}</tr>".format(
             _esc(x["region"]),
             "".join(f"<td class='num'>{_money(cum[k][-1])}</td>" if k in cum else "<td>—</td>"
-                    for k in ["B0 naive"] + SERIES)))
+                    for k in [base] + SERIES)))
     if not panels:
         return ""
     legend = "".join(
-        f'<span class="key"><i class="sw {("base" if k == "B0 naive" else "s" + str(SERIES.index(k) + 1))}"></i>'
-        f'{MODEL_NAME[k]}</span>' for k in ["B0 naive"] + SERIES)
-    head_cells = "".join(f"<th class='num'>{MODEL_NAME[k]}</th>" for k in ["B0 naive"] + SERIES)
+        f'<span class="key"><i class="sw {("base" if k == base else "s" + str(SERIES.index(k) + 1))}"></i>'
+        f'{MODEL_NAME[k]}</span>' for k in [base] + SERIES)
+    head_cells = "".join(f"<th class='num'>{MODEL_NAME[k]}</th>" for k in [base] + SERIES)
     return f"""
-<figure class="fig" id="fig-cum">
-  <figcaption><h3>累计收益：一块 {mw:g} MW / {mwh:g} MWh 电池</h3>
-    <p>每天 {decide_at} 用各模型的预测排好次日计划，按实际电价结算后的累计美元。线越高越好；
-    圆点是该区建议使用的模型。</p></figcaption>
+<figure class="fig" id="{fig_id}">
+  <figcaption><h3>{title or f"累计收益：一块 {mw:g} MW / {mwh:g} MWh 电池"}</h3>
+    <p>{sub or f"每天 {decide_at} 用各模型的预测排好次日计划，按实际电价结算后的累计美元。线越高越好；圆点是该区建议使用的模型。"}</p></figcaption>
   <div class="legend">{legend}</div>
   <div class="grid5">{''.join(panels)}</div>
   <details class="tv"><summary>表格视图（期末累计）</summary>
     <table class="dt"><thead><tr><th>区</th>{head_cells}</tr></thead>
     <tbody>{''.join(tables)}</tbody></table></details>
 </figure>"""
+
+
+# ------------------------------------------------------------------ 能下单的产品
+PRODUCT_KEYS = ["battery", "flexload", "peaker"]
+
+
+def product_rows(regs: dict, key: str) -> list[dict]:
+    out = []
+    for name, r in regs.items():
+        pr = (r.get("products") or {})
+        it = (pr.get("items") or {}).get(key) if pr.get("status") == "ok" else None
+        if not it:
+            out.append({"region": name, "ok": False, "reason": "没有可比结果"})
+            continue
+        rows = {x["model"]: x for x in it["rows"]}
+        w = rows.get("B3 +天气") or {}
+        b2 = rows.get("B2 +官方") or {}
+        rec = it.get("recommended")
+        days = it.get("days") or 0
+        st = _ci_state(w.get("vs_b2_ci"), days) if w else "none"
+        dl = it.get("daily") or {}
+        out.append({
+            "region": name, "ok": True, "state": st, "rec": rec,
+            "rec_daily": 0.0 if rec == "不做" else (rows.get(rec) or {}).get("daily"),
+            "rec_capture": None if rec == "不做" else (rows.get(rec) or {}).get("capture"),
+            "perfect": it.get("perfect"), "days": days,
+            "w_gain": w.get("vs_b2"), "w_ci": w.get("vs_b2_ci"),
+            "m_gain": b2.get("vs_aemo"), "m_ci": b2.get("vs_aemo_ci"),
+            "aemo_daily": (rows.get("AEMO 直用") or {}).get("daily"),
+            "daily": dl, "w_ref": "B2 +官方", "has_official": bool(r.get("has_official")),
+        })
+    return out
+
+
+def _ci_txt(ci, nd=1) -> str:
+    if not ci:
+        return ""
+    return f"[{_money(ci[0], True, nd)}, {_money(ci[1], True, nd)}]"
+
+
+def products_block(regs: dict, decide_at: str) -> tuple[str, dict]:
+    """三个能下单的产品，一个产品一个标签页：行动表 + 天气森林图 + 累计收益。"""
+    tabs, panes, stats = [], [], {}
+    first = True
+    for key in PRODUCT_KEYS:
+        rows = product_rows(regs, key)
+        oks = [x for x in rows if x["ok"]]
+        if not oks:
+            continue
+        it0 = next(((r.get("products") or {}).get("items") or {}).get(key)
+                    for r in regs.values() if (r.get("products") or {}).get("status") == "ok")
+        name, desc = it0["name"], it0["desc"]
+        stats[key] = {"name": name, "yes": [x["region"] for x in oks if x["state"] == "yes"],
+                      "loss": [x["region"] for x in oks if x["state"] == "loss"],
+                      "model_yes": [x["region"] for x in oks if x["m_ci"] and x["m_ci"][0] > 0],
+                      "recs": {x["region"]: x["rec"] for x in oks}}
+        trs = []
+        for x in rows:
+            if not x["ok"]:
+                trs.append(f"<tr><td class='rg'>{_esc(x['region'])}</td><td>{chip('none')}</td>"
+                           f"<td colspan='5' class='why'>{_esc(x['reason'])}</td></tr>")
+                continue
+            cap = x["rec_capture"]
+            trs.append(f"""<tr>
+  <td class="rg">{_esc(x['region'])}</td>
+  <td class="st">{chip(x['state'])}</td>
+  <td class="mdl" data-l="用什么预测"><span class="model">{MODEL_NAME.get(x['rec'], '—')}</span><span class="hint">{MODEL_HINT.get(x['rec'], '')}</span></td>
+  <td class="num" data-l="每天净赚"><span class="big2">{_money(x['rec_daily'], True)}</span><span class="hint">已扣成本</span></td>
+  <td class="num" data-l="抓到上限的">{'—' if cap is None else f'{cap:.0%}'}<span class="hint">上限 {_money(x['perfect'])}</span></td>
+  <td class="num" data-l="建模比直接用 AEMO 多"><span class="big2">{_money(x['m_gain'], True, 1)}</span><span class="hint">{_ci_txt(x['m_ci'])}</span></td>
+  <td class="num" data-l="再加天气"><span class="big2">{_money(x['w_gain'], True, 1)}</span><span class="hint">{_ci_txt(x['w_ci'])}</span></td>
+</tr>""")
+        days = max(x["days"] for x in oks)
+        fig = forest([dict(x, m=x["w_gain"], ci=x["w_ci"]) for x in oks if x["w_gain"] is not None],
+                     "m", "ci", f"{name}：加上天气每天多赚还是少赚？",
+                     f"点 = {days} 天的日均差额（相对价格 + AEMO 模型），横线 = 95% 区间。已扣交易成本。",
+                     f"fig-w-{key}")
+        cum = cumulative(oks, decide_at, base="AEMO 直用", fig_id=f"fig-cum-{key}",
+                         title=f"{name}：累计净收益",
+                         sub=f"灰线 = 不建模型、直接按 AEMO 预调度排；彩线 = 我们的三个模型。"
+                             f"每天 {decide_at} 定次日计划，按实际电价结算，已扣交易成本。圆点 = 建议用的预测。")
+        hid = "" if first else " hidden"
+        tabs.append(f'<button class="tab{" on" if first else ""}" data-pane="pane-{key}" '
+                    f'aria-selected="{"true" if first else "false"}" role="tab">{name}</button>')
+        panes.append(f"""<div class="pane" id="pane-{key}" role="tabpanel"{hid}>
+<p class="lead2"><b>{name}</b>：{_esc(desc)}。</p>
+<div class="card"><div class="scroll"><table class="act">
+<thead><tr><th>区</th><th>天气</th><th>用什么预测</th><th class="num">每天净赚</th><th class="num">抓到上限的</th>
+<th class="num">建模比直接用 AEMO 多</th><th class="num">再加天气</th></tr></thead>
+<tbody>{''.join(trs)}</tbody></table></div></div>
+{fig}{cum}</div>""")
+        first = False
+    if not panes:
+        return "", stats
+    return f"""
+<h2>能下单的产品</h2>
+<p class="lead2">ASX 的 NEM 电力合约只有月度、季度和年度，<b>没有日度或周度合约</b>，
+"明天哪几个小时贵"这种信号在交易所上表达不出来。能把它变成钱的，是按现货价结算的实物决策。
+下面三种都按 1 MW 算、<b>已扣交易成本</b>，和"不建模型、直接按 AEMO 预调度排"比。</p>
+<div class="tabs" role="tablist">{''.join(tabs)}</div>
+{''.join(panes)}""", stats
+
+
+def costs_block(regs: dict) -> str:
+    pr = next(((r.get("products") or {}) for r in regs.values()
+               if (r.get("products") or {}).get("status") == "ok"), None)
+    if not pr:
+        return ""
+    c, src = pr["costs"], pr.get("sources", {})
+    bd_rows, pk_rows = [], []
+    for name, r in regs.items():
+        ss = ((r.get("products") or {}).get("sensitivity") or {})
+        if ss.get("battery_degr"):
+            bd_rows.append(f"<tr><td class='tier'>{_esc(name)}</td>" + "".join(
+                f"<td class='num'>{_money(x['best_daily'], True)}<br><small>{_esc(MODEL_NAME.get(x['best'], x['best']))}</small></td>"
+                for x in ss["battery_degr"]) + "</tr>")
+        if ss.get("peaker_srmc"):
+            pk_rows.append(f"<tr><td class='tier'>{_esc(name)}</td>" + "".join(
+                f"<td class='num'>{_money(x['best_daily'], True)}<br><small>天气 {_money(x['w_gain'], True, 1)}</small></td>"
+                for x in ss["peaker_srmc"]) + "</tr>")
+    any_ss = next(((r.get("products") or {}).get("sensitivity") for r in regs.values()
+                   if (r.get("products") or {}).get("sensitivity")), {})
+    bd_head = "".join(f"<th class='num'>衰减 ${x['x']:g}</th>" for x in any_ss.get("battery_degr", []))
+    pk_head = "".join(f"<th class='num'>边际成本 ${x['x']:g}</th>" for x in any_ss.get("peaker_srmc", []))
+    return f"""
+<h2>交易成本假设</h2>
+<div class="how">
+  <div><b>AEMO 市场费用</b> ${c['fee']:.2f}/MWh，买、卖两个方向都收。{_esc(src.get('fee', ''))}。</div>
+  <div><b>储能</b>：往返效率 {c['eta']:.0%}，衰减 ${c['degr']:g}/MWh 放电量（下表做敏感性）。预计扣完成本不赚钱的日子不动。</div>
+  <div><b>调峰机组</b>：边际成本 ${c['srmc']:g}/MWh（{_esc(src.get('gas', ''))}，热耗约 11.5 GJ/MWh，加可变运维），
+    启动 ${c['start']:g}/MW/次，开机至少连续 {c['min_up']} 小时。快速启动、能实时报价的机组用不上日前预测，这里假设的是要提前一天定计划的机组。</div>
+  <div><b>没算进去的</b>：自己的出力对价格的影响（规模放大会压价）、网损系数、网络费、辅助服务收入、融资成本。</div>
+</div>
+<div class="card"><div class="scroll"><table class="act sens">
+<thead><tr><th>储能：最好的预测每天净赚</th>{bd_head}</tr></thead>
+<tbody>{''.join(bd_rows)}</tbody></table></div></div>
+<div class="card"><div class="scroll"><table class="act sens">
+<thead><tr><th>调峰机组：最好的预测每天净赚</th>{pk_head}</tr></thead>
+<tbody>{''.join(pk_rows)}</tbody></table></div></div>"""
 
 
 # ------------------------------------------------------------------ 第二种用法
@@ -366,7 +514,7 @@ def bias_section(ok: list[dict], days: int) -> str:
         f"点 = {days} 天里的日均差额（1 MW，相对不用天气的价格 + AEMO 模型），横线 = 95% 区间。"
         "空心点 / 箭头 = 超出刻度，看右侧数字。", "fig-bias")
     return f"""
-<h2>另一种用法：赌 AEMO 预调度的偏差</h2>
+<h2>信号检验：赌 AEMO 预调度的偏差（不能直接下单）</h2>
 <p class="lead2">电池只吃<b>日内排序</b>（哪个小时最便宜、哪个最贵），而天气——尤其是风——主要移动的是
 <b>整天的价格水平</b>。所以单独量一次水平信号：每个小时，我们的预测比 AEMO 预调度高就做多 1 MW、
 低就做空 1 MW，按实际电价结算。NEM 没有日前市场，这不是一张能直接下的单；
@@ -413,6 +561,25 @@ def paper_section(pp: dict | None, rb: dict | None) -> str:
 <thead><tr><th>区</th><th class="num">已结算</th><th class="num">价格+AEMO 比一直做空</th>
 <th class="num">加天气累计（偏差交易）</th><th class="num">电池（价格模型）</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table></div></div>"""
+    prow = []
+    names = {"battery": "储能", "flexload": "可调负荷", "peaker": "调峰机组"}
+    for k, v in regs.items():
+        pv = v.get("products") or {}
+        if not v.get("n") or not pv:
+            continue
+        cells = ""
+        for key in PRODUCT_KEYS:
+            x = pv.get(key) or {}
+            b2, b3, ae = x.get("b2"), x.get("b3"), x.get("aemo")
+            dw = None if b2 is None or b3 is None else b3 - b2
+            dm = None if b2 is None or ae is None else b2 - ae
+            cells += (f'<td class="num" data-l="{names[key]}">{_money(b2, True)}'
+                      f'<span class="hint">比 AEMO 直用 {_money(dm, True)} · 加天气 {_money(dw, True)}</span></td>')
+        prow.append(f'<tr><td class="rg">{_esc(k)}</td>{cells}</tr>')
+    if prow:
+        table += f"""<div class="card"><div class="scroll"><table class="act">
+<thead><tr><th>区</th>{''.join(f'<th class="num">{names[k]}（价格+AEMO，累计）</th>' for k in PRODUCT_KEYS)}</tr></thead>
+<tbody>{''.join(prow)}</tbody></table></div></div>"""
     strip = ""
     if lt:
         for k in focus:
@@ -589,6 +756,12 @@ table.act .hint{display:block;font-size:12px;color:var(--muted);font-weight:400}
 table.act .why{font-size:12.5px;color:var(--ink2);max-width:300px}
 .big2{font-size:18px;font-weight:650}
 svg.spark{max-width:620px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 14px}
+.tab{font:inherit;font-size:14px;padding:7px 14px;border-radius:999px;border:0;cursor:pointer;
+ background:transparent;color:var(--ink2);box-shadow:0 0 0 1px var(--ring)}
+.tab.on{background:var(--ink);color:var(--page);box-shadow:none}
+.pane[hidden]{display:none}
+table.sens td small{color:var(--muted)}
 table.strip{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
 table.strip th,table.strip td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
 table.strip thead th{color:var(--muted);font-weight:600}
@@ -693,7 +866,7 @@ svg .hitarea{fill:transparent;cursor:crosshair}
 .key{display:inline-flex;align-items:center;gap:6px}
 .sw{display:inline-block;width:16px;height:3px;border-radius:2px}
 .sw.s1{background:var(--s1)}.sw.s2{background:var(--s2)}.sw.s3{background:var(--s3)}.sw.base{background:var(--base)}
-.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:14px}
+.grid5{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr));gap:14px}
 .panel{border-radius:10px;box-shadow:0 0 0 1px var(--ring);padding:10px 10px 4px}
 .phead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 4px}
 .pname{font-weight:700}
@@ -719,6 +892,13 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 
 JS = r"""
 (function(){
+  document.querySelectorAll('.tab').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');x.setAttribute('aria-selected','false');});
+      document.querySelectorAll('.pane').forEach(function(p){p.hidden=true;});
+      b.classList.add('on');b.setAttribute('aria-selected','true');
+      document.getElementById(b.getAttribute('data-pane')).hidden=false;});
+  });
   var tip=document.createElement('div');tip.className='tip';document.body.appendChild(tip);
   function show(html,x,y){tip.innerHTML=html;tip.style.display='block';
     var w=tip.offsetWidth,h=tip.offsetHeight,vx=window.innerWidth,vy=window.innerHeight;
@@ -730,7 +910,7 @@ JS = r"""
     g.addEventListener('focus',function(){var r=g.getBoundingClientRect();show(g.getAttribute('data-tip'),r.left+20,r.top);});
     g.addEventListener('blur',hide);
   });
-  var cls={'B0 naive':'base','B1 自回归':'s1','B2 +官方':'s2','B3 +天气':'s3'};
+  var cls={'B0 naive':'base','AEMO 直用':'base','B1 自回归':'s1','B2 +官方':'s2','B3 +天气':'s3'};
   document.querySelectorAll('svg.cum').forEach(function(svg){
     var d=JSON.parse(svg.getAttribute('data-cum')),hit=svg.querySelector('.hitarea'),
         cross=svg.querySelector('.cross'),n=d.dates.length;
@@ -754,82 +934,46 @@ def render_trader(data: dict) -> str:
     regs = data.get("regions", {})
     items = [region_summary(k, v) for k, v in regs.items()]
     ok = [x for x in items if x["ok"]]
-    n_yes = sum(1 for x in ok if x["state"] == "yes")
-    n_loss = [x["region"] for x in ok if x["state"] == "loss"]
-    n_short = [x["region"] for x in ok if x["state"] == "none"]
     is_fix = bool(data.get("is_fixture"))
     decide_at = data.get("decide_at", "13:30")
-    bt = data.get("battery") or {"mw": 1, "hours": 2}
     last = max((x["daily"]["dates"][-1] for x in ok if x.get("daily")), default="")
     first = min((x["daily"]["dates"][0] for x in ok if x.get("daily")), default="")
     days = max((x["days"] or 0 for x in ok), default=0)
+    prod_html, pst = products_block(regs, decide_at)
 
-    # ---- 一句话结论 ----
-    if not ok:
+    # ---- 一句话结论（按能下单的产品）----
+    n_cells = sum(len([x for x in product_rows(regs, k) if x["ok"]]) for k in pst)
+    n_yes = sum(len(v["yes"]) for v in pst.values())
+    if not pst:
         verdict_big, verdict_say = "—", "还没有一个区跑出可比结果。"
-    elif len(n_short) == len(ok):
+    elif days < D.MIN_TEST_DAYS:
         verdict_big = "未定"
         verdict_say = f"样本外只有 {days} 天，不到 {D.MIN_TEST_DAYS} 天，<b>先不下结论</b>。"
     else:
-        verdict_big = f"{n_yes}<small>/ {len(ok)} 个区</small>"
-        if n_yes == 0:
-            verdict_say = "加上天气预报后，<b>没有一个区</b>的电池收益显著提高"
-        else:
-            verdict_say = f"<b>{n_yes} 个区</b>加上天气后电池收益显著提高"
-        if n_loss:
-            verdict_say += f"；<b>{'、'.join(n_loss)}</b> 反而显著少赚"
-        verdict_say += "。"
-        recs = {}
-        for x in ok:
-            recs.setdefault(MODEL_NAME.get(x["rec"], "—"), []).append(x["region"])
-        verdict_say += "<br>排电池建议用：" + "；".join(
-            f"<b>{m}</b>（{'、'.join(r)}）" for m, r in recs.items()) + "。"
+        verdict_big = f"{n_yes}<small>/ {n_cells}</small>"
+        parts = []
+        for k, v in pst.items():
+            t = f"<b>{v['name']}</b>："
+            t += (f"天气在 <b>{'、'.join(v['yes'])}</b> 扣完成本后显著多赚" if v["yes"]
+                  else "加天气没有一个区显著多赚")
+            if v["loss"]:
+                t += f"，<b>{'、'.join(v['loss'])}</b> 反而显著少赚"
+            grp = {}
+            for rg, m in v["recs"].items():
+                grp.setdefault("不做" if m == "不做" else MODEL_NAME.get(m, m), []).append(rg)
+            t += "。建议：" + "；".join(f"{'、'.join(r)} {m}" for m, r in grp.items())
+            parts.append(t + "。")
+        verdict_say = "<br>".join(parts)
     nest = [x for x in ok if x.get("n_ci")]
-    if nest:
-        ny = [x["region"] for x in nest if x["n_state"] == "yes"]
-        verdict_say += ("<br>只用训练段挑天气变量（不偷看测试集）后："
-                        + (f"<b>{'、'.join(ny)}</b> 显著多赚。" if ny else "仍然<b>没有</b>区显著多赚。"))
     bias = [x for x in ok if x["b_ok"] and x["b_ci"]]
     if bias:
         by = [x["region"] for x in bias if x["b_state"] == "yes"]
-        bl = [x["region"] for x in bias if x["b_state"] == "loss"]
-        verdict_say += ("<br>换成赌 AEMO 预调度的偏差（吃整天水平，不是日内排序）："
-                        + (f"天气在 <b>{'、'.join(by)}</b> 显著多赚" if by else "天气<b>没有</b>一个区显著多赚")
-                        + (f"，<b>{'、'.join(bl)}</b> 显著少赚" if bl else "") + "。")
-    if ok and not all(x["has_official"] for x in ok):
-        verdict_say += " 部分区缺 AEMO 预调度，天气增量没扣掉官方预测，只能当上界。"
-
-    # ---- 行动表 ----
-    trs = []
-    for x in items:
-        if not x["ok"]:
-            trs.append(f"<tr><td class='rg'>{_esc(x['region'])}</td><td>{chip('none')}</td>"
-                       f"<td colspan='5' class='why'>{_esc(x['reason'])}</td></tr>")
-            continue
-        rec = x["rec"]
-        cap = x["rec_capture"]
-        trs.append(f"""<tr>
-  <td class="rg">{_esc(x['region'])}</td>
-  <td class="st">{chip(x['state'])}</td>
-  <td class="mdl" data-l="排电池用"><span class="model">{MODEL_NAME.get(rec, '—')}</span><span class="hint">{MODEL_HINT.get(rec, '')}</span></td>
-  <td class="num" data-l="日收益"><span class="big2">{_money(x['rec_daily'])}</span><span class="hint">/ 天</span></td>
-  <td class="num" data-l="抓到上限的">{'—' if cap is None else f'{cap:.0%}'}<span class="hint">上限 {_money(x['perfect'])}</span></td>
-  <td class="num" data-l="加天气每天"><span class="big2">{_money(x['w_gain'], True, 2)}</span>
-      <span class="hint">[{_money((x['w_ci'] or [None])[0], True, 1)}, {_money((x['w_ci'] or [None, None])[1], True, 1)}]</span></td>
-  <td class="why">{_esc(x['reason'])}</td>
-</tr>""")
+        verdict_say += ("<br><span class='dim'>信号检验（不能直接下单）：赌 AEMO 偏差时天气"
+                        + (f"在 {'、'.join(by)} 显著有用" if by else "没有显著用处") + "。</span>")
 
     fixture = ('<div class="fixture">合成数据（fixture）——数字都是假的，只用来检查版面。</div>'
                if is_fix else "")
     gen = str(data.get("generated_at", ""))[:16].replace("T", " ")
-    forest_html = forest(
-        [dict(x, m=x["w_gain"], ci=x["w_ci"]) for x in ok], "m", "ci",
-        "加上天气预报，电池每天多赚还是少赚？",
-        "点 = 168 天里的日均差额（相对不用天气的同一套模型），横线 = 95% 区间。"
-        "横线整段在 0 右边才算真的多赚，整段在左边是真的少赚，跨过 0 就是和运气分不开。空心点 / 箭头 = 超出刻度，看右侧数字。"
-        .replace("168", str(days)),
-        "fig-weather")
-
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -846,23 +990,16 @@ def render_trader(data: dict) -> str:
     <a href="{D.REPO_URL}">代码</a></nav>
 </div>
 <div class="asof">样本外 {first} → {last}（{days} 天）· 每天 {decide_at}（NEM）定次日 24 小时计划 ·
-  {bt.get('mw', 1):g} MW / {bt.get('mw', 1) * bt.get('hours', 2):g} MWh 电池 · 生成于 {gen} UTC</div>
+  按现货价结算、已扣交易成本 · 生成于 {gen} UTC</div>
 {fixture}
 
 <section class="hero">
-  <div><p class="q">排电池：加上天气后显著多赚的区</p><div class="big">{verdict_big}</div></div>
+  <div><p class="q">扣完交易成本，加天气后显著多赚的（区 × 产品）</p><div class="big">{verdict_big}</div></div>
   <p class="say">{verdict_say}</p>
 </section>
 
-<h2>每个区怎么做</h2>
-<div class="card"><div class="scroll"><table class="act">
-<thead><tr><th>区</th><th>天气</th><th>排电池用</th><th class="num">日收益</th>
-<th class="num">抓到上限的</th><th class="num">加天气每天</th><th>原因</th></tr></thead>
-<tbody>{''.join(trs)}</tbody></table></div></div>
-
-<h2>证据</h2>
-{forest_html}
-{cumulative(ok, decide_at, bt.get('mw', 1), bt.get('mw', 1) * bt.get('hours', 2))}
+{prod_html}
+{costs_block(regs)}
 
 {bias_section(ok, days)}
 {robust_checks(data.get("robust"))}
@@ -870,15 +1007,11 @@ def render_trader(data: dict) -> str:
 
 <h2>怎么读这一页</h2>
 <div class="how">
-  <div><b>四个模型</b>，一个比一个多看一样东西：一周前同期 → 价格模型（最近电价）→
-    价格 + AEMO（再加官方预调度）→ 价格 + AEMO + 天气。天气的价值 = 最后一步多赚的钱。</div>
-  <div><b>电池规则</b>：每天 {decide_at} 只用预测排好明天，先充 {bt.get('hours', 2):g} 小时、后放
-    {bt.get('hours', 2):g} 小时，算上 85% 往返效率和每 MWh $5 的损耗；预计不赚钱的日子不动。
-    然后按实际电价结算。</div>
-  <div><b>"排电池用"</b>选的是：收益不显著低于最好那个模型的、<b>最简单</b>的那个。
-    多看一样东西，必须用显著更多的钱来换。</div>
-  <div><b>天气"用"</b>要同时满足：样本外 ≥ {D.MIN_TEST_DAYS} 天、预测更准、准得不是运气、
-    而且每天多赚的钱 95% 区间整段大于 0。任何一条不过就是"不用"。</div>
+  <div><b>预测来源</b>：AEMO 预调度直接用（不建模型）→ 价格模型（最近电价）→ 价格 + AEMO →
+    价格 + AEMO + 天气。天气的价值 = 最后一步多赚的钱；建模的价值 = 价格 + AEMO 比直接用 AEMO 多赚的钱。</div>
+  <div><b>"用什么预测"</b>选的是：收益不显著低于最好那个的、<b>最简单</b>的那个。多看一样东西，必须用显著更多的钱来换。</div>
+  <div><b>天气"用"</b>：样本外 ≥ {D.MIN_TEST_DAYS} 天，而且加天气每天多赚的钱（已扣成本）95% 区间整段大于 0。</div>
+  <div><b>信号检验</b>那一节（赌 AEMO 偏差）说明预测方向对不对，但预调度价不是成交价，不能直接下单，只作参考。</div>
 </div>
 
 <div class="next"><span>统计检验、误差解剖、哪些天气变量有用——都在第二页。</span>

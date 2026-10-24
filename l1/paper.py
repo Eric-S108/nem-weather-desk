@@ -212,6 +212,16 @@ def settle(con, signals: pd.DataFrame | None = None, prices: dict | None = None)
             rec["batt_perfect"] = 0.0 if ci is None else round(float(
                 L.BATT_POWER_MW * (L.BATT_ETA * y[di].sum() - y[ci].sum()
                                    - L.BATT_COST * L.BATT_HOURS)), 2)
+            # 能下单的产品（已扣交易成本），口径和回测里的 products.py 一样
+            import products as PR
+            srcs = {"aemo": a, "perfect": y}
+            for m, c in COL.items():
+                p = g[c].to_numpy(float)
+                if np.isfinite(p).all():
+                    srcs[c[2:]] = p
+            for k, (_, _, fn) in PR.PRODUCTS.items():
+                for name, p in srcs.items():
+                    rec[f"{k}_{name}"] = round(float(fn(p, y, PR.COSTS)), 2)
         days.append(rec)
     return {"status": "ok", "days": days}
 
@@ -227,6 +237,11 @@ def _agg(days: list[dict], reg: str) -> dict:
     for k in ("short", "bias_b2", "bias_b3", "bias_b3sel", "day_b2", "day_b3",
               "batt_b0", "batt_b1", "batt_b2", "batt_b3", "batt_perfect"):
         out[k] = tot(k)
+    import products as PR
+    out["products"] = {}
+    for k in PR.PRODUCTS:
+        out["products"][k] = {m: tot(f"{k}_{m}") for m in
+                              ("aemo", "b0", "b1", "b2", "b3", "b3sel", "perfect")}
     g = np.array([x["bias_b3"] - x["bias_b2"] for x in ds if "bias_b3" in x and "bias_b2" in x])
     out["w_gain_total"] = round(float(g.sum()), 2) if len(g) else None
     out["w_gain_per_day"] = round(float(g.mean()), 2) if len(g) else None

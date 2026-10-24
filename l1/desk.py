@@ -275,6 +275,50 @@ def bias_table(r: dict) -> str:
       <tbody>{''.join(rows)}</tbody></table></div>"""
 
 
+def products_section(regs: dict) -> str:
+    """三个能下单的产品，逐区逐预测来源的日均净收益（已扣交易成本）。"""
+    import products as PR
+    blocks = []
+    for key in PR.PRODUCTS:
+        rows, name = [], None
+        for k, r in regs.items():
+            pr = r.get("products") or {}
+            it = (pr.get("items") or {}).get(key) if pr.get("status") == "ok" else None
+            if not it:
+                continue
+            name = it["name"]
+            rr = {x["model"]: x for x in it["rows"]}
+            cells = "".join(
+                f"<td class='num'>{rr[m]['daily']:.1f}</td>" if m in rr else "<td>—</td>"
+                for m in PR.MODEL_ORDER)
+            w, b2 = rr.get("B3 +天气", {}), rr.get("B2 +官方", {})
+            wci, mci = w.get("vs_b2_ci"), b2.get("vs_aemo_ci")
+            rows.append(f"<tr><td class='tier'>{k}</td>{cells}<td class='num'>{it['perfect']:.1f}</td>"
+                        f"<td class='num'>{w.get('vs_b2', float('nan')):+.1f}<br><small>"
+                        f"{'' if not wci else f'[{wci[0]:.1f}, {wci[1]:.1f}]'}</small></td>"
+                        f"<td class='num'>{b2.get('vs_aemo', float('nan')):+.1f}<br><small>"
+                        f"{'' if not mci else f'[{mci[0]:.1f}, {mci[1]:.1f}]'}</small></td>"
+                        f"<td>{html.escape(it.get('recommended') or '—')}</td></tr>")
+        if rows:
+            head = "".join(f"<th>{html.escape(m)}</th>" for m in PR.MODEL_ORDER)
+            blocks.append(f"""<h4>{html.escape(name)}：{html.escape(PR.PRODUCTS[key][1])}</h4>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th>{head}<th>完美预知</th>
+      <th>B3 − B2</th><th>B2 − AEMO 直用</th><th>推荐</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>""")
+    if not blocks:
+        return ""
+    c = PR.COSTS
+    return f"""<section class="reg" id="products">
+      <h2>能下单的产品：按现货价结算、已扣交易成本</h2>
+      <p class="lede">ASX 的 NEM 电力合约只有月度/季度/年度，没有日度或周度合约，日前信号在交易所上表达不出来。
+        这里把预测变成按现货价结算的实物决策，单位 $/天、1 MW。</p>
+      <p class="cap">成本：AEMO 市场费用 ${c['fee']}/MWh（双向）；储能往返效率 {c['eta']:.0%}、衰减 ${c['degr']:g}/MWh 放电量；
+        调峰机组边际成本 ${c['srmc']:g}/MWh、启动 ${c['start']:g}/MW/次、最小连续运行 {c['min_up']} 小时；
+        可调负荷每天 {c['load_mwh']} MWh、最大 {c['load_mw']:g} MW，和全天平均用电比。
+        "AEMO 直用"= 不建模型、直接按预调度排计划，是最重要的对照。区间为 5 天移动块自助 95% 区间。</p>
+      {''.join(blocks)}
+    </section>"""
+
+
 def robust_section(rb: dict | None) -> str:
     """偏差交易里天气增量的稳健性：按月、多重比较、按天下注、换训练窗。"""
     if not rb or not rb.get("regions"):
@@ -622,6 +666,7 @@ the economic value of reducing prediction errors.”<br>
 不只是误差。</p></div>
 <p class="lede">{head}</p>
 <div class="grid">{cards}</div>
+{products_section(regs)}
 {robust_section(data.get("robust"))}
 {secs}
 {FOOT.format(decide_at=html.escape(str(data.get('decide_at', '13:30'))), stamp=stamp,
