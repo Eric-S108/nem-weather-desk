@@ -8,6 +8,7 @@ L1/L2 回归测试 —— 不联网，可在 CI 里跑。
 而 get_features 把它们挡住了。只测前者会被一张空表骗过去。
 """
 from __future__ import annotations
+import json
 import os
 import tempfile
 
@@ -1358,7 +1359,7 @@ def test_trader_page_two_pages_plain_words(tmp_path):
     body = page.split("<body>", 1)[1]
     assert "rMAE" not in body and "GW p" not in body
     assert "✕" in body and "亏钱" in body
-    assert "能下单的产品" in body and "交易成本假设" in body and "日度或周度" in body
+    assert "现货决策" in body and "交易成本假设" in body and "日度或周度" in body
     assert "少赚" in trader.plain_reason(loss)
     src = tmp_path / "ladder.json"
     src.write_text(_json.dumps(data, ensure_ascii=False))
@@ -1594,3 +1595,77 @@ def test_products_summary_compares_against_aemo_as_is():
     if best["ci"][0] <= 0:
         assert peak["recommended"] == "不做"
     assert len(out["sensitivity"]["battery_degr"]) == 5
+
+
+def _price_mat(days=200, seed=2):
+    rng = np.random.default_rng(seed)
+    idx = pd.date_range("2026-01-01", periods=days, freq="D")
+    base = 80 + 30 * np.sin(np.arange(24) / 24 * 2 * np.pi)
+    m = base[None, :] + rng.normal(scale=20, size=(days, 24))
+    return pd.DataFrame(m, index=idx, columns=range(24))
+
+
+def test_futures_settlement_products_and_fully_settled_period():
+    """结算口径：峰荷只算工作日 07–22 点；合约期全部结算后，公允价值就是实际结算价、区间收成一点。"""
+    import futures as F
+    mat = _price_mat()
+    per = {"start": pd.Timestamp("2026-03-01"), "end": pd.Timestamp("2026-03-31")}
+    fv = F.fair_value(mat, per, pd.Timestamp("2026-04-30"), "peak", n_sims=50)
+    sub = mat.loc["2026-03-01":"2026-03-31"]
+    wd = sub.index.weekday < 5
+    exact = sub.loc[wd, list(range(7, 22))].to_numpy().mean()
+    assert abs(fv["mean"] - exact) < 0.01 and fv["p5"] == fv["p95"] and fv["days_left"] == 0
+    cap = F.fair_value(mat, per, pd.Timestamp("2026-04-30"), "cap300", n_sims=10)
+    assert cap["mean"] == 0.0                                    # 这组价格从不过 $300
+    # 进行到一半：已结算比例对，区间有宽度
+    mid = F.fair_value(mat, per, pd.Timestamp("2026-03-15"), "base", n_sims=500)
+    assert abs(mid["settled_share"] - 15 / 31) < 1e-3 and mid["p95"] > mid["p5"]
+
+
+def test_public_futures_page_never_carries_market_prices():
+    """公开页面只放我们的公允价值：futures.json 里不能有 bid / ask / 市场价字段，渲染出来的页面也不能有。"""
+    import futures as F
+    import trader
+    mat = _price_mat()
+    asof = mat.index.max() - pd.Timedelta(days=20)
+    fut = {"pool_days": 90, "n_sims": 500, "regions": {"VIC1": {"asof": str(asof.date()), "last_hour": "x",
+           "contracts": []}}}
+    for per in F.contract_periods(asof):
+        c = {"tag": per["tag"], "label": per["label"], "kind": per["kind"], "products": {}}
+        for prod in ("base", "peak", "cap300"):
+            fv = F.fair_value(mat, per, asof, prod, n_sims=300)
+            if fv:
+                fv.pop("_samples")
+                fv["risk_long"] = F.daily_risk_per_mw(fv, fv["mean"], 1)
+                fv["risk_short"] = F.daily_risk_per_mw(fv, fv["mean"], -1)
+                c["products"][prod] = fv
+        fut["regions"]["VIC1"]["contracts"].append(c)
+    txt = json.dumps(fut)
+    assert "bid" not in txt and "ask" not in txt
+    html_ = trader.futures_block(fut) + trader.hero_tiles(fut, "0", "")
+    assert "期货公允价值" in html_ and "signals.py" in html_ and "bid" not in html_
+
+
+def test_futures_widening_and_signal_rules():
+    """区间放宽：系数只会放宽不会收窄；信号要同时过胜率和优势两道门槛；仓位受单日亏损上限约束。"""
+    import futures as F
+    import signals as S
+    df = pd.DataFrame({"period": ["a"] * 10, "asof": range(10), "mean": 100.0, "p5": 90.0, "p25": 97.0,
+                       "p75": 103.0, "p95": 110.0, "actual": [100, 120, 80, 101, 99, 130, 70, 100, 100, 100]})
+    k50, k90 = F.widen_factors(df)
+    assert k50 >= 1 and k90 >= 2.0
+    rng = np.random.default_rng(0)
+    smp = rng.normal(100, 5, size=4000)
+    d = S.decide(smp, 100.0, bid=95, ask=96, fee=0.05, min_prob=0.7, min_edge=1.0)
+    assert d["action"] == "买入" and d["prob"] > 0.7
+    d = S.decide(smp, 100.0, bid=99, ask=100.5, fee=0.05, min_prob=0.7, min_edge=1.0)
+    assert d["action"] == "观望"
+    d = S.decide(smp, 100.0, bid=108, ask=109, fee=0.05, min_prob=0.7, min_edge=1.0)
+    assert d["action"] == "卖出"
+    d = S.decide(smp, 100.0, bid=108, ask=109, fee=0.05, min_prob=0.7, min_edge=1.0, allow_sell=False)
+    assert d["action"] == "观望"                          # $300 cap 的公允价值是下限，不出卖出信号
+    fv = {"days_left": 10, "day_p05": 40.0, "day_p95": 200.0, "day_hours": 24.0}
+    mw, per_mw = S.size(fv, +1, 100.0, {"daily_loss_limit": 14400, "max_mw_per_contract": 50})
+    assert per_mw == 60 * 24 and mw == 10
+    assert S.period_from_label("Q426")["start"] == pd.Timestamp("2026-10-01")
+    assert S.period_from_label("Nov 26")["end"] == pd.Timestamp("2026-11-30")

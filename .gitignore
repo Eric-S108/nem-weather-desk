@@ -8,3 +8,4 @@ __pycache__/
 .DS_Store
 l1/ladder.json
 l1/交易台.html
+private/

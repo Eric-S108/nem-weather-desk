@@ -275,6 +275,48 @@ def bias_table(r: dict) -> str:
       <tbody>{''.join(rows)}</tbody></table></div>"""
 
 
+def _pc(v) -> str:
+    return "—" if v is None else f"{v:.0%}"
+
+
+def futures_section(fut: dict | None) -> str:
+    """期货公允价值的历史校准：抽样区间准不准、放宽多少、按剩余天数分的误差。"""
+    if not fut or not fut.get("regions"):
+        return ""
+    rows, det = [], []
+    for reg, r in fut["regions"].items():
+        for key, c in (r.get("calibration") or {}).items():
+            if not c.get("n"):
+                continue
+            kind, prod = key.split("_")
+            rows.append(f"<tr><td class='tier'>{reg}</td><td>{'月度' if kind == 'month' else '季度'}{'基荷' if prod == 'base' else '峰荷'}</td>"
+                        f"<td class='num'>{c['periods']}</td><td class='num'>{c['n']}</td>"
+                        f"<td class='num'>{c['cov50']:.0%}</td><td class='num'>{c['cov90']:.0%}</td>"
+                        f"<td class='num'>{c['k50']:.2f} / {c['k90']:.2f}</td>"
+                        f"<td class='num'>{_pc(c.get('oos_cov50'))}</td>"
+                        f"<td class='num'>{_pc(c.get('oos_cov90'))}</td></tr>")
+            if key == "month_base":
+                for b in c.get("by_left", []):
+                    det.append(f"<tr><td class='tier'>{reg}</td><td>{html.escape(b['bucket'])}</td><td class='num'>{b['n']}</td>"
+                               f"<td class='num'>{b['mae']:.1f}</td><td class='num'>{_n(b['mae_naive'], '{:.1f}')}</td>"
+                               f"<td class='num'>{b['cov90']:.0%}</td></tr>")
+    return f"""<section class="reg" id="futures">
+      <h2>期货公允价值：历史校准</h2>
+      <p class="lede">在过去每个完整的月份和季度上，从开始前一天起每隔一周站一次位置，算结算价分布，
+        再看实际结算价落在 50% / 90% 区间里的比例。抽样区间偏窄时按历史放宽（只放宽、不收窄），
+        放宽系数只用<b>更早的</b>合约期估、在后面的合约期上检验，得到样本外覆盖率。</p>
+      <p class="cap">抽样：决策日前 {fut.get('pool_days', 90)} 天的完整交易日，{fut.get('block', 3)} 天一块，{fut.get('n_sims', 4000)} 次。
+        结算按小时均价，$300 cap 因此偏低。没有用 ASX 的任何价格。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>合约</th><th>合约期数</th><th>站位次数</th>
+        <th>50% 覆盖（抽样）</th><th>90% 覆盖（抽样）</th><th>放宽系数 50/90</th><th>50% 覆盖（放宽，样本外）</th><th>90% 覆盖（放宽，样本外）</th></tr></thead>
+        <tbody>{''.join(rows)}</tbody></table></div>
+      <h4>月度基荷：按剩余比例看误差</h4>
+      <p class="cap">MAE = 公允价值（均值）和实际结算价的平均绝对差，$/MWh；"只看已结算"= 假设剩下的日子和已经过去的一样。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>站位时剩余</th><th>次数</th><th>MAE</th><th>MAE（只看已结算）</th><th>90% 覆盖（抽样）</th></tr></thead>
+        <tbody>{''.join(det)}</tbody></table></div>
+    </section>"""
+
+
 def products_section(regs: dict) -> str:
     """三个能下单的产品，逐区逐预测来源的日均净收益（已扣交易成本）。"""
     import products as PR
@@ -666,6 +708,7 @@ the economic value of reducing prediction errors.”<br>
 不只是误差。</p></div>
 <p class="lede">{head}</p>
 <div class="grid">{cards}</div>
+{futures_section(data.get("futures"))}
 {products_section(regs)}
 {robust_section(data.get("robust"))}
 {secs}
@@ -692,6 +735,10 @@ def main(argv=None) -> int:
     if os.path.exists(rp) and "robust" not in data:
         with open(rp) as f:
             data["robust"] = json.load(f)
+    fp = os.path.join(os.path.dirname(os.path.abspath(a.src)), "futures.json")
+    if os.path.exists(fp) and "futures" not in data:
+        with open(fp) as f:
+            data["futures"] = json.load(f)
     pp = os.path.join(os.path.dirname(os.path.abspath(a.src)), "paper", "summary.json")
     if os.path.exists(pp) and "paper" not in data:
         with open(pp) as f:

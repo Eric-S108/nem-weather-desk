@@ -23,6 +23,8 @@ import html
 import json
 import math
 
+import numpy as np
+
 import desk as D
 
 MODEL_NAME = {
@@ -348,6 +350,183 @@ def cumulative(items: list[dict], decide_at: str = "13:30", mw: float = 1, mwh: 
 </figure>"""
 
 
+# ------------------------------------------------------------------ 顶部
+def hero_tiles(fut: dict | None, verdict_big: str, verdict_say: str) -> str:
+    tiles = []
+    for reg, r in ((fut or {}).get("regions") or {}).items():
+        c = next((c for c in r.get("contracts", []) if c["tag"] == "当季"), None)
+        fv = (c or {}).get("products", {}).get("base")
+        if not fv:
+            continue
+        tiles.append(f"""<div class="tile"><div class="tl">{_esc(reg)} · {_esc(c['label'])} 基荷公允</div>
+<div class="tv">{_money(fv['mean'], nd=2)}</div><div class="tn">50% {_money(fv['p25'])}–{_money(fv['p75'])} · 已结算 {fv['settled_share']:.0%}</div></div>""")
+    if not tiles:
+        return f"""<section class="hero"><div><p class="q">扣完交易成本，加天气后显著多赚的（区 × 产品）</p>
+<div class="big">{verdict_big}</div></div><p class="say">{verdict_say}</p></section>"""
+    return f"""<section class="hero hero2">
+<div class="tiles">{''.join(tiles)}</div>
+<p class="say">拿你屏幕上的当季基荷价和上面比：低于 50% 区间偏便宜、高于偏贵。买卖信号、数量和风险在本机运行
+<code>python l1/signals.py</code> 生成（市场价不出你的电脑）。<br>
+<span class="dim">天气对能下单的东西：扣完成本后显著多赚的（区 × 产品）{verdict_big.replace('<small>/', ' / ').replace('</small>', '')}。</span></p>
+</section>"""
+
+
+# ------------------------------------------------------------------ 期货：公允价值
+FUT_PROD = [("base", "基荷"), ("peak", "峰荷"), ("cap300", "$300 cap*")]
+
+
+def _range_row(label: str, fv: dict, lo: float, hi: float, note: str) -> str:
+    P = lambda v: (min(max(v, lo), hi) - lo) / ((hi - lo) or 1) * 100   # noqa: E731
+    tip = (f"<b>{_esc(label)}</b><br>公允 {_money(fv['mean'], nd=2)}<br>50% 区间 {_money(fv['p25'], nd=1)} – {_money(fv['p75'], nd=1)}"
+           f"<br>90% 区间 {_money(fv['p5'], nd=1)} – {_money(fv['p95'], nd=1)}<br>已结算 {fv['settled_share']:.0%}，剩 {fv['days_left']} 天")
+    return f"""<div class="fr" tabindex="0" data-tip="{_esc(tip)}">
+  <span class="fl fl2">{_esc(label)}</span>
+  <span class="ftrack rng"><i class="r90" style="left:{P(fv['p5']):.1f}%;width:{max(P(fv['p95']) - P(fv['p5']), .5):.1f}%"></i>
+    <i class="r50" style="left:{P(fv['p25']):.1f}%;width:{max(P(fv['p75']) - P(fv['p25']), .5):.1f}%"></i>
+    <i class="fd" style="left:{P(fv['mean']):.1f}%"></i></span>
+  <span class="fv"><b>{_money(fv['mean'], nd=2)}</b><small>{_esc(note)}</small></span></div>"""
+
+
+def futures_block(fut: dict | None) -> str:
+    if not fut or not fut.get("regions"):
+        return ""
+    panels, rows = [], []
+    for reg, r in fut["regions"].items():
+        cs = [c for c in r.get("contracts", []) if "base" in c.get("products", {})]
+        if not cs:
+            continue
+        vals = [c["products"]["base"][k] for c in cs for k in ("p5", "p95")]
+        lo, hi = _nice_floor(min(vals)), _nice_ceil(max(vals))
+        cal = r.get("calibration") or {}
+        cm = cal.get("month_base") or {}
+        cq = cal.get("quarter_base") or {}
+        body = "".join(_range_row(f"{c['label']}", c["products"]["base"], lo, hi,
+                                  f"{_money(c['products']['base']['p5'])}–{_money(c['products']['base']['p95'])}")
+                       for c in cs)
+        cov = []
+        if cm.get("oos_cov90") is not None:
+            cov.append(f"月度 {cm['oos_cov90']:.0%}")
+        if cq.get("oos_cov90") is not None:
+            cov.append(f"季度 {cq['oos_cov90']:.0%}")
+        panels.append(f"""<div class="panel"><div class="phead"><span class="pname">{_esc(reg)}</span>
+  <span class="pnote">基荷 · 截至 {_esc(r['asof'])} · 90% 区间历史覆盖 {'、'.join(cov) or '—'}</span></div>
+  <div class="forest">{body}
+  <div class="fr faxis"><span class="fl fl2"></span><span class="ftrack"><span class="ft" style="left:0%">{_money(lo)}</span>
+  <span class="ft" style="left:100%">{_money(hi)}</span></span><span class="fv"></span></div></div></div>""")
+        for c in r.get("contracts", []):
+            cells = ""
+            for k, _ in FUT_PROD:
+                fv = c["products"].get(k)
+                cells += ("<td>—</td>" if not fv else
+                          f"<td class='num' data-l='{dict(FUT_PROD)[k]}'><span class='big2'>{_money(fv['mean'], nd=2)}</span>"
+                          f"<span class='hint'>50% {_money(fv['p25'])}–{_money(fv['p75'])} · 90% {_money(fv['p5'])}–{_money(fv['p95'])}</span></td>")
+            b = c["products"].get("base") or {}
+            rows.append(f"""<tr><td class="rg">{_esc(reg)}</td><td data-l="合约"><b>{_esc(c['label'])}</b><span class="hint">{_esc(c['tag'])} · 剩 {b.get('days_left', '—')} 天 · 已结算 {b.get('settled_share', 0):.0%}</span></td>
+{cells}<td class="num" data-l="每 MW 单日 95% 亏损">{_money(b.get('risk_long'))}<span class="hint">做空 {_money(b.get('risk_short'))}</span></td></tr>""")
+    return f"""
+<h2>期货公允价值</h2>
+<p class="lead2">ASX 的 NEM 期货按合约期内现货均价结算。这里只用 AEMO 公开的现货价算：已经过去的小时按实际价，
+剩下的从最近 {fut.get('pool_days', 90)} 天里整块抽样 {fut.get('n_sims', 4000):,} 次，区间再按历史校准放宽。
+<b>页面上不放 ASX 的价格</b>（ASX Energy 网站条款禁止转载）——拿你自己屏幕上的价格对照：
+市场价低于 50% 区间下沿 → 偏便宜；高于上沿 → 偏贵。要买卖信号和仓位，在本机运行 <code>python l1/signals.py</code>。</p>
+<div class="grid5">{''.join(panels)}</div>
+<div class="card" style="margin-top:16px"><div class="scroll"><table class="act">
+<thead><tr><th>区</th><th>合约</th>{''.join(f'<th class="num">{n} 公允</th>' for _, n in FUT_PROD)}<th class="num">基荷每 MW 单日 95% 亏损（做多）</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div></div>
+<p class="lead2">* $300 cap 按小时均价算，5 分钟尖峰被平均掉，是<b>下限</b>。"单日 95% 亏损"= 持有到交割时，
+95% 的交易日里单日最多亏多少（按开仓价 = 公允价、每天一天现货结算进来算；不含期货价本身的盯市波动）。</p>"""
+
+
+def _nice_floor(v: float) -> float:
+    st = _nice(max(abs(v), 1) / 4)
+    return float(np.floor(v / st) * st)
+
+
+def _nice_ceil(v: float) -> float:
+    st = _nice(max(abs(v), 1) / 4)
+    return float(np.ceil(v / st) * st)
+
+
+def spot_block(fut: dict | None) -> str:
+    if not fut:
+        return ""
+    trs = []
+    for reg, r in fut.get("regions", {}).items():
+        sp = r.get("spot") or {}
+        if not sp or "error" in sp:
+            continue
+        if sp.get("stale"):
+            trs.append(f"""<tr><td class="rg">{_esc(reg)}</td><td data-l="日期">{_esc(sp['day'])}</td>
+<td colspan="3" class="why">预调度只更新到 {_esc(sp.get('pd_last') or '—')}（NEM），还没覆盖明天——每日任务跑过之后才有。</td>
+<td class="num" data-l="本月历史尖峰日">{'—' if sp.get('spike_freq') is None else f"{sp['spike_freq']:.0%}"}</td></tr>""")
+            continue
+        ours = ("—" if sp.get("ours_avg") is None else
+                f"{_money(sp['ours_avg'])}<span class='hint'>最高 {_money(sp.get('ours_max'))}</span>")
+        trs.append(f"""<tr><td class="rg">{_esc(reg)}</td><td data-l="日期">{_esc(sp['day'])}</td>
+<td class="num" data-l="AEMO 预调度均价">{_money(sp['aemo_avg'])}<span class="hint">最高 {_money(sp['aemo_max'])}</span></td>
+<td class="num" data-l="我们的预测均价">{ours}</td>
+<td class="num" data-l="预调度 > $300 的小时">{sp['aemo_hours_over_300']}</td>
+<td class="num" data-l="本月历史尖峰日">{'—' if sp.get('spike_freq') is None else f"{sp['spike_freq']:.0%}"}<span class="hint">{sp.get('spike_days', '')} 天里</span></td></tr>""")
+    if not trs:
+        return ""
+    return f"""
+<h2>明日现货展望</h2>
+<p class="lead2">AEMO 预调度取最新一版（前一天的预调度系统性偏高，均价要打折看）；"我们的预测"是纸面交易每天 13:30 前出的价格 + AEMO 模型（没有就显示 —）。
+"本月历史尖峰日"= 历史上同一个月里，日内最高小时均价超过 $300 的天数占比，用来看 cap 和晚峰合约的尾部风险。</p>
+<div class="card"><div class="scroll"><table class="act"><thead><tr><th>区</th><th>日期</th><th class="num">AEMO 预调度均价</th>
+<th class="num">我们的预测均价</th><th class="num">预调度 &gt; $300 的小时</th><th class="num">本月历史尖峰日</th></tr></thead>
+<tbody>{''.join(trs)}</tbody></table></div></div>"""
+
+
+def weather_block(fut: dict | None) -> str:
+    if not fut:
+        return ""
+    trs = []
+    for reg, r in fut.get("regions", {}).items():
+        w = r.get("weather") or {}
+        if not w or "error" in w or "wind" not in w:
+            continue
+        wz, tz = w["wind"]["z"], w["temp"]["z"]
+        wtxt = "偏弱" if wz < -0.5 else "偏强" if wz > 0.5 else "正常"
+        ttxt = "偏冷" if tz < -0.5 else "偏热" if tz > 0.5 else "正常"
+        imp = w.get("implied")
+        trs.append(f"""<tr><td class="rg">{_esc(reg)}</td><td data-l="区间">{_esc(w['from'][5:])} – {_esc(w['to'][5:])}</td>
+<td class="num" data-l="100 米风速">{w['wind']['fc']:.1f} km/h<span class="hint">常态 {w['wind']['norm']:.1f} · {wtxt}（{wz:+.1f}σ）</span></td>
+<td class="num" data-l="气温">{w['temp']['fc']:.1f} °C<span class="hint">常态 {w['temp']['norm']:.1f} · {ttxt}（{tz:+.1f}σ）</span></td>
+<td class="num" data-l="历史上对应的日均价偏离">{_money(imp, True, 1)}<span class="hint">风每少 1 km/h {_money(-(w.get('sens_wind') or 0), True, 1)}</span></td></tr>""")
+    if not trs:
+        return ""
+    return f"""
+<h2>天气指标（未来几天）</h2>
+<p class="lead2">ECMWF 最新一版预报相对同期常态（ERA5 同日 ±15 天）的偏离。最后一列是历史上同月份里这种偏离对应的日均价偏离——
+<b>描述性的，不是预测</b>：前面的检验已经说明，加上天气并没有让能下单的东西显著多赚。把它当成"市场可能在交易什么"的背景信息。</p>
+<div class="card"><div class="scroll"><table class="act"><thead><tr><th>区</th><th>区间</th><th class="num">100 米风速</th>
+<th class="num">气温</th><th class="num">历史上对应的日均价偏离</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div></div>"""
+
+
+def risk_block(fut: dict | None, data: dict) -> str:
+    items = []
+    if fut:
+        lasts = [r.get("last_hour", "")[:16] for r in fut.get("regions", {}).values()]
+        if lasts:
+            items.append(f"<div><b>数据新鲜度</b>：现货价最后一个小时 {_esc(min(lasts))}（NEM）。超过两天没更新就别用公允价值。</div>")
+        covs = [((r.get("calibration") or {}).get("month_base") or {}).get("oos_cov90")
+                for r in fut.get("regions", {}).values()]
+        covs = [c for c in covs if c is not None]
+        if covs:
+            items.append(f"<div><b>区间可信度</b>：放宽后的 90% 区间在样本外盖住了 {min(covs):.0%}–{max(covs):.0%} 的实际结算价"
+                         f"（月度基荷，各区）。低于 90% 说明还偏窄。</div>")
+    items += [
+        "<div><b>没有历史期货价</b>：公允价值的准确度检验过，但“市场价偏离公允价值就交易”这个规则<b>没有在历史期货价上回测过</b>。</div>",
+        "<div><b>结构性变化</b>：抽样池只看最近 90 天；新机组投运、长时间检修、气价跳变、极端天气都可能让未来和最近不一样。</div>",
+        "<div><b>尾部</b>：NEM 有市场价格上限（每 5 分钟一万多澳元/MWh）。卖出 cap、做空晚峰在尖峰日的亏损可以远超“单日 95% 亏损”。</div>",
+        "<div><b>流动性</b>：月度和峰荷合约成交稀，bid/ask 价差可能吃掉全部优势。</div>",
+    ]
+    return f"""
+<h2>风险</h2>
+<div class="how">{''.join(items)}</div>"""
+
+
 # ------------------------------------------------------------------ 能下单的产品
 PRODUCT_KEYS = ["battery", "flexload", "peaker"]
 
@@ -441,10 +620,9 @@ def products_block(regs: dict, decide_at: str) -> tuple[str, dict]:
     if not panes:
         return "", stats
     return f"""
-<h2>能下单的产品</h2>
-<p class="lead2">ASX 的 NEM 电力合约只有月度、季度和年度，<b>没有日度或周度合约</b>，
-"明天哪几个小时贵"这种信号在交易所上表达不出来。能把它变成钱的，是按现货价结算的实物决策。
-下面三种都按 1 MW 算、<b>已扣交易成本</b>，和"不建模型、直接按 AEMO 预调度排"比。</p>
+<h2>有实物资产时：现货决策</h2>
+<p class="lead2">ASX 没有日度或周度合约，"明天哪几个小时贵"只能通过实物资产按现货价变现。
+下面三种都按 1 MW 算、<b>已扣交易成本</b>，和"不建模型、直接按 AEMO 预调度排"比。纯金融交易员可以跳过这一节。</p>
 <div class="tabs" role="tablist">{''.join(tabs)}</div>
 {''.join(panes)}""", stats
 
@@ -737,6 +915,14 @@ a{color:var(--s1)}
 .hero .big{font-size:52px;font-weight:700;line-height:1.05;letter-spacing:-.01em}
 .hero .big small{font-size:18px;font-weight:600;color:var(--ink2);margin-left:6px}
 .hero .say{font-size:16px;margin:0}
+.hero2{grid-template-columns:1fr}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+@media (max-width:640px){.tile .tv{font-size:24px}.panel .fr{grid-template-columns:48px 1fr}.panel .fr .fv{grid-column:2}}
+.tile{padding:4px 0}
+.tile .tl{font-size:13px;color:var(--ink2)}
+.tile .tv{font-size:30px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.tile .tn{font-size:12.5px;color:var(--muted)}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.92em;background:var(--chipbg-neutral);padding:1px 5px;border-radius:4px}
 .hero .say b{font-weight:650}
 @media (max-width:640px){.hero{grid-template-columns:1fr;gap:12px;padding:18px}.hero .big{font-size:44px}}
 h2{font-size:18px;margin:36px 0 12px}
@@ -822,6 +1008,12 @@ svg .rval{font-size:12.5px;font-variant-numeric:tabular-nums}
 svg .rval .strong{fill:var(--ink);font-weight:650}
 svg .rval .muted{fill:var(--muted)}
 .forest{display:flex;flex-direction:column}
+.fl2{font-weight:600;font-size:13px}
+.panel .fr{grid-template-columns:56px 1fr 150px;gap:10px}
+.panel .fv small{display:block;margin-top:-2px}
+.rng .r90{position:absolute;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:var(--s1);opacity:.35}
+.rng .r50{position:absolute;top:50%;height:10px;margin-top:-5px;border-radius:3px;background:var(--s1);opacity:.75}
+.rng .fd{color:var(--ink)}
 .fr{display:grid;grid-template-columns:64px 1fr 190px;align-items:center;gap:14px;min-height:40px;
  border-radius:8px;outline:none}
 .fr[data-tip]:hover,.fr[data-tip]:focus-visible{background:color-mix(in srgb,var(--grid) 45%,transparent)}
@@ -993,10 +1185,12 @@ def render_trader(data: dict) -> str:
   按现货价结算、已扣交易成本 · 生成于 {gen} UTC</div>
 {fixture}
 
-<section class="hero">
-  <div><p class="q">扣完交易成本，加天气后显著多赚的（区 × 产品）</p><div class="big">{verdict_big}</div></div>
-  <p class="say">{verdict_say}</p>
-</section>
+{hero_tiles(data.get("futures"), verdict_big, verdict_say)}
+
+{futures_block(data.get("futures"))}
+{spot_block(data.get("futures"))}
+{weather_block(data.get("futures"))}
+{risk_block(data.get("futures"), data)}
 
 {prod_html}
 {costs_block(regs)}

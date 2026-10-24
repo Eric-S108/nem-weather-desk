@@ -303,7 +303,7 @@ def refresh_data() -> None:
     import aemo
     t0 = time.time()
     try:
-        ingest.live(models=list(L.WX_MODELS), past_days=1, forecast_days=3)
+        ingest.live(models=list(L.WX_MODELS), past_days=1, forecast_days=10)
     except Exception as e:                                       # noqa: BLE001
         print(f"  天气预报抓取失败：{e}")
     try:
@@ -327,7 +327,7 @@ def render_and_push(msg: str) -> None:
     py = sys.executable
     if os.path.exists(os.path.join(ROOT, "docs", "ladder.json")):
         _run([py, "l1/desk.py", "--in", "docs/ladder.json", "--out", "docs/index.html"])
-    _run(["git", "add", "docs/paper", "docs/index.html", "docs/method.html"])
+    _run(["git", "add", "docs/paper", "docs/index.html", "docs/method.html", "docs/futures.json"])
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
         print("  没有新改动")
         return
@@ -376,6 +376,13 @@ def cron() -> int:
         sig = make_signals(con, target)
         append_signals(sig)
         write_summary(con)
+        try:                                   # 期货公允价值随新结算的现货一起更新
+            import futures as FU
+            res = FU.build(con, calib=True)
+            with open(FU.OUT, "w") as f:
+                json.dump(res, f, ensure_ascii=False, indent=1, default=str)
+        except Exception as e:                 # noqa: BLE001
+            print(f"  期货公允价值更新失败：{e}")
         con.close()
         n_ok = int((sig["status"] == "ok").sum() // 24)
         render_and_push(f"Paper signal for {tday} ({n_ok} regions)")

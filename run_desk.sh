@@ -26,15 +26,15 @@ echo "数据库：${WQ_DATA_DIR}"
 echo "训练窗：${TRAIN_DAYS} 天；稳健性对照：${ALT_WINDOWS:-无}"
 echo
 
-echo "== 1/4 回归测试 =="
+echo "== 1/5 回归测试 =="
 python -m pytest l1/test_asof.py -q
 
 echo
-echo "== 2/4 基准阶梯 =="
+echo "== 2/5 基准阶梯 =="
 python l1/ladder.py --region all --hours all --train-days "${TRAIN_DAYS}" --out docs/ladder.json
 
 echo
-echo "== 3/4 稳健性检验 =="
+echo "== 3/5 稳健性检验 =="
 mkdir -p docs/windows
 ALT_ARGS=""
 for W in ${ALT_WINDOWS}; do
@@ -45,9 +45,14 @@ done
 python l1/robust.py --in docs/ladder.json --alt ${ALT_ARGS} --out docs/robust.json
 
 echo
-echo "== 4/4 交易台 =="
+echo "== 4/5 期货公允价值 =="
+python l1/futures.py --out docs/futures.json
+
+echo
+echo "== 5/5 交易台 =="
 python l1/desk.py --in docs/ladder.json --out docs/index.html
 
 echo
 echo "完成：docs/index.html 交易台、docs/method.html 方法与证据（本地用浏览器打开即可）"
 echo "发布：bash publish.sh"
+echo "期货信号（只在本机）：python l1/signals.py --template 填价格，再 python l1/signals.py"
