@@ -564,7 +564,7 @@ def test_ladder_tiers_share_one_test_set():
     d = pd.DataFrame({"t": t, "hod": [x.hour for x in t], "rrp": price,
                       "naive": np.roll(price, 42), "aemo": price + rng.normal(scale=8, size=n),
                       "ghi": ghi, "wind": rng.uniform(0, 1, n), "temp": rng.uniform(0, 1, n)})
-    for c, lag in (("p_lag26", 6), ("p_lag27", 7), ("p_lag48", 12), ("p_lag168", 42)):
+    for c, lag in (("p_last", 6), ("p_d1", 7), ("p_d2", 12), ("p_w1", 42)):
         d[c] = np.roll(price, lag)
     d["p_mean24"] = pd.Series(price).rolling(6).mean().shift(6).to_numpy()
     d = d.dropna().reset_index(drop=True)
@@ -592,7 +592,7 @@ def test_ladder_falls_back_without_official_data():
                       "naive": np.roll(price, 42), "aemo": np.nan,
                       "ghi": rng.uniform(0, 1, n), "wind": rng.uniform(0, 1, n),
                       "temp": rng.uniform(0, 1, n)})
-    for c, lag in (("p_lag26", 6), ("p_lag27", 7), ("p_lag48", 12), ("p_lag168", 42)):
+    for c, lag in (("p_last", 6), ("p_d1", 7), ("p_d2", 12), ("p_w1", 42)):
         d[c] = np.roll(price, lag)
     d["p_mean24"] = pd.Series(price).rolling(6).mean().shift(6).to_numpy()
     d = d.dropna(subset=[c for c in d.columns if c != "aemo"]).reset_index(drop=True)
@@ -619,7 +619,7 @@ def test_ladder_pure_noise_weather_shows_no_gain():
                       "aemo": price + rng.normal(scale=15, size=n),
                       "ghi": rng.uniform(0, 1, n), "wind": rng.uniform(0, 1, n),
                       "temp": rng.uniform(0, 1, n)})
-    for c, lag in (("p_lag26", 6), ("p_lag27", 7), ("p_lag48", 12), ("p_lag168", 42)):
+    for c, lag in (("p_last", 6), ("p_d1", 7), ("p_d2", 12), ("p_w1", 42)):
         d[c] = np.roll(price, lag)
     d["p_mean24"] = pd.Series(price).rolling(6).mean().shift(6).to_numpy()
     d = d.dropna().reset_index(drop=True)
@@ -669,7 +669,7 @@ def test_spike_in_training_does_not_wreck_rmae():
     d = pd.DataFrame({"t": t, "hod": [x.hour for x in t], "rrp": price, "ghi": ghi,
                       "wind": rng.uniform(0, 1, n), "temp": rng.uniform(0, 1, n),
                       "aemo": np.nan})
-    for c, lag in (("p_lag26", 26), ("p_lag27", 27), ("p_lag48", 48), ("p_lag168", 168)):
+    for c, lag in (("p_last", 26), ("p_d1", 27), ("p_d2", 48), ("p_w1", 168)):
         d[c] = s.reindex(t - pd.Timedelta(hours=lag)).to_numpy()
     d["p_mean24"] = s.rolling("24h").mean().reindex(
         t - pd.Timedelta(hours=26)).to_numpy()
@@ -694,7 +694,7 @@ def test_rmdae_reported_alongside_rmae():
     d = pd.DataFrame({"t": t, "hod": [x.hour for x in t], "rrp": price, "ghi": ghi,
                       "wind": rng.uniform(0, 1, n), "temp": rng.uniform(0, 1, n),
                       "aemo": np.nan})
-    for c, lag in (("p_lag26", 26), ("p_lag27", 27), ("p_lag48", 48), ("p_lag168", 168)):
+    for c, lag in (("p_last", 26), ("p_d1", 27), ("p_d2", 48), ("p_w1", 168)):
         d[c] = s.reindex(t - pd.Timedelta(hours=lag)).to_numpy()
     d["p_mean24"] = s.rolling("24h").mean().reindex(
         t - pd.Timedelta(hours=26)).to_numpy()
@@ -787,7 +787,7 @@ def _hourly_panel(days=420, seed=77, ghi_coef=-20.0):
     d = pd.DataFrame({"t": t, "hod": hod, "rrp": price, "ghi": ghi,
                       "wind": rng.uniform(0, 1, n), "temp": rng.uniform(0, 1, n),
                       "aemo": np.nan})
-    for c, lag in (("p_lag26", 26), ("p_lag27", 27), ("p_lag48", 48), ("p_lag168", 168)):
+    for c, lag in (("p_last", 26), ("p_d1", 27), ("p_d2", 48), ("p_w1", 168)):
         d[c] = s.reindex(t - pd.Timedelta(hours=lag)).to_numpy()
     d["p_mean24"] = s.rolling("24h").mean().reindex(
         t - pd.Timedelta(hours=26)).to_numpy()
@@ -888,51 +888,6 @@ def test_l4_value_forwards_to_ladder(monkeypatch):
 # ---------------------------------------------------------------------------
 # 决策时刻纪律：每个特征在 t − 24h 都必须已可见
 # ---------------------------------------------------------------------------
-
-def test_ar_lags_are_visible_at_decision_time():
-    """起点为 h 的那一小时，结算价要到 h + 1h10m 才发布。
-    决策时刻 t − 24h，所以任何价格滞后都必须 ≥ 25h10m，取整 ≥ 26h。
-
-    2026-10 之前用的是 24h / 25h，比决策时刻晚了 50 分钟到 1 小时。
-    """
-    import ladder as LD
-    publish_after_h = 1 + 10 / 60                 # 一小时 + 发布延迟 10 分钟
-    for lag in LD.AR_LAGS:
-        assert lag - publish_after_h >= LD.DECIDE_LEAD_H, (lag, LD.DECIDE_LEAD_H)
-    assert "p_lag24" not in LD.AR_COLS and "p_lag25" not in LD.AR_COLS
-
-
-def _seed_official(region="SA1"):
-    """一个目标时刻，五版预调度：发出时刻离目标 30 / 25 / 24 / 23.5 / 2 小时。"""
-    tgt = pd.Timestamp("2026-07-10 08:00")
-    rows = []
-    for lead in (30, 25, 24, 23.5, 2):
-        rows.append(dict(site_id=region, model="aemo_predispatch", variable="rrp",
-                         interval_time=tgt,
-                         known_at=tgt - pd.Timedelta(hours=lead),
-                         value=float(lead), known_at_method="exact",
-                         source="test_pd", ingested_at=store.utcnow()))
-    store.append("forecast", pd.DataFrame(rows), store.new_run_id())
-    return tgt
-
-
-def test_official_never_uses_forecast_issued_after_decision_time():
-    """预调度只能用决策时刻（t−24h）之前发出的版本，并在其中取最新的一版。
-
-    之前按 |时效 − 24| 取最近，23.5 小时前发出的那版会胜出——那是前视。
-    """
-    import ladder as LD
-    tgt = _seed_official()
-    c = store.connect()
-    try:
-        fc = LD.official(c, "SA1")
-    finally:
-        c.close()
-    row = fc[fc["t"] == tgt]
-    assert len(row) == 1
-    assert row["lh"].iloc[0] == 24.0, row          # 不是 23.5，也不是 25 / 30
-    assert row["value"].iloc[0] == 24.0
-
 
 def _seed_weather_site(site="QLD1_DD", days=40, run_every_h=6, delay_h=5):
     """一个站点 40 天的逐小时预报：每 6 小时一个运行，发布延迟 5 小时，
@@ -1090,8 +1045,7 @@ def test_predispatch_archive_end_to_end(monkeypatch):
     finally:
         c.close()
     assert len(fc) > 0
-    assert (fc["lh"] >= 24).all()
-    # 每个目标小时取的都必须是"≥24h 的版本里最新的一版"。逐个目标核对：
+    # 每个目标小时取的都必须是"决策时刻之前发出的版本里最新的一版"。逐个目标核对：
     c = store.connect()
     try:
         allv = c.execute("""
@@ -1101,8 +1055,13 @@ def test_predispatch_archive_end_to_end(monkeypatch):
         """).df()
     finally:
         c.close()
-    want = allv[allv["lh"] >= 24].groupby("t")["lh"].min()
+    import realdata as R
+    allv["tau"] = pd.to_datetime(R.decision_time(allv["t"]))
+    allv["ka"] = allv["t"] - pd.to_timedelta(allv["lh"], unit="h")
+    adm = allv[allv["ka"] <= allv["tau"] + pd.Timedelta(seconds=1)]
+    want = adm.groupby("t")["lh"].min()            # 可见版本里最新的一版 = 时效最短
     got = fc.set_index("t")["lh"]
+    assert set(got.index) == set(want.index)
     assert np.allclose(got.sort_index().to_numpy(), want.sort_index().to_numpy())
 
 
@@ -1167,3 +1126,149 @@ def test_desk_page_is_full_document_without_local_paths():
     assert '<meta charset="utf-8">' in page
     assert "/Users/" not in page and "secret" not in page
     assert "样本不足" in page
+
+
+def test_mmsdm_archive_writes_month_by_month(monkeypatch):
+    """月度归档必须逐月解析、逐月落盘——一次性攒 31 个月在 Mac 上会吃光内存卡死。"""
+    import io as _io
+    import zipfile as _zf
+    import aemo
+
+    def month_zip(y, m):
+        rows = ["I,DISPATCH,PRICE,5,SETTLEMENTDATE,RUNNO,REGIONID,DISPATCHINTERVAL,"
+                "INTERVENTION,RRP,EEP,ROP"]
+        t0 = pd.Timestamp(year=y, month=m, day=1, hour=10, minute=5)
+        for i in range(24):
+            sd = (t0 + pd.Timedelta(minutes=5 * i)).strftime("%Y/%m/%d %H:%M:%S")
+            rows.append(f'D,DISPATCH,PRICE,5,"{sd}",1,TAS1,{i},0,{40 + i},0,0')
+        b = _io.BytesIO()
+        with _zf.ZipFile(b, "w") as z:
+            z.writestr("x.CSV", "\n".join(rows))
+        return b.getvalue()
+
+    calls = []
+    real_write = aemo._write
+
+    def spy(texts, source, quiet=False):
+        calls.append(len(texts))
+        return real_write(texts, source, quiet=quiet)
+
+    def fake_get(url, binary=False):
+        import re as _re
+        m = _re.search(r"(\d{4})(\d{2})010000", url)
+        return month_zip(int(m.group(1)), int(m.group(2)))
+
+    monkeypatch.setattr(aemo, "_get", fake_get)
+    monkeypatch.setattr(aemo, "_write", spy)
+    nt, nf = aemo.ingest_archive("2023-01", "2023-03")
+    assert calls == [1, 1, 1], calls          # 三个月，三次各写一个月
+    assert nt == 3 * 2 * 2                    # 每月 2 小时 × (rrp, rrp_max)
+
+
+
+# ---------------------------------------------------------------------------
+# 固定时刻决策口径（2026-10）：NEM 日 D 的 24 小时在 D−1 天 13:30 一次性定计划
+# ---------------------------------------------------------------------------
+
+def test_decision_time_is_previous_nem_day_at_clock():
+    import realdata as R
+    # UTC 14:00 = NEM 次日 00:00 → 属于次日，决策在当天 13:30 NEM = 03:30 UTC
+    cases = {"2026-03-10 13:00": "2026-03-09 03:30",    # NEM 3/10 23:00 → 3/9 13:30
+             "2026-03-10 14:00": "2026-03-10 03:30",    # NEM 3/11 00:00 → 3/10 13:30
+             "2026-03-10 02:00": "2026-03-09 03:30"}    # NEM 3/10 12:00 → 3/9 13:30
+    for t, tau in cases.items():
+        assert R.decision_time(pd.Timestamp(t)) == pd.Timestamp(tau), t
+
+
+def test_decision_time_python_and_sql_agree():
+    """SQL 版本和 Python 版本必须给出同一个决策时刻，否则天气/预调度和价格滞后
+    用的是两套信息集。"""
+    import duckdb
+    import realdata as R
+    t = pd.date_range("2026-01-01", periods=24 * 9, freq="h")
+    want = pd.to_datetime(R.decision_time(pd.Series(t), "13:30"))
+    c = duckdb.connect()
+    c.register("x", pd.DataFrame({"t": t}))
+    got = c.execute(f"SELECT {R.decision_sql('t', '13:30')} AS tau FROM x ORDER BY t").df()["tau"]
+    c.close()
+    assert (pd.to_datetime(got).to_numpy() == pd.Series(want).to_numpy()).all()
+
+
+def test_ar_features_are_published_before_decision_time():
+    """每个价格特征用到的那一小时，都必须在决策时刻之前结算公布（起点 + 1h10m）。
+    p_last 必须是**最新**能用的那一小时——再晚一小时就还没公布。"""
+    import ladder as LD
+    import realdata as R
+    hrs = pd.date_range("2026-01-01", periods=24 * 30, freq="h")
+    s = pd.Series(np.arange(len(hrs), dtype=float), index=hrs)    # 值 = 小时编号
+    t = pd.Series(hrs[24 * 10: 24 * 13])                           # 三天、每个钟点
+    f = LD.ar_features(s, t)
+    tau = pd.Series(pd.to_datetime(R.decision_time(t)))
+    pub = pd.Timedelta(hours=1, minutes=10)
+    for col in ("p_last", "p_d1", "p_d2", "p_w1"):
+        src = hrs[0] + pd.to_timedelta(f[col], unit="h")           # 反推用到的小时
+        assert ((src + pub) <= tau).all(), col
+    src_last = hrs[0] + pd.to_timedelta(f["p_last"], unit="h")
+    assert ((src_last + pd.Timedelta(hours=1) + pub) > tau).all(), "p_last 不是最新可用的"
+    # 同一钟点：p_d1 要么是昨天、要么是前天，取决于那一钟点昨天是否已公布
+    lag = (t - (hrs[0] + pd.to_timedelta(f["p_d1"], unit="h"))) / pd.Timedelta(hours=1)
+    assert set(lag.unique()) <= {24.0, 48.0}
+    assert {24.0, 48.0} <= set(lag.unique())
+
+
+def test_official_uses_latest_version_before_decision_time():
+    """预调度只能用决策时刻之前发出的版本，并在其中取最新——晚 5 分钟发出的也不行。"""
+    import ladder as LD
+    import realdata as R
+    tgt = pd.Timestamp("2026-07-10 08:00")                 # NEM 18:00
+    tau = R.decision_time(tgt)
+    rows = []
+    for k, dt in enumerate((-180, -10, 5, 120)):
+        rows.append(dict(site_id="VIC1", model="aemo_predispatch", variable="rrp",
+                         interval_time=tgt, known_at=tau + pd.Timedelta(minutes=dt),
+                         value=float(dt), known_at_method="exact", source="test_pd2",
+                         ingested_at=store.utcnow()))
+    store.append("forecast", pd.DataFrame(rows), store.new_run_id())
+    c = store.connect()
+    try:
+        fc = LD.official(c, "VIC1")
+    finally:
+        c.close()
+    row = fc[fc["t"] == tgt]
+    assert len(row) == 1 and row["value"].iloc[0] == -10.0, row
+
+
+def test_load_backtest_decide_at_respects_decision_time():
+    """天气预报：只取决策时刻前发出的版本里最新的一版。"""
+    import realdata as R
+    _seed_weather_site()
+    c = store.connect()
+    try:
+        p = R.load_backtest(c, "QLD1_DD", models=["ecmwf_ifs025"], decide_at="13:30")
+    finally:
+        c.close()
+    t = pd.Series(pd.to_datetime(p.t))
+    ka = t - pd.to_timedelta(np.asarray(p.lead_h["ecmwf_ifs025"], float), unit="h")
+    tau = pd.Series(pd.to_datetime(R.decision_time(t)))
+    assert (ka <= tau).all()
+    assert ((tau - ka) < pd.Timedelta(hours=6)).all()     # 每 6 小时一个运行，取最新那版
+
+
+def test_run_reports_official_coverage():
+    import ladder as LD
+    d = _hourly_panel(days=300, seed=9)
+    res = LD.run(d, train_days=180, step_days=28, embargo_days=3, variants=False)
+    assert "official_coverage" in res
+
+
+def test_official_coverage_separates_short_history_from_bad_clock():
+    """预调度历史比价格短（比如下载还没完）≠ 决策时刻太早。两个数必须分开报，
+    否则会把"还没下完"误判成"决策时刻要往后挪"。"""
+    import ladder as LD
+    d = _hourly_panel(days=300, seed=10)
+    half = d["t"] >= d["t"].iloc[len(d) // 2]
+    d["aemo"] = np.where(half, d["rrp"] + 5.0, np.nan)
+    res = LD.run(d, train_days=60, step_days=28, embargo_days=3, variants=False)
+    assert res["official_cov_in_range"] == 1.0
+    assert 0.3 < res["official_coverage"] < 0.7
+    assert res["official_span"][0] >= str(d.loc[half, "t"].iloc[0])[:10]

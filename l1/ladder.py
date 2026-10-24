@@ -17,7 +17,7 @@
 所以改成四层阶梯，每层只比上一层多一组特征：
 
     B0  naive        P(d−7,h)                     ——  基线，rMAE 的分母
-    B1  自回归       + P(t−26h) / P(t−27h) / P(t−48h) / P(t−168h) / 24h 均价
+    B1  自回归       + 决策时刻已结算的最新价 / 最近两天同一钟点 / 一周前 / 24h 均价
     B2  官方         + AEMO 预调度（同时效）
     B3  天气         + GHI / 风速 / 气温预报
 
@@ -49,21 +49,26 @@ import realdata as R  # noqa: E402
 import store  # noqa: E402
 from config import SITES  # noqa: E402
 
-# 决策时刻：目标时刻往前 DECIDE_LEAD_H 小时。所有特征必须在那之前可见。
-DECIDE_LEAD_H = 24
-
-# 一个小时的结算价（12 个 5 分钟区间的均值）要等这一小时结束、再加发布延迟
-# （aemo.py 保守取 10 分钟）才可见：起点为 h 的那一小时，h + 1h10m 才知道。
-# 决策时刻是 t − 24h，所以**最新可用**的是起点 t − 26h 的那一小时。
+# 决策时刻：NEM 日 D 的全部 24 小时，在 D−1 天的固定时刻（NEM）一次性定计划。
+# 所有特征必须在那一刻已经可见。定义在 realdata.decision_time，这里只引用。
 #
-# 2026-10 之前这里用的是 t−24h / t−25h，比决策时刻晚 50 分钟到 1 小时——
-# 所有层共用这组特征，所以它抬高的是绝对表现而不是天气增量，但仍然是前视。
-PRICE_VISIBLE_H = 2                      # 向上取整的 1h10m
-FRESH_LAG_H = DECIDE_LEAD_H + PRICE_VISIBLE_H
-AR_LAGS = (FRESH_LAG_H, FRESH_LAG_H + 1, 48, 168)
+# 为什么不是"每个小时滚动提前 24 小时"：AEMO 预调度最远只看到下一个交易日结束
+# （次日 04:00），而且大约 12:30 之后才开始覆盖下一天。所以目标落在 04:00–12:30
+# 的小时，不存在提前 ≥24h 发出的预调度；加了官方预测这一层，这半天会被整段丢掉。
+# 固定时刻口径也正是电池运营商排次日计划的方式。2026-10 改。
+DECIDE_AT_NEM = R.DECIDE_AT_NEM
+
+# 一个小时的结算价（12 个 5 分钟区间的均值）要等这一小时结束、再过发布延迟
+# （aemo.py 保守取 10 分钟）才可见：起点为 h 的那一小时，h + 1h10m 才知道。
+PRICE_PUBLISH = pd.Timedelta(hours=1, minutes=10)
 
 TIERS = ["B0 naive", "B1 自回归", "B2 +官方", "B3 +天气"]
-AR_COLS = [f"p_lag{h}" for h in AR_LAGS] + ["p_mean24"]
+# p_last  决策时刻已结算的最新一小时（同一天的 24 个小时共用）
+# p_d1    最近一个"同一钟点"且已结算的价格（钟点早于决策时刻用昨天，否则用前天）
+# p_d2    再往前一天的同一钟点
+# p_w1    一周前同一钟点
+# p_mean24  截至 p_last 那一小时的 24 小时均价
+AR_COLS = ["p_last", "p_d1", "p_d2", "p_w1", "p_mean24"]
 WX_COLS = ["ghi", "wind", "temp"]
 OFF_COLS = ["aemo"]
 
@@ -74,35 +79,58 @@ PRICE_FLOOR = -1000.0
 NEM_OFFSET_H = 10          # NEM 时间 = UTC+10，全年固定，无夏令时
 
 
-def official(con, region: str, min_lead_h: float = DECIDE_LEAD_H) -> pd.DataFrame:
+def official(con, region: str, decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
     """AEMO 预调度：每个目标小时取**决策时刻之前**发出的最新一版。
 
-    单侧约束：只要 known_at ≤ t − min_lead_h 的，其中取最新。
-    之前按 abs(时效 − 24) 取最近，会选到 23 小时前发出的版本——比决策时刻还新。
-    时效按秒精确算，不用 date_diff('hour')（12:01 → 次日 12:00 会被它算成 24 小时）。
+    目标落在 NEM 日 D，只要 known_at ≤ D−1 天 decide_at 的版本，其中取最新。
+    按 known_at 排序，不在浮点时效上做 QUALIFY 排序——那会触发 DuckDB 1.5.x 的
+    优化器内部错误（Mac 上实测复现）。
     """
-    # 整数秒算时效、整数秒排序：浮点列上的 QUALIFY 排序 + 过滤会触发
-    # DuckDB 1.5.x 的优化器内部错误（Mac 上实测复现）。
-    return con.execute("""
-        WITH f AS (SELECT interval_time AS t, value,
-                          date_diff('second', known_at, interval_time) AS ls
+    tau = R.decision_sql("interval_time", decide_at)
+    return con.execute(f"""
+        WITH f AS (SELECT interval_time AS t, value, known_at, {tau} AS tau
                    FROM forecast
                    WHERE site_id = ? AND variable = 'rrp' AND model = 'aemo_predispatch')
-        SELECT t, value, ls / 3600.0 AS lh FROM f WHERE ls >= ?
-        QUALIFY row_number() OVER (PARTITION BY t ORDER BY ls) = 1
-    """, [region, int(round(float(min_lead_h) * 3600))]).df()
+        SELECT t, value, date_diff('second', known_at, t) / 3600.0 AS lh
+        FROM f
+        WHERE known_at <= tau AND known_at >= tau - INTERVAL 4 DAY
+        QUALIFY row_number() OVER (PARTITION BY t ORDER BY known_at DESC) = 1
+    """, [region]).df()
 
 
-def build(con, region: str, site_id: str, hours=None) -> pd.DataFrame:
-    """装配阶梯用的特征表。**每一列在决策时刻 t − 24h 都已可见**。
+def ar_features(s: pd.Series, t, decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
+    """价格自回归特征，**每一个都在决策时刻已经结算公布**。
 
-      价格滞后   起点 ≤ t − 26h 的小时（结算价要过 1h10m 才发布）
-      天气预报   known_at ≤ t − 24h 的版本里最新的一版
-      官方预测   known_at ≤ t − 24h 的预调度里最新的一版
+    s：逐小时 RRP，索引是小时起点（UTC）。t：目标小时起点（UTC）。
+    全部按时间戳取，不按下标平移——样本有洞时下标平移会静默错位。
+    """
+    t = pd.Series(pd.to_datetime(t)).reset_index(drop=True)
+    tau = pd.Series(pd.to_datetime(R.decision_time(t, decide_at)))
+    last_h = (tau - PRICE_PUBLISH).dt.floor("h")      # 决策时刻已结算的最新一小时
+    y1 = t - pd.Timedelta(hours=24)
+    d1 = y1.where(y1 + PRICE_PUBLISH <= tau, t - pd.Timedelta(hours=48))
+    d2 = d1 - pd.Timedelta(hours=24)
+    s = s.sort_index()
+    roll = s.rolling("24h").mean()
+    return pd.DataFrame({
+        "p_last": s.reindex(last_h).to_numpy(),
+        "p_d1": s.reindex(d1).to_numpy(),
+        "p_d2": s.reindex(d2).to_numpy(),
+        "p_w1": s.reindex(t - pd.Timedelta(hours=168)).to_numpy(),
+        "p_mean24": roll.reindex(last_h).to_numpy(),
+    })
+
+
+def build(con, region: str, site_id: str, hours=None,
+          decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
+    """装配阶梯用的特征表。目标落在 NEM 日 D，**每一列在 D−1 天 decide_at 都已可见**：
+
+      价格滞后   决策时刻前已结算的小时（结算价要过 1h10m 才发布）
+      天气预报   known_at ≤ 决策时刻的版本里最新的一版
+      官方预测   known_at ≤ 决策时刻的预调度里最新的一版
       naive     t − 168h
     """
-    p = R.fill_persist_head(R.load_backtest(con, site_id, lead_day=1,
-                                            min_lead_h=DECIDE_LEAD_H))
+    p = R.fill_persist_head(R.load_backtest(con, site_id, decide_at=decide_at))
     q = p.preds["qra"]
     d = pd.DataFrame({"t": pd.to_datetime(p.t), "hod": p.hod,
                       "ghi_raw": q["ghi"], "wind_raw": q["wind100"],
@@ -120,18 +148,14 @@ def build(con, region: str, site_id: str, hours=None) -> pd.DataFrame:
                         aggfunc="last").reset_index()
     d = d.merge(mw, on="t", how="left").sort_values("t").reset_index(drop=True)
 
-    # ---- 自回归特征：严格按时间戳取滞后，不按下标平移 ----
-    # 样本有洞，按下标平移会把"24 行前"当成"24 小时前"，静默错位。
-    # 价格序列直接从 truth 取全量，不受气象面板覆盖范围的限制。
+    # 价格序列直接从 truth 取全量，不受气象面板覆盖范围的限制
     s = mw.set_index("t")["rrp"].sort_index()
-    for lag in AR_LAGS:
-        d[f"p_lag{lag}"] = s.reindex(d["t"] - pd.Timedelta(hours=lag)).to_numpy()
-    # 最新可用那一小时为止的 24 小时均价
-    roll = s.rolling("24h").mean()
-    d["p_mean24"] = roll.reindex(d["t"] - pd.Timedelta(hours=FRESH_LAG_H)).to_numpy()
+    feats = ar_features(s, d["t"], decide_at)
+    for c in feats.columns:
+        d[c] = feats[c].to_numpy()
 
     # ---- 官方预测：决策时刻之前发出的最新预调度 ----
-    fc = official(con, region)
+    fc = official(con, region, decide_at)
     d["aemo"] = (d.merge(fc[["t", "value"]].rename(columns={"value": "_a"}),
                          on="t", how="left")["_a"].to_numpy()
                  if len(fc) else np.nan)
@@ -228,6 +252,21 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
     variants=True 时额外跑"只留一个天气变量"的几组，用来回答
     "哪几个特征真的有用、哪些该删"——这是精简的依据，不是阶梯的一环。
     """
+    # 官方预测覆盖率：在其他特征都齐的行里，有多少行拿得到决策时刻前的预调度。
+    # 固定时刻口径下应接近 100%；明显偏低说明决策时刻早于 AEMO 发布次日预调度。
+    # 两个数要分开看：
+    #   in_range —— 预调度有数据的那段日期里，每天的小时覆盖了多少。低于 100% 说明
+    #               决策时刻早于 AEMO 发布次日预调度（实测：12:30 只有 17%，13:00 起 100%）。
+    #   span     —— 预调度历史从哪天到哪天。比价格历史短时，B2/B3 只能在这段里评估。
+    base_ok = d[AR_COLS + WX_COLS + ["rrp", "naive"]].notna().all(axis=1)
+    off_cov = float(d.loc[base_ok, "aemo"].notna().mean()) if base_ok.any() else 0.0
+    has_a = d["aemo"].notna()
+    off_span, off_in = None, None
+    if has_a.any():
+        a_, b_ = d.loc[has_a, "t"].min(), d.loc[has_a, "t"].max()
+        off_span = [str(a_), str(b_)]
+        w_ = base_ok & (d["t"] >= a_ + pd.Timedelta(days=1)) & (d["t"] <= b_ - pd.Timedelta(days=1))
+        off_in = float(d.loc[w_, "aemo"].notna().mean()) if w_.any() else None
     have_off = d["aemo"].notna().sum() > 200
     base = AR_COLS + OFF_COLS if have_off else AR_COLS
     tiers = {"B0 naive": None, "B1 自回归": AR_COLS,
@@ -282,6 +321,9 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
     med0 = float(np.median(err["B0 naive"])) or 1.0
     out = {"status": "ok", "n_test": int(ok.sum()), "n_refit": n_fit,
            "per_hour": bool(per_hour),
+           "official_coverage": round(off_cov, 4),
+           "official_span": off_span,
+           "official_cov_in_range": None if off_in is None else round(off_in, 4),
            "span": [str(d["t"][ok].min()), str(d["t"][ok].max())],
            "has_official": bool(have_off), "tiers": [], "variants": []}
     prev = prev_row = None
@@ -536,7 +578,7 @@ def _all_regions(a) -> int:
     """
     hrs = None if a.hours == "all" else tuple(int(x) for x in a.hours.split("-"))
     out = {"generated_at": pd.Timestamp.now("UTC").isoformat(),
-           "hours": a.hours, "decide_lead_h": DECIDE_LEAD_H,
+           "hours": a.hours, "decide_at": a.decide_at,
            "is_fixture": "fixture" in os.environ.get("WQ_DATA_DIR", "").lower(),
            "train_days": a.train_days, "step_days": a.step_days,
            "embargo_days": a.embargo_days, "per_hour": not a.shared,
@@ -548,7 +590,7 @@ def _all_regions(a) -> int:
         for site_id, region, *_ in SITES:
             print(f"\n─── {region} " + "─" * 60)
             try:
-                d = build(con, region, site_id, hrs)
+                d = build(con, region, site_id, hrs, a.decide_at)
                 res = run(d, a.train_days, a.step_days, a.embargo_days,
                           per_hour=not a.shared)
                 ec = economics(res) if res.get("status") == "ok" else {"status": "skip"}
@@ -556,6 +598,12 @@ def _all_regions(a) -> int:
                 pub = {k: v for k, v in res.items() if not k.startswith("_")}
                 out["regions"][region] = {**pub, "economics": ec, "diag": dg}
                 if res.get("status") == "ok":
+                    sp = res.get("official_span")
+                    if sp:
+                        print(f"  预调度 {str(sp[0])[:10]} → {str(sp[1])[:10]}，"
+                              f"区间内覆盖 {res.get('official_cov_in_range') or 0:.1%}")
+                    else:
+                        print("  预调度：无")
                     for r_ in res["tiers"]:
                         if r_.get("skipped"):
                             print(f"  {r_['tier']:<12s} —— {r_['skipped']}")
@@ -584,6 +632,8 @@ def main(argv=None) -> int:
     ap.add_argument("--region", default="QLD1",
                     help="区域代码，或 all 跑全部四区并汇总到一个 JSON")
     ap.add_argument("--hours", default="10-16")
+    ap.add_argument("--decide-at", default=DECIDE_AT_NEM,
+                    help="决策时刻（NEM，前一天），默认 13:30。NEM 日 D 的 24 小时在 D−1 天这个时刻一次性定计划")
     ap.add_argument("--train-days", type=int, default=180)
     ap.add_argument("--step-days", type=int, default=7)
     ap.add_argument("--embargo-days", type=int, default=3)
@@ -603,7 +653,7 @@ def main(argv=None) -> int:
 
     con = store.connect()
     try:
-        d = build(con, a.region, site, hrs)
+        d = build(con, a.region, site, hrs, a.decide_at)
         res = run(d, a.train_days, a.step_days, a.embargo_days,
                   per_hour=not a.shared)
     finally:
@@ -618,6 +668,17 @@ def main(argv=None) -> int:
     print(f"  测试 {res['n_test']} 小时   {res['span'][0][:10]} → {res['span'][1][:10]}"
           + ("   · 分小时拟合（24 个模型）" if res.get("per_hour")
              else "   · 单一共享模型（对照用）"))
+    print(f"  决策时刻：前一天 {a.decide_at}（NEM）")
+    if res["has_official"]:
+        sp = res.get("official_span") or ["?", "?"]
+        cin = res.get("official_cov_in_range")
+        print(f"  AEMO 预调度历史 {str(sp[0])[:10]} → {str(sp[1])[:10]}，"
+              f"区间内小时覆盖 {cin:.1%}" if cin is not None else "")
+        if cin is not None and cin < 0.95:
+            print("  ⚠ 区间内覆盖不到 95%：决策时刻早于 AEMO 发布覆盖次日的预调度，")
+            print("    试试 --decide-at 13:30 或更晚（实测 12:30 只覆盖 17%）。")
+        if res.get("official_coverage", 1) < 0.95:
+            print("  注意：预调度历史比价格历史短，B2/B3 只在上面这段日期里评估。")
     if not res["has_official"]:
         print("  ⚠ 没有 AEMO 预调度数据：B2 跳过，B3 的增量**没有扣掉官方预测**，")
         print("    那部分市场已经定价，不能当作 alpha。")

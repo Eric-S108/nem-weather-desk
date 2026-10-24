@@ -28,7 +28,7 @@ schema 一行没改。约定：**市场数据的 site_id 直接用 NEM 区代码
     python aemo.py --archive --start 2025-01 --end 2026-07   MMSDM 月度归档回填
     python aemo.py --predispatch                       官方预测（Current，约 2 天）
     python aemo.py --inspect-predispatch               看一眼最新一份预调度，不写库
-    python aemo.py --predispatch-archive --start 2025-10-25 --end 2026-10-23 --lead-lo 24 --lead-hi 30
+    python aemo.py --predispatch-archive --start 2025-10-25 --end 2026-10-23 --lead-lo 12 --lead-hi 40
                                                        官方预测历史（日归档，约 13 个月，断点续跑）
 """
 from __future__ import annotations
@@ -632,31 +632,40 @@ def ingest_current(dir_url: str, hours: int, source: str) -> tuple[int, int]:
 def ingest_archive(start: str, end: str, tables=("DISPATCHPRICE",)) -> tuple[int, int]:
     """MMSDM 月度归档。默认只拉 DISPATCHPRICE——它一个月才几 MB，
     而 DISPATCHREGIONSUM 一个月上百 MB，网络不稳时基本下不完。需要需求侧
-    数据再显式 --tables DISPATCHPRICE,DISPATCHREGIONSUM。"""
+    数据再显式 --tables DISPATCHPRICE,DISPATCHREGIONSUM。
+
+    **逐月解析、逐月落盘。** 以前是把所有月份的文本攒在内存里最后一次性解析：
+    DISPATCHPRICE 一行约 60 列，31 个月 136 万行会变成上亿个 Python 字符串对象，
+    吃掉 5–10 GB 内存，MacBook 上直接进交换区、看起来像卡死（2026-10 实测）。
+    现在内存只占一个月；中途断掉，已写的月份不会重写（append 自带去重），
+    下载也走断点缓存，重跑同一条命令很快。
+    """
     a, b = pd.Period(start, "M"), pd.Period(end, "M")
-    texts = []
+    nt = nf = 0
     p = a
     while p <= b:
         for tab in tables:
-            got = False
+            text = None
             for tpl in (MMSDM_TPL, MMSDM_TPL_ALT):
                 url = tpl.format(base=MMSDM, y=p.year, m=p.month, table=tab)
                 try:
-                    texts.append(unzip_all(_get(url, binary=True)))
-                    print(f"  {p} {tab} ✓")
-                    got = True
+                    text = unzip_all(_get(url, binary=True))
                     break
                 except AemoError:
                     continue
-            if not got:
+            if text is None:
                 url2 = _discover(p.year, p.month, tab)
                 if url2:
-                    texts.append(unzip_all(_get(url2, binary=True)))
-                    print(f"  {p} {tab} ✓（目录发现 {url2.split('/')[-1]}）")
-                else:
-                    print(f"  {p} {tab} ✗ 未找到")
+                    text = unzip_all(_get(url2, binary=True))
+            if text is None:
+                print(f"  {p} {tab} ✗ 未找到")
+                continue
+            a_, b_ = _write([text], "mmsdm", quiet=True)
+            nt += a_; nf += b_
+            print(f"  {p} {tab} ✓ 写入 {a_} 行")
+            del text
         p += 1
-    return _write(texts, "mmsdm")
+    return nt, nf
 
 
 def ingest_daily_archive(start: str, end: str) -> tuple[int, int]:
@@ -723,12 +732,14 @@ def _discover(y: int, m: int, table: str) -> str | None:
     return f"{scheme}://{host}/{path.replace('#', '%23')}"
 
 
-def _write(texts: list[str], source: str) -> tuple[int, int]:
+def _write(texts: list[str], source: str, quiet: bool = False) -> tuple[int, int]:
     if not texts:
         return 0, 0
     texts = [t for t in texts if t]
     tabs = extract(texts)
-    print("  解析到的表：", ", ".join(f"{a}/{b}({len(d)})" for (a, b), d in sorted(tabs.items()))[:400])
+    if not quiet:
+        print("  解析到的表：", ", ".join(f"{a}/{b}({len(d)})"
+                                      for (a, b), d in sorted(tabs.items()))[:400])
     t, f = rows_from_tables(tabs, source)
     rid = store.new_run_id()
     nt = store.append("truth", t, rid) if len(t) else 0

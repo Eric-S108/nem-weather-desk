@@ -104,6 +104,46 @@ class Panel:
         return self.solar_w * solar_cf(ghi, temp) + self.wind_w * wind_cf(wind)
 
 
+# ------------------------------------------------------------------ 决策时刻
+# 交易口径：NEM 日历日 D 的全部 24 小时，在 D−1 天的固定时刻（NEM 时间）一次性定计划。
+# 这是电池运营商排次日计划的真实做法：AEMO 大约 12:30 之后才发布覆盖下一天的
+# 预调度，在那之后一次性排好明天。也和 EPF 综述的 day-ahead 设定一致——
+# 同一天的 24 个小时共用一个信息集，时效随小时变（约 10–35 小时）。
+#
+# 之前用的是"滚动提前 24 小时"：每个小时各自往前推 24 小时。那样对 04:00–12:30
+# 的目标小时根本拿不到预调度（AEMO 那时还没发布覆盖它们的版本），
+# 加了官方预测这一层后这半天会被整段丢掉——恰好是午间光伏低谷的前半段。
+DECIDE_AT_NEM = "13:30"
+
+
+def _clock_minutes(clock: str) -> int:
+    hh, mm = clock.split(":")
+    m = int(hh) * 60 + int(mm)
+    if not 0 <= m < 24 * 60:
+        raise ValueError(f"决策时刻要是 HH:MM（NEM 时间），收到 {clock!r}")
+    return m
+
+
+def decision_time(t_utc, clock: str = DECIDE_AT_NEM):
+    """目标小时（UTC）→ 它的决策时刻（UTC）。
+
+    目标落在 NEM 日历日 D，决策时刻就是 D−1 天的 clock（NEM），再换回 UTC。
+    """
+    t = pd.to_datetime(t_utc)
+    off = pd.Timedelta(hours=NEM_OFFSET.total_seconds() / 3600)
+    nem_day = (t + off).normalize() if isinstance(t, pd.Timestamp) \
+        else (pd.Series(t) + off).dt.normalize()
+    out = nem_day - pd.Timedelta(days=1) + pd.Timedelta(minutes=_clock_minutes(clock)) - off
+    return out if isinstance(t, pd.Timestamp) else out.to_numpy()
+
+
+def decision_sql(col: str, clock: str = DECIDE_AT_NEM) -> str:
+    """decision_time 的 SQL 版本（DuckDB），两者必须一致——有测试盯着。"""
+    off_h = int(NEM_OFFSET.total_seconds() // 3600)
+    return (f"(date_trunc('day', {col} + INTERVAL {off_h} HOUR) - INTERVAL 1 DAY "
+            f"+ INTERVAL {_clock_minutes(clock)} MINUTE - INTERVAL {off_h} HOUR)")
+
+
 # ------------------------------------------------------------------ 读取
 _WARNED: set = set()
 
@@ -128,7 +168,8 @@ def _time_cols(t_utc, lat, lon):
 def load_backtest(con, site_id: str, start=None, end=None, lead_day: int = 1,
                   lead_tol_h: int = 12, strict: bool = False,
                   final_only: bool = True, models=None,
-                  min_lead_h: float | None = None) -> Panel:
+                  min_lead_h: float | None = None,
+                  decide_at: str | None = None) -> Panel:
     """按固定预报时效装配回测面板。
 
     lead_day=1 表示取"目标时刻前约 24h 发出"的那一版，容差 ±lead_tol_h。
@@ -140,6 +181,9 @@ def load_backtest(con, site_id: str, start=None, end=None, lead_day: int = 1,
     默认的 ±lead_tol_h 双侧窗口会选到"离 24h 最近"的那版——可能是 21h 前发出的，
     比决策时刻还新，对决策回测来说就是前视。时效按秒精确算，不用 date_diff('hour')
     （后者数的是跨过的整点个数，12:01 → 次日 12:00 会算成 24 小时）。
+
+    decide_at（"HH:MM"，NEM）：**固定时刻**口径，优先于 lead_day / min_lead_h。
+    目标落在 NEM 日 D，只取 known_at ≤ D−1 天 decide_at 的版本，并取其中最新的一版。
     """
     models = models or NWP
     lead_c = lead_day * 24
@@ -155,7 +199,24 @@ def load_backtest(con, site_id: str, start=None, end=None, lead_day: int = 1,
     if end is not None:
         where.append("interval_time <= ?"); params.append(pd.Timestamp(end))
 
-    if min_lead_h is None:
+    if decide_at is not None:
+        tau = decision_sql("interval_time", decide_at)
+        f = con.execute(f"""
+            WITH f AS (
+                SELECT site_id, model, variable, interval_time, value, known_at,
+                       {tau} AS tau
+                FROM forecast WHERE {' AND '.join(where)}
+            )
+            SELECT site_id, model, variable, interval_time, value,
+                   date_diff('second', known_at, interval_time) / 3600.0 AS lead_h
+            FROM f
+            WHERE known_at <= tau AND known_at >= tau - INTERVAL 4 DAY
+            QUALIFY row_number() OVER (
+                PARTITION BY model, variable, interval_time
+                ORDER BY known_at DESC
+            ) = 1
+        """, params).df()
+    elif min_lead_h is None:
         f = con.execute(f"""
             WITH f AS (
                 SELECT site_id, model, variable, interval_time, value,

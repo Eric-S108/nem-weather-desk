@@ -29,7 +29,7 @@ MIN_TEST_DAYS = 90
 REPO_URL = "https://github.com/Eric-S108/nem-weather-desk"
 TIER_NOTE = {
     "B0 naive": "一周前同一时刻的价格。所有 rMAE 的分母。",
-    "B1 自回归": "加上 26/27/48/168 小时前的价格与 24h 均价——决策时刻 t−24h 已结算的最新价。综述里的主导预测因子。",
+    "B1 自回归": "加上决策时刻已结算的最新价、最近两天同一钟点、一周前同一钟点和 24h 均价。综述里的主导预测因子。",
     "B2 +官方": "加上 AEMO 预调度（决策时刻前发出的最新一版）。这部分市场已经定价。",
     "B3 +天气": "加上 GHI / 风速 / 气温预报的滚动分位。天气的增量在这一行。",
 }
@@ -272,6 +272,8 @@ def section(region: str, r: dict) -> str:
       {warn}
       <div class="meta">样本外 {r['n_test']} 小时 · {r['span'][0][:10]} → {r['span'][1][:10]}
         · {r.get('n_refit','?')} 次滚动重拟合 ·
+        {('预调度 ' + str((r.get('official_span') or ['', ''])[0])[:10] + ' 起，区间内覆盖 '
+          + format(r.get('official_cov_in_range') or 0, '.0%') + ' ·') if r.get('official_span') else '无预调度 ·'}
         {'分小时拟合（24 个模型）' if r.get('per_hour') else '单一共享模型（对照）'}</div>
       <h4>一、基准阶梯</h4>{ladder_table(r)}{RMDAE_NOTE}
       <h4>二、经济评估</h4>{econ_table(r)}
@@ -377,9 +379,12 @@ FOOT = """
 <footer>
 <h3>口径</h3>
 <ul>
-<li><b>决策时刻</b>比目标时刻早 {lead} 小时，<b>每一个特征在那一刻都必须已经可见</b>。
-    一小时的结算价要等这一小时结束再过 10 分钟才发布，所以最新可用的价格是
-    t−26h 那一小时；天气预报和 AEMO 预调度都取 known_at ≤ t−24h 的版本里最新的一版。
+<li><b>决策时刻</b>：NEM 日 D 的全部 24 小时，在 D−1 天 <b>{decide_at}</b>（NEM）一次性定计划——
+    电池运营商排次日计划的真实做法，也和 EPF 综述的 day-ahead 设定一致。
+    AEMO 预调度最远只看到次日 04:00，而且约 12:30 之后才开始覆盖下一天，
+    所以"每小时滚动提前 24 小时"的口径会让 04:00–12:30 的小时拿不到官方预测。
+    <b>每一个特征在决策时刻都必须已经可见</b>：一小时的结算价要等这一小时结束再过 10 分钟
+    才发布；天气预报和 AEMO 预调度都取决策时刻之前发出的版本里最新的一版。
     价格滞后按<b>时间戳</b>取，不按下标平移；天气分位用滚动窗口，不用全样本分位。</li>
 <li><b>每个 hour-of-day 各拟合一个模型</b>，不是一个模型跨 24 小时。共享模型会把
     日内曲线压平（NSW1 实测振幅比 0.09），水平贴得准，挑出来的充放电时刻却是噪声。</li>
@@ -460,7 +465,7 @@ def render(data: dict) -> str:
     stamp = " · ".join(x for x in (
         f"生成于 {gen} UTC", window,
         f"评估时段 {html.escape(str(data.get('hours', '')))}",
-        f"决策提前 {data.get('decide_lead_h', 24)}h",
+        f"前一天 {data.get('decide_at', '13:30')} 定计划",
         "分小时拟合" if data.get("per_hour", True) else "共享模型") if x)
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -488,7 +493,7 @@ the economic value of reducing prediction errors.”<br>
 <p class="lede">{head}</p>
 <div class="grid">{cards}</div>
 {secs}
-{FOOT.format(lead=data.get('decide_lead_h', 24), stamp=stamp,
+{FOOT.format(decide_at=html.escape(str(data.get('decide_at', '13:30'))), stamp=stamp,
              embargo=data.get('embargo_days', 3), train=data.get('train_days', 180),
              step=data.get('step_days', 7), min_days=MIN_TEST_DAYS, repo=REPO_URL)}
 </div>

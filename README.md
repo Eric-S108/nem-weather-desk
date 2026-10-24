@@ -18,7 +18,7 @@
 | 层 | 特征 | 含义 |
 |---|---|---|
 | B0 naive | P(t−168h) | rMAE 的分母 |
-| B1 自回归 | + t−26/27/48/168h 的价格、24h 均价 | 主导预测因子 |
+| B1 自回归 | + 决策时刻已结算的最新价、最近两天同一钟点、一周前、24h 均价 | 主导预测因子 |
 | B2 +官方 | + AEMO 预调度 | 市场已经定价的部分 |
 | B3 +天气 | + GHI / 风速 / 气温预报的滚动分位 | **天气的增量在这一格** |
 
@@ -31,9 +31,13 @@
 
 ### 几条硬约束
 
-- **决策时刻 t−24h，每个特征在那一刻都必须已可见。** 一小时的结算价要过
-  1h10m 才发布，所以最新可用价格是 t−26h；天气和预调度都只取 known_at ≤ t−24h
-  的版本里最新的一版。回归测试会在这条被破坏时直接失败。
+- **固定时刻决策：NEM 日 D 的 24 小时，在 D−1 天 13:30（NEM）一次性定计划。**
+  这是电池运营商排次日计划的方式，也是 EPF 综述的 day-ahead 设定。AEMO 预调度
+  最远只看到次日 04:00、约 12:30 之后才覆盖下一天，所以"每小时滚动提前 24 小时"
+  会让 04:00–12:30 的小时拿不到官方预测。可用 `--decide-at` 调整。
+- **每个特征在决策时刻都必须已可见。** 一小时的结算价要过 1h10m 才发布；天气和
+  预调度都只取决策时刻之前发出的版本里最新的一版。回归测试会在这条被破坏时直接失败；
+  合成数据里还埋了一个"决策时刻之后发出、数值等于实际价"的预调度版本当前视陷阱。
 - **每个 hour-of-day 各拟合一个模型。** 一个模型跨 24 小时会把日内曲线压平：
   水平贴得准，挑出来的充放电时刻却是噪声。
 - **asinh 变换后拟合，预测夹回训练期见过的范围。** 电价重尾、会穿零。
@@ -57,15 +61,17 @@ bash publish.sh
 ### 补数据（要联网，在本机跑）
 
 ```
+export WQ_DATA_DIR="$HOME/aus-weather-quant/data"
 cd l1
 python aemo.py --archive --start 2024-03 --end 2026-09
 python aemo.py --daily-archive --start 2026-10-01 --end 2026-10-23
 python aemo.py --inspect-predispatch
-python aemo.py --predispatch-archive --start 2025-10-25 --end 2026-10-23 --lead-lo 24 --lead-hi 30
+python aemo.py --predispatch-archive --start 2025-10-25 --end 2026-10-23 --lead-lo 12 --lead-hi 40
 python ingest.py --backfill-forecast --method previous-runs --model ecmwf_ifs025 --start 2026-08-20 --end 2026-10-23
 python ingest.py --backfill-truth --start 2026-08-20 --end 2026-10-17
 ```
 
+第一行很重要：采集脚本和 `run_desk.sh` 必须指向同一个数据库。
 预调度归档每天一个大文件、只滚动保留约 13 个月；中途断了直接重跑同一条命令，
 已完成的日子会跳过。
 

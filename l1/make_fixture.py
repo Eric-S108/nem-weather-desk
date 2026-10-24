@@ -107,14 +107,22 @@ def main(argv=None) -> int:
                     "quality": "final", "source": "fixture_market",
                     "ingested_at": store.utcnow()}))
             np_ += store.append("truth", pd.concat(prows, ignore_index=True), run_id)
-            adf = pd.DataFrame({
+            # 两版预调度：
+            #   早版——决策时刻（前一天 13:30 NEM）前半小时发出，这是 ladder 该用的那一版；
+            #   晚版——目标前 2 小时发出，数值**就是实际电价**。这是一个前视陷阱：
+            #   哪天代码不小心用到了决策时刻之后的信息，B2 会突然变得完美，一眼就能看出来。
+            import realdata as RD
+            tau = pd.to_datetime(RD.decision_time(pd.Series(t_utc)))
+            early = pd.DataFrame({
                 "site_id": region, "model": "aemo_predispatch", "variable": "rrp",
                 "interval_time": t_utc,
-                # 25 小时前发出：ladder 的决策时刻是 t−24h，只认在那之前发出的版本。
-                # 以前这里是 12 小时，旧查询会把它当成"24 小时前的预测"用——前视。
-                "known_at": t_utc - pd.Timedelta(hours=25), "value": aemo,
-                "known_at_method": "exact", "source": "fixture_market",
+                "known_at": pd.Series(tau).to_numpy() - pd.Timedelta(minutes=30),
+                "value": aemo, "known_at_method": "exact", "source": "fixture_market",
                 "ingested_at": store.utcnow()})
+            late = early.copy()
+            late["known_at"] = t_utc - pd.Timedelta(hours=2)
+            late["value"] = rrp
+            adf = pd.concat([early, late], ignore_index=True)
             tot_f += store.append("forecast", adf, run_id)
             tot_t += np_
         print(f"  {site_id:10s} 真值 {len(tdf):>7d} · 预报 {len(fdf):>7d} · 市场 {np_:>6d}")
