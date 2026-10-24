@@ -49,19 +49,55 @@ else
   git commit -q -m "Update trading desk $(date -u +%Y-%m-%dT%H:%MZ)" || echo "没有新改动，直接推送"
 fi
 
-if git remote get-url origin >/dev/null 2>&1; then
-  git push -q origin main
-  echo "已推送。页面约 1 分钟后更新：${PAGE}"
-  exit 0
+HAVE_GH=0
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  HAVE_GH=1
 fi
 
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  gh repo create "${OWNER}/${REPO}" --public --source=. --remote=origin --push
+enable_pages() {
+  # 打开 GitHub Pages：main 分支 /docs 目录。已经开过就更新一下，失败不致命。
   gh api -X POST "repos/${OWNER}/${REPO}/pages" \
-    -f "source[branch]=main" -f "source[path]=/docs" >/dev/null 2>&1 || true
+    -f "source[branch]=main" -f "source[path]=/docs" >/dev/null 2>&1 \
+  || gh api -X PUT "repos/${OWNER}/${REPO}/pages" \
+    -f "source[branch]=main" -f "source[path]=/docs" >/dev/null 2>&1 \
+  || true
+}
+
+push_failed() {
+  echo
+  echo "推送失败。多半是终端里没有可用的 GitHub 登录。只需要做一次："
+  echo
+  echo "  conda install -y -c conda-forge gh"
+  echo "  gh auth login"
+  echo "  gh auth setup-git"
+  echo
+  echo "gh auth login 依次选：GitHub.com → HTTPS → Yes → Login with a web browser，"
+  echo "按提示在浏览器里粘贴验证码。然后重新运行 bash publish.sh"
+  exit 1
+}
+
+if [ "${HAVE_GH}" = "1" ]; then
+  if ! gh repo view "${OWNER}/${REPO}" >/dev/null 2>&1; then
+    gh repo create "${OWNER}/${REPO}" --public >/dev/null
+    echo "已在 GitHub 上建好仓库 ${OWNER}/${REPO}"
+  fi
+  if ! git remote get-url origin >/dev/null 2>&1; then
+    git remote add origin "https://github.com/${OWNER}/${REPO}.git"
+  fi
+  git push -u origin main || push_failed
+  enable_pages
   echo
   echo "仓库：https://github.com/${OWNER}/${REPO}"
   echo "页面：${PAGE} （第一次开启约 1–2 分钟后生效）"
+  exit 0
+fi
+
+if git remote get-url origin >/dev/null 2>&1; then
+  git push -u origin main || push_failed
+  echo
+  echo "已推送。如果还没开过 Pages，打开 https://github.com/${OWNER}/${REPO}/settings/pages"
+  echo "  Source 选 Deploy from a branch；Branch 选 main，文件夹选 /docs；点 Save"
+  echo "页面：${PAGE}"
   exit 0
 fi
 
@@ -74,7 +110,7 @@ echo
 printf "  建好后按回车继续……"
 read -r _
 git remote add origin "https://github.com/${OWNER}/${REPO}.git"
-git push -u origin main
+git push -u origin main || push_failed
 echo
 echo "  2. 打开 https://github.com/${OWNER}/${REPO}/settings/pages"
 echo "     Source 选 Deploy from a branch；Branch 选 main，文件夹选 /docs；点 Save"
