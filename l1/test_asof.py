@@ -1272,3 +1272,29 @@ def test_official_coverage_separates_short_history_from_bad_clock():
     assert res["official_cov_in_range"] == 1.0
     assert 0.3 < res["official_coverage"] < 0.7
     assert res["official_span"][0] >= str(d.loc[half, "t"].iloc[0])[:10]
+
+
+def test_feature_outside_training_range_cannot_drive_prediction_to_ceiling():
+    """训练期里几乎不动的特征，在测试期突然出现没见过的值，不能把预测顶到天花板。
+
+    真实复现：SA1 07:00 的 GHI 分位冬天几乎恒定，九月日出提前后跳变，
+    预测连续多天顶到训练期唯一一次尖峰 $16,506。
+    """
+    import ladder as LD
+    rng = np.random.default_rng(42)
+    n = 300
+    x = 0.5 + rng.normal(scale=1e-3, size=n)          # 训练期几乎不动
+    y = 60 + 8000 * (x - 0.5) + rng.normal(scale=10, size=n)   # 与价格有一点正相关
+    y[17] = 16506.6                                    # 一次尖峰
+    tr = pd.DataFrame({"x": x, "z": rng.normal(size=n), "rrp": y})
+    te = pd.DataFrame({"x": np.array([0.5, 0.9, 1.0]), "z": np.zeros(3)})   # 季节变了
+    p = LD._fit_predict(tr, te, ["x", "z"])
+    # 不夹输入端时这里是 [60.6, 16506.6, 16506.6]——正好复现 SA1 的症状
+    assert np.all(p < 1000), p
+
+
+def test_desk_labels_significant_loss_correctly():
+    """区间整体在 0 以下是"显著亏钱"，不是"跨 0"。"""
+    import desk
+    _, _, why = desk.verdict(_region_ok(168, gain_ci=(-8.9, -0.4)))
+    assert "显著亏钱" in why and "跨 0" not in why, why

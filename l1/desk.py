@@ -74,6 +74,8 @@ def verdict(r: dict) -> tuple[str, str, str]:
         fails.append(f"GW p={'—' if p is None else f'{p:.3f}'} 不显著")
     if gain_ci is None:
         fails.append("经济增益算不出区间")
+    elif gain_ci[1] < 0:
+        fails.append(f"日收益增量区间 [{gain_ci[0]:.1f}, {gain_ci[1]:.1f}] 整体在 0 以下——显著亏钱")
     elif gain_ci[0] <= 0:
         fails.append(f"日收益增量区间 [{gain_ci[0]:.1f}, {gain_ci[1]:.1f}] 跨 0")
 
