@@ -1,0 +1,10 @@
+data/
+data_fixture/
+data_smoke/
+**/.httpcache/
+__pycache__/
+.pytest_cache/
+*.zip
+.DS_Store
+l1/ladder.json
+l1/交易台.html
