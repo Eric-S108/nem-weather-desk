@@ -1,9 +1,34 @@
 {
- "generated_at": "2026-10-25 03:13",
+ "generated_at": "2026-10-25 03:23",
  "status": "empty",
  "regions": {},
  "latest": null,
  "failures": [
+  {
+   "target_day": "2026-10-26",
+   "region": "NSW1",
+   "status": "目标日特征缺失：p_d2 8 小时"
+  },
+  {
+   "target_day": "2026-10-26",
+   "region": "QLD1",
+   "status": "目标日特征缺失：p_d2 8 小时"
+  },
+  {
+   "target_day": "2026-10-26",
+   "region": "VIC1",
+   "status": "目标日特征缺失：p_d2 8 小时"
+  },
+  {
+   "target_day": "2026-10-26",
+   "region": "SA1",
+   "status": "目标日特征缺失：p_d2 8 小时"
+  },
+  {
+   "target_day": "2026-10-26",
+   "region": "TAS1",
+   "status": "目标日特征缺失：p_d2 8 小时"
+  },
   {
    "target_day": "2026-10-26",
    "region": "NSW1",
