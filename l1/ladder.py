@@ -79,7 +79,7 @@ PRICE_FLOOR = -1000.0
 NEM_OFFSET_H = 10          # NEM 时间 = UTC+10，全年固定，无夏令时
 
 
-def official(con, region: str, decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
+def official(con, region: str, decide_at: str = DECIDE_AT_NEM, variable: str = "rrp") -> pd.DataFrame:
     """AEMO 预调度：每个目标小时取**决策时刻之前**发出的最新一版。
 
     目标落在 NEM 日 D，只要 known_at ≤ D−1 天 decide_at 的版本，其中取最新。
@@ -90,12 +90,12 @@ def official(con, region: str, decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
     return con.execute(f"""
         WITH f AS (SELECT interval_time AS t, value, known_at, {tau} AS tau
                    FROM forecast
-                   WHERE site_id = ? AND variable = 'rrp' AND model = 'aemo_predispatch')
+                   WHERE site_id = ? AND variable = ? AND model = 'aemo_predispatch')
         SELECT t, value, date_diff('second', known_at, t) / 3600.0 AS lh
         FROM f
         WHERE known_at <= tau AND known_at >= tau - INTERVAL 4 DAY
         QUALIFY row_number() OVER (PARTITION BY t ORDER BY known_at DESC) = 1
-    """, [region]).df()
+    """, [region, variable]).df()
 
 
 def ar_features(s: pd.Series, t, decide_at: str = DECIDE_AT_NEM) -> pd.DataFrame:
@@ -167,6 +167,17 @@ def build(con, region: str, site_id: str, hours=None,
     d["aemo"] = (d.merge(fc[["t", "value"]].rename(columns={"value": "_a"}),
                          on="t", how="left")["_a"].to_numpy()
                  if len(fc) else np.nan)
+
+    # ---- 供需基本面：同样取决策时刻之前最新一版预调度（没有历史就整列空着，阶梯里自动跳过）----
+    fund = {}
+    for var in ("demand", "avail_gen", "wind_uigf", "solar_uigf"):
+        f_ = official(con, region, decide_at, var)
+        fund[var] = (d.merge(f_[["t", "value"]].rename(columns={"value": "_v"}), on="t", how="left")["_v"]
+                     .to_numpy(float) if len(f_) else np.full(len(d), np.nan))
+    d["pd_demand"] = fund["demand"]
+    d["pd_margin"] = fund["avail_gen"] - fund["demand"]             # 供给余量：越小越容易出尖峰
+    vre = np.nan_to_num(fund["wind_uigf"]) + np.nan_to_num(fund["solar_uigf"])
+    d["pd_vre"] = np.where(np.isfinite(fund["wind_uigf"]) | np.isfinite(fund["solar_uigf"]), vre, np.nan)
 
     # ---- 天气：滚动分位，as-of 干净 ----
     import l3_signal as SG
@@ -299,6 +310,38 @@ def select_features(tr: pd.DataFrame, base: list[str], fp, embargo_days: int = 3
     return min(ok, key=lambda x: (x[0], x[1]))[2]
 
 
+HYBRID_NAME = "B2 混合"
+FUND_NAME = "B2 +供需"
+FUND_COLS = ["pd_demand", "pd_margin", "pd_vre"]
+FUND_MIN_COVER = 0.98       # 基本面在样本里的覆盖率低于这个就不跑（历史没回填之前就是这样）
+
+
+def _nem_day(t) -> np.ndarray:
+    return (pd.to_datetime(pd.Series(t)) + pd.Timedelta(hours=NEM_OFFSET_H)).dt.floor("D").to_numpy()
+
+
+def hybrid_predict(tr: pd.DataFrame, te: pd.DataFrame, level: np.ndarray) -> np.ndarray:
+    """混合预测：**数值**用我们的模型，**日内排序**用 AEMO 预调度。
+
+    产品检验发现：排储能、可调负荷时，直接照 AEMO 预调度排反而最好（它的日内排序更准）；
+    定调峰机组时，我们的模型好得多（预调度整体偏高）。
+
+    第一版用"我们的日均 + β × 预调度的日内偏离"，β 用回归估。实测不行：预调度日内起伏很大，
+    回归把 β 压到接近 0，预测成了一条平线，电池算出来的价差盖不住成本，干脆不交易。
+    现在的做法不估任何参数：每天把我们模型的 24 个预测值从小到大排好，
+    按 AEMO 预调度的从小到大顺序分配到各个小时 —— 水平和日内振幅都是我们的，哪个小时贵是 AEMO 的。
+    """
+    out = np.full(len(te), np.nan)
+    a_te = te["aemo"].to_numpy(float)
+    dte = _nem_day(te["t"])
+    for dd in np.unique(dte):
+        idx = np.where(dte == dd)[0]
+        lv = np.sort(level[idx])
+        order = np.argsort(a_te[idx], kind="stable")
+        out[idx[order]] = lv
+    return out
+
+
 def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
         variants=True, per_hour=True, nested=True) -> dict:
     """滚动重拟合跑完四层，每层都在**同一批**测试行上评估。
@@ -335,6 +378,12 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
             if rest:
                 var_cols[f"去掉 {k}"] = base + rest
     need = AR_COLS + WX_COLS + ["rrp", "naive"] + (OFF_COLS if have_off else [])
+    fund_cols = [c for c in FUND_COLS if c in d.columns]
+    base_rows = d.dropna(subset=need)
+    have_fund = bool(have_off and fund_cols and len(base_rows)
+                     and base_rows[fund_cols].notna().all(axis=1).mean() >= FUND_MIN_COVER)
+    if have_fund:
+        need = need + fund_cols
     d = d.dropna(subset=need).sort_values("t").reset_index(drop=True)
     if d.empty:
         return {"status": "no_rows"}
@@ -350,6 +399,10 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
     pred["B0 naive"] = d["naive"].to_numpy(float)
     if nested:
         pred[NESTED_NAME] = np.full(len(d), np.nan)
+    if have_off:
+        pred[HYBRID_NAME] = np.full(len(d), np.nan)
+    if have_fund:
+        pred[FUND_NAME] = np.full(len(d), np.nan)
     picks: list[list[str]] = []
     n_fit = 0
     for d0 in range(train_days + embargo_days, span, step_days):
@@ -363,6 +416,11 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
                 continue
             fp = _fit_predict_ph if per_hour else _fit_predict
             pred[name][te_m] = fp(d[tr_m], d[te_m], cols)
+        if have_off:
+            pred[HYBRID_NAME][te_m] = hybrid_predict(d[tr_m], d[te_m], pred["B2 +官方"][te_m])
+        if have_fund:
+            fp = _fit_predict_ph if per_hour else _fit_predict
+            pred[FUND_NAME][te_m] = fp(d[tr_m], d[te_m], AR_COLS + OFF_COLS + fund_cols)
         if nested:
             fp = _fit_predict_ph if per_hour else _fit_predict
             sub = select_features(d[tr_m], base, fp, embargo_days)
@@ -376,6 +434,10 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
             ok &= np.isfinite(pred[name])
     if nested:
         ok &= np.isfinite(pred[NESTED_NAME])
+    if have_off:
+        ok &= np.isfinite(pred[HYBRID_NAME])
+    if have_fund:
+        ok &= np.isfinite(pred[FUND_NAME])
     y = d["rrp"].to_numpy(float)[ok]
     if ok.sum() < 200:
         return {"status": "too_few_test", "n": int(ok.sum())}
@@ -444,6 +506,22 @@ def run(d: pd.DataFrame, train_days=180, step_days=7, embargo_days=3,
             "gw_p": None if gw is None else round(gw, 4),
             "windows": len(picks), "freq": freq,
             "combos": dict(sorted(combos.items(), key=lambda kv: -kv[1]))}
+
+    out["has_fund"] = have_fund
+    if FUND_NAME in err and "B2 +官方" in err:
+        e = err[FUND_NAME]
+        gw = giacomini_white(err["B2 +官方"], e)
+        out["fund"] = {"name": FUND_NAME, "vs": "B2 +官方", "cols": fund_cols,
+                       "rmae": round(float(np.mean(e)) / mae0, 4),
+                       "gain_rmae": round(float(np.mean(err["B2 +官方"]) - np.mean(e)) / mae0, 4),
+                       "gw_p": None if gw is None else round(gw, 4)}
+    if HYBRID_NAME in err and "B2 +官方" in err:
+        e = err[HYBRID_NAME]
+        gw = giacomini_white(err["B2 +官方"], e)
+        out["hybrid"] = {"name": HYBRID_NAME, "vs": "B2 +官方",
+                         "rmae": round(float(np.mean(e)) / mae0, 4),
+                         "gain_rmae": round(float(np.mean(err["B2 +官方"]) - np.mean(e)) / mae0, 4),
+                         "gw_p": None if gw is None else round(gw, 4)}
 
     out["_pred"] = {k: v[ok] for k, v in pred.items()}
     out["_y"] = y
@@ -846,9 +924,11 @@ def _all_regions(a) -> int:
                 pub = {k: v for k, v in res.items() if not k.startswith("_")}
                 bt = bias_trade(res) if res.get("status") == "ok" else {"status": "skip"}
                 import products as PR
+                import prob as PB
                 pr = PR.products(res) if res.get("status") == "ok" else {"status": "skip"}
+                pb = PB.probabilistic(res) if res.get("status") == "ok" else {"status": "skip"}
                 out["regions"][region] = {**pub, "economics": ec, "diag": dg, "bias": bt,
-                                          "products": pr}
+                                          "products": pr, "prob": pb}
                 if res.get("status") == "ok":
                     sp = res.get("official_span")
                     if sp:
@@ -1084,7 +1164,16 @@ def main(argv=None) -> int:
     print()
 
     import products as PR
+    import prob as PB
     prd = PR.products(res)
+    pbd = PB.probabilistic(res)
+    if pbd.get("status") == "ok":
+        o_, a_ = pbd["ours"], pbd["aemo"]
+        print(f"\n  概率预测（{pbd['hours']} 小时，尖峰 > $300 占 {pbd['spike_rate']:.2%}）")
+        print(f"    pinball q10/q50/q90  我们 {o_['pinball']}  AEMO {a_['pinball']}")
+        print(f"    80% 区间覆盖        我们 {o_['cov80']:.1%}  AEMO {a_['cov80']:.1%}")
+        print(f"    尖峰 Brier          我们 {o_['brier']:.5f}  AEMO+残差 {a_['brier']:.5f}  "
+              f"预调度>300 {pbd['brier_aemo_hard']:.5f}  气候态 {pbd['brier_clim']:.5f}")
     if prd.get("status") == "ok":
         print("\n  能下单的产品（按现货价结算，已扣交易成本；$/天，1 MW）")
         for k, it in prd["items"].items():
@@ -1103,7 +1192,7 @@ def main(argv=None) -> int:
             json.dump({"region": a.region, "hours": a.hours,
                        "generated_at": pd.Timestamp.now("UTC").isoformat(),
                        **pub, "economics": ec, "diag": dg,
-                       "bias": bias_trade(res), "products": prd}, f,
+                       "bias": bias_trade(res), "products": prd, "prob": pbd}, f,
                       ensure_ascii=False, indent=1, default=str)
         print(f"→ {a.out}")
     return 0

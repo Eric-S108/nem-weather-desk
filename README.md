@@ -157,6 +157,15 @@ python l1/paper.py --status
 python l1/paper.py --signal --refresh --push
 ```
 
+
+### 每日任务跑在 GitHub 上（不依赖 Mac 开机）
+
+`.github/workflows/paper-daily.yml` 每天 UTC 03:05 / 03:13 / 03:21（= NEM 13:05 / 13:13 / 13:21）触发：
+补数据 → 出信号 → 结算 → 更新期货公允价值和页面 → 提交推送。数据用仓库里的精简数据仓 `data_live/`
+（`l1/livestore.py --export` 从完整数据仓导出，约 17 MB；和完整仓出的信号逐位一致，已核对）。
+每次运行写 `docs/paper/health.json`，页面顶部显示数据体检结果；数据出问题、错过窗口、信号没出全时任务以失败结束，
+GitHub 会发邮件。在 GitHub 网页的 Actions 页也可以手动点 Run workflow（只补数据、结算、更新页面）。
+
 第一版信号就是正式版，同一天再出一次不会覆盖；决策时刻之后才生成的信号标为 late，不计成绩。
 
 ---
@@ -171,6 +180,9 @@ python l1/paper.py --signal --refresh --push
 | `l1/futures.py` | 期货公允价值：结算价分布、历史校准、单日风险、天气指标、明日现货展望 |
 | `l1/signals.py` | 本机私有：按你录入的报价出信号、仓位和风险（不提交） |
 | `l1/products.py` | 能下单的产品：储能、可调负荷、调峰机组，含交易成本和敏感性 |
+| `l1/livestore.py` | 精简数据仓：导出 / 合并每日任务用的 data_live/ |
+| `l1/prob.py` | 概率预测：分位数、尖峰概率及其检验 |
+| `l1/futures_bt.py` | 期货信号回测（本机私有，用你提供的历史期货价） |
 | `l1/paper.py` | 前推纸面交易：每日出信号、结算、写 summary |
 | `l1/robust.py` | 稳健性检验：按月拆分、Holm 多重比较、按天下注、换训练窗（共同样本段） |
 | `l1/aemo.py` | NEMWeb：电价、需求、预调度 |
@@ -192,3 +204,17 @@ python l1/paper.py --signal --refresh --push
   Price Forecast.* [arXiv 2510.03657](https://arxiv.org/html/2510.03657)
 
 数据：[AEMO NEMWeb](https://nemweb.com.au)、[Open-Meteo](https://open-meteo.com)。
+
+
+## 概率预测、混合模型、供需基本面、期货回测、组合风险（2026-10-25）
+
+- `l1/prob.py`：分位数（q10/q50/q90）和尖峰概率（> $300）= 点预测 + 过去 90 天同一小时的样本外误差。
+  第二页"概率预测与新模型"给 pinball、80% 覆盖、Brier，对照 AEMO、"预调度 > 300"和历史频率。
+- 混合模型 `B2 混合`：每天把我们模型的 24 个预测值按 AEMO 预调度的日内顺序重新分配到各小时
+  （水平和振幅是我们的，哪个小时贵是 AEMO 的）。
+- 供需基本面：预调度解析器多出需求、可用发电、联络线、风光可用出力。历史要重跑一遍预调度归档
+  （完成记录换成 v2，已有的电价行按主键去重），然后用 `l1/livestore.py --sync data_live` 带给云上任务。
+- `l1/futures_bt.py`（本机私有）：把你拿到的历史期货结算价放进 `private/futures_history.csv`，
+  回测风险溢价、公允价值的信息量和信号规则。
+- `l1/signals.py` 加组合风险：同一批历史日期算各腿盈亏再加总（带相关性），VaR95 / ES95 / 历史最差一天；
+  新信号按"期望盈亏 ÷ 单日风险"排序分配额度，组合 ES95 不超过单日上限。

@@ -279,6 +279,46 @@ def _pc(v) -> str:
     return "—" if v is None else f"{v:.0%}"
 
 
+def prob_section(regs: dict) -> str:
+    """概率预测（分位数、尖峰）和两个新模型（混合、供需）的检验。"""
+    rows, mrows = [], []
+    for k, r in regs.items():
+        pb = r.get("prob") or {}
+        if pb.get("status") == "ok":
+            o_, a_ = pb["ours"], pb["aemo"]
+            rows.append(f"<tr><td class='tier'>{k}</td><td class='num'>{pb['spike_rate']:.1%}</td>"
+                        f"<td class='num'>{o_['pinball']['0.1']:.1f} / {o_['pinball']['0.5']:.1f} / {o_['pinball']['0.9']:.1f}</td>"
+                        f"<td class='num'>{a_['pinball']['0.1']:.1f} / {a_['pinball']['0.5']:.1f} / {a_['pinball']['0.9']:.1f}</td>"
+                        f"<td class='num'>{o_['cov80']:.0%} / {a_['cov80']:.0%}</td>"
+                        f"<td class='num'>{o_['brier']:.4f}</td><td class='num'>{a_['brier']:.4f}</td>"
+                        f"<td class='num'>{pb['brier_aemo_hard']:.4f}</td><td class='num'>{pb['brier_clim']:.4f}</td></tr>")
+        for key, lab in (("hybrid", "价格 + AEMO（AEMO 日内形状）"), ("fund", "价格 + AEMO + 供需")):
+            h = r.get(key)
+            if h:
+                mrows.append(f"<tr><td class='tier'>{k}</td><td>{lab}</td><td class='num'>{h['rmae']:.3f}</td>"
+                             f"<td class='num'>{h['gain_rmae']:+.4f}</td><td class='num'>{_n(h.get('gw_p'), '{:.3f}')}</td></tr>")
+        if not r.get("has_fund") and r.get("status") == "ok":
+            mrows.append(f"<tr><td class='tier'>{k}</td><td>价格 + AEMO + 供需</td>"
+                         f"<td colspan='3' class='cap'>还没有足够的历史（预调度归档里的供需要重新回填）</td></tr>")
+    if not rows and not mrows:
+        return ""
+    return f"""<section class="reg" id="prob">
+      <h2>概率预测与新模型</h2>
+      <p class="lede">NEM 的钱大部分在尾部。这里检验两件事：给出的分位数和尖峰概率准不准；
+        两个新模型（AEMO 日内形状 + 我们的水平、加供需基本面）有没有让预测更准。</p>
+      <p class="cap">分位数 = 点预测 + 过去 90 天同一小时的<b>样本外</b>误差。pinball loss 越小越好；
+        80% 区间覆盖应接近 80%。尖峰 = 价格 &gt; $300；Brier 越小越好，对照"AEMO 预调度 + 它自己的误差"、
+        "预调度 &gt; $300 就当 100%"和"历史同小时频率"。</p>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>尖峰小时占比</th>
+        <th>pinball q10/q50/q90（我们）</th><th>pinball（AEMO）</th><th>80% 覆盖 我们/AEMO</th>
+        <th>Brier 我们</th><th>Brier AEMO+误差</th><th>Brier 预调度&gt;300</th><th>Brier 历史频率</th></tr></thead>
+        <tbody>{''.join(rows)}</tbody></table></div>
+      <h4>新模型：相对 价格 + AEMO</h4>
+      <div class="tblwrap"><table class="lad"><thead><tr><th>区</th><th>模型</th><th>rMAE</th><th>增量</th><th>GW p</th></tr></thead>
+        <tbody>{''.join(mrows)}</tbody></table></div>
+    </section>"""
+
+
 def futures_section(fut: dict | None) -> str:
     """期货公允价值的历史校准：抽样区间准不准、放宽多少、按剩余天数分的误差。"""
     if not fut or not fut.get("regions"):
@@ -709,6 +749,7 @@ the economic value of reducing prediction errors.”<br>
 <p class="lede">{head}</p>
 <div class="grid">{cards}</div>
 {futures_section(data.get("futures"))}
+{prob_section(regs)}
 {products_section(regs)}
 {robust_section(data.get("robust"))}
 {secs}
@@ -739,6 +780,10 @@ def main(argv=None) -> int:
     if os.path.exists(fp) and "futures" not in data:
         with open(fp) as f:
             data["futures"] = json.load(f)
+    hp = os.path.join(os.path.dirname(os.path.abspath(a.src)), "paper", "health.json")
+    if os.path.exists(hp) and "health" not in data:
+        with open(hp) as f:
+            data["health"] = json.load(f)
     pp = os.path.join(os.path.dirname(os.path.abspath(a.src)), "paper", "summary.json")
     if os.path.exists(pp) and "paper" not in data:
         with open(pp) as f:

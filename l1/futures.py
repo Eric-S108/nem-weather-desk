@@ -188,7 +188,7 @@ def daily_risk_per_mw(fv: dict, price: float, side: int) -> float:
 
 # ------------------------------------------------------------------ 校准
 def calibrate(mat: pd.DataFrame, product: str, kind: str, offsets=(0, 7, 14, 21, 28, 45, 60, 75),
-              n_sims: int = 1500) -> dict:
+              n_sims: int = 1500, return_rows: bool = False):
     """在过去每个完整的合约期上，从开始前一天起每隔若干天站一次位置，看区间准不准。"""
     first, last = mat.dropna().index.min(), mat.dropna().index.max()
     per = pd.period_range(first + pd.Timedelta(days=POOL_DAYS + 1), last, freq="M" if kind == "month" else "Q")
@@ -218,8 +218,9 @@ def calibrate(mat: pd.DataFrame, product: str, kind: str, offsets=(0, 7, 14, 21,
                          "pit": float((v < actual).mean()),
                          "naive": fv["settled_avg"]})
     if not rows:
-        return {"n": 0}
+        return (pd.DataFrame(), {"n": 0}) if return_rows else {"n": 0}
     df = pd.DataFrame(rows)
+    df["end"] = [pd.Period(x).end_time.normalize() for x in df["period"]]
     df["bucket"] = pd.cut(df["left"], [-0.01, 0.25, 0.5, 0.75, 1.01],
                           labels=["剩 ≤25%", "剩 25–50%", "剩 50–75%", "剩 75–100%"])
     by = []
@@ -231,9 +232,10 @@ def calibrate(mat: pd.DataFrame, product: str, kind: str, offsets=(0, 7, 14, 21,
                    "mae_naive": round(float((nv["naive"] - nv["actual"]).abs().mean()), 2) if len(nv) else None})
     k50, k90 = widen_factors(df)
     oos = widened_oos(df)
-    return {"n": int(len(df)), "periods": int(df["period"].nunique()),
+    summ = {"n": int(len(df)), "periods": int(df["period"].nunique()),
             "cov50": round(float(df["in50"].mean()), 3), "cov90": round(float(df["in90"].mean()), 3),
             "k50": k50, "k90": k90, **oos, "by_left": by}
+    return (df, summ) if return_rows else summ
 
 
 def _z(df: pd.DataFrame, lo: str, hi: str) -> np.ndarray:
@@ -374,6 +376,15 @@ def spot_outlook(con, region: str, mat: pd.DataFrame) -> dict | None:
     out.update({"aemo_avg": round(float(df["value"].mean()), 1), "aemo_max": round(float(df["value"].max()), 1),
                 "aemo_hours_over_300": int((df["value"] > CAP_STRIKE).sum()),
                 "pd_known_at": str(pd.to_datetime(df["known_at"]).max() + NEM)[:16]})
+    sm_p = os.path.join(ROOT, "docs", "paper", "summary.json")
+    if os.path.exists(sm_p):
+        with open(sm_p) as f:
+            lt = (json.load(f) or {}).get("latest") or {}
+        dist = ((lt.get("regions") or {}).get(region) or {}).get("dist") if lt.get("target_day") == out["day"] else None
+        if dist:
+            out["p_spike_max"] = max(dist["p_spike"])
+            out["spike_hours"] = int(sum(1 for v in dist["p_spike"] if v > 0.2))
+            out["q90_max"] = max(dist["q90"])
     sig = os.path.join(ROOT, "docs", "paper", "signals.csv")
     if os.path.exists(sig):
         sg = pd.read_csv(sig)

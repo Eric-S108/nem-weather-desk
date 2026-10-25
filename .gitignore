@@ -9,3 +9,4 @@ __pycache__/
 l1/ladder.json
 l1/交易台.html
 private/
+data_live/.paper.lock

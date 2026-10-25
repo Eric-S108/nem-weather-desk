@@ -48,8 +48,8 @@ SOURCES = {
     "gas": "AEMO Quarterly Energy Dynamics Q1 2026：东海岸气价均值 $10.61/GJ",
     "asx": "ASX Australian Electricity fact sheet（2025-06）：只有月度/季度/年度合约，无日度、周度",
 }
-MODEL_ORDER = ["B0 naive", "AEMO 直用", "B1 自回归", "B2 +官方", "B3 +天气", "B3 选特征"]
-REC_ORDER = ["AEMO 直用", "B0 naive", "B1 自回归", "B2 +官方", "B3 +天气", "B3 选特征"]
+MODEL_ORDER = ["B0 naive", "AEMO 直用", "B1 自回归", "B2 +官方", "B2 混合", "B2 +供需", "B3 +天气", "B3 选特征"]
+REC_ORDER = ["AEMO 直用", "B0 naive", "B1 自回归", "B2 +官方", "B2 混合", "B2 +供需", "B3 +天气", "B3 选特征"]
 
 
 # ------------------------------------------------------------------ 三个产品的单日决策

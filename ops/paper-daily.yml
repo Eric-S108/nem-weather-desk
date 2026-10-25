@@ -1,0 +1,50 @@
+# 前推纸面交易的每日任务：在 GitHub 的机器上跑，不依赖你的 Mac 开机。
+#
+# NEM 13:05–13:29 = UTC 03:05–03:29（NEM 全年 UTC+10，没有夏令时）。
+# GitHub 的定时触发经常晚几分钟，所以在窗口里排了三次；已经出过信号的后几次会直接退出。
+# 错过窗口或数据出问题时任务会以失败结束，GitHub 会给你发邮件。
+name: paper-daily
+
+on:
+  schedule:
+    - cron: "5 3 * * *"
+    - cron: "13 3 * * *"
+    - cron: "21 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: pip install -r requirements.txt
+      - name: Git identity
+        run: |
+          git config user.name "nem-desk-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Paper trading (signal, settle, fair value, page)
+        env:
+          WQ_DATA_DIR: ${{ github.workspace }}/data_live
+          WQ_CI: "1"
+          WQ_HTTP_CACHE: ${{ runner.temp }}/httpcache
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python l1/paper.py --maintenance
+          else
+            python l1/paper.py --cron
+          fi

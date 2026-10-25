@@ -38,6 +38,8 @@ PAPER_DIR = os.path.join(ROOT, "docs", "paper")
 SIGNALS = os.path.join(PAPER_DIR, "signals.csv")
 SUMMARY = os.path.join(PAPER_DIR, "summary.json")
 LOCK = os.path.join(os.environ.get("WQ_DATA_DIR", ROOT), ".paper.lock")
+CI = os.environ.get("WQ_CI") == "1"          # 在 GitHub Actions 上跑：数据仓是 data_live/，要一起提交
+HEALTH = os.path.join(PAPER_DIR, "health.json")
 
 MODELS = ["B0 naive", "B1 自回归", "B2 +官方", "B3 +天气", L.NESTED_NAME]
 COL = {"B0 naive": "p_b0", "B1 自回归": "p_b1", "B2 +官方": "p_b2",
@@ -149,6 +151,10 @@ def append_signals(sig: pd.DataFrame) -> None:
         have = set(zip(old.loc[old["status"] == "ok", "target_day"],
                        old.loc[old["status"] == "ok", "region"]))
         sig = sig[[(a, b) not in have for a, b in zip(sig["target_day"], sig["region"])]]
+        # 同一天同一区之前失败过的记录，这次又有新结果（成功或新的失败原因）就只留最新的
+        newk = set(zip(sig["target_day"], sig["region"]))
+        old = old[[(s_ == "ok") or ((a, b) not in newk)
+                   for a, b, s_ in zip(old["target_day"], old["region"], old["status"])]]
         # 之前失败的记录，这次成功了就替换掉
         okk = set(zip(sig.loc[sig["status"] == "ok", "target_day"], sig.loc[sig["status"] == "ok", "region"]))
         old = old[[(a, b) not in okk or s == "ok"
@@ -312,28 +318,102 @@ def refresh_data() -> None:
         print(f"  预调度抓取失败：{e}")
     today = (now_utc() + NEM).normalize()
     try:
-        aemo.ingest_daily_archive(str((today - pd.Timedelta(days=5)).date()),
-                                  str((today - pd.Timedelta(days=1)).date()))
+        miss = _missing_price_days(7)
+        if miss:
+            print(f"  电价缺的日子：{', '.join(miss)}，从日归档补")
+            aemo.ingest_daily_archive(miss[0], miss[-1])
     except Exception as e:                                       # noqa: BLE001
         print(f"  日归档电价失败：{e}")
     try:
-        aemo.ingest_current(aemo.CUR_DISPATCH, 16, "nemweb_current")
+        # 当日电价从 Reports/Current 拿。昨天的日归档要到今天某个时候才发布，没发布之前昨天也只能从这里补，
+        # 所以从昨天 00:00（NEM）一直取到现在。2026-10-25 第一次实跑就栽在这里：只取了 16 小时，
+        # 昨天上午的价格缺了，p_d2 有 8 个小时是空的，五个区都没出成信号。
+        now_nem = now_utc() + NEM
+        hrs = int((now_nem - (today - pd.Timedelta(days=1))).total_seconds() // 3600) + 1
+        aemo.ingest_current(aemo.CUR_DISPATCH, min(max(hrs, 16), 48), "nemweb_current")
     except Exception as e:                                       # noqa: BLE001
         print(f"  当日电价失败：{e}")
     print(f"  补数据用时 {time.time() - t0:.0f}s")
+
+
+def _missing_price_days(n: int = 7) -> list[str]:
+    """最近 n 个已经结束的交易日里，哪个区电价不满 24 小时。日归档每天一个大文件，只补缺的。"""
+    import store
+    con = store.connect()
+    try:
+        today = (now_utc() + NEM).normalize()
+        lo = today - pd.Timedelta(days=n) - NEM
+        df = con.execute("""
+            SELECT site_id, interval_time FROM truth WHERE variable = 'rrp' AND interval_time >= ?
+        """, [lo]).df()
+    finally:
+        con.close()
+    days = [today - pd.Timedelta(days=k) for k in range(n, 0, -1)]
+    if df.empty:
+        return [str(d.date()) for d in days]
+    df["d"] = (pd.to_datetime(df["interval_time"]) + NEM).dt.normalize()
+    cnt = df.groupby(["site_id", "d"]).size()
+    regs = sorted(df["site_id"].unique())
+    return [str(d.date()) for d in days if any(cnt.get((r, d), 0) < 24 for r in regs)]
+
+
+def health(con, target: pd.Timestamp) -> dict:
+    """每日任务的体检：数据新不新、有没有洞、明天的输入齐不齐。结果写 docs/paper/health.json，页面顶部显示。"""
+    now = now_utc()
+    out = {"checked_at": now.strftime("%Y-%m-%d %H:%M"), "ci": CI, "target_day": str(target.date()),
+           "regions": {}, "level": "ok", "notes": []}
+    lo_t, hi_t = target - NEM, target + pd.Timedelta(days=1) - NEM
+    for site_id, region, *_ in L.SITES:
+        last = con.execute("SELECT max(interval_time) FROM truth WHERE site_id = ? AND variable = 'rrp'",
+                           [region]).fetchone()[0]
+        lag_h = None if last is None else round((now - pd.Timestamp(last)).total_seconds() / 3600, 1)
+        pd_h = con.execute("""SELECT count(DISTINCT interval_time) FROM forecast
+                              WHERE site_id = ? AND model = 'aemo_predispatch'
+                                AND interval_time >= ? AND interval_time < ?""", [region, lo_t, hi_t]).fetchone()[0]
+        wx_h = con.execute("""SELECT count(DISTINCT interval_time) FROM forecast
+                              WHERE site_id = ? AND model = 'ecmwf_ifs025'
+                                AND interval_time >= ? AND interval_time < ?""", [site_id, lo_t, hi_t]).fetchone()[0]
+        lvl = "ok"
+        if lag_h is None or lag_h > 48:
+            lvl = "fail"
+        elif lag_h > 6 or pd_h < 24 or wx_h < 24:
+            lvl = "warn"
+        out["regions"][region] = {"price_lag_h": lag_h, "predispatch_hours": int(pd_h),
+                                  "weather_hours": int(wx_h), "level": lvl}
+    try:
+        gaps = _missing_price_days(7)
+    except Exception:                                            # noqa: BLE001
+        gaps = []
+    out["gap_days"] = gaps
+    if gaps:
+        out["notes"].append(f"最近 7 天电价有缺口：{'、'.join(gaps)}")
+    lv = [v["level"] for v in out["regions"].values()]
+    out["level"] = "fail" if "fail" in lv else "warn" if ("warn" in lv or gaps) else "ok"
+    os.makedirs(PAPER_DIR, exist_ok=True)
+    with open(HEALTH, "w") as f:
+        json.dump(out, f, ensure_ascii=False, indent=1)
+    return out
 
 
 def render_and_push(msg: str) -> None:
     py = sys.executable
     if os.path.exists(os.path.join(ROOT, "docs", "ladder.json")):
         _run([py, "l1/desk.py", "--in", "docs/ladder.json", "--out", "docs/index.html"])
-    _run(["git", "add", "docs/paper", "docs/index.html", "docs/method.html", "docs/futures.json"])
+    paths = ["docs/paper", "docs/index.html", "docs/method.html", "docs/futures.json"]
+    if CI:
+        paths.append("data_live")
+    _run(["git", "add", *paths])
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
         print("  没有新改动")
         return
     _run(["git", "commit", "-q", "-m", msg])
-    if not _run(["git", "push", "-q", "origin", "HEAD"], timeout=180):
-        print("  推送失败（多半是这个环境里没有 GitHub 登录）；提交已在本地，下次手动 bash publish.sh 会一起推上去")
+    for _ in range(3):
+        # 你在 Mac 上也会推送（改代码、手动发布），先把远端的合进来再推；生成的文件冲突时以这次为准
+        _run(["git", "pull", "-q", "--rebase", "-X", "theirs", "origin", "main"], timeout=180)
+        if _run(["git", "push", "-q", "origin", "HEAD:main"], timeout=180):
+            return
+        time.sleep(5)
+    print("  推送失败；提交已在本地")
 
 
 def in_window(now: pd.Timestamp | None = None) -> bool:
@@ -354,7 +434,14 @@ def cron() -> int:
     now = now_utc()
     target = ((now + NEM).normalize() + pd.Timedelta(days=1))
     tday = str(target.date())
+    nem_hm = (now + NEM).strftime("%H:%M")
     if not in_window(now):
+        if CI and nem_hm > WINDOW[1] and not have_signal(tday):
+            # 云上的定时触发偶尔会晚到。错过窗口就不出信号（出了也是 late），但照样补数据、结算、更新页面，
+            # 并且以失败退出 —— GitHub 会给你发邮件。
+            print(f"{now} 已过 {WINDOW[1]}（NEM），{tday} 的信号没出成。只做结算和页面更新。")
+            _maintenance(target, f"Settle only, missed signal window for {tday}")
+            return 2
         return 0
     if have_signal(tday):
         return 0
@@ -368,6 +455,7 @@ def cron() -> int:
             return 0
         os.remove(LOCK)
         return cron()
+    n_ok, hl = 0, {}
     try:
         print(f"\n===== {now:%Y-%m-%d %H:%M} UTC · 给 {tday} 出信号 =====", flush=True)
         refresh_data()
@@ -383,17 +471,46 @@ def cron() -> int:
                 json.dump(res, f, ensure_ascii=False, indent=1, default=str)
         except Exception as e:                 # noqa: BLE001
             print(f"  期货公允价值更新失败：{e}")
+        hl = health(con, target)
         con.close()
+        if CI and now.weekday() == 6:
+            import livestore
+            print(f"  合并数据仓：{livestore.compact(os.environ['WQ_DATA_DIR'])}")
         n_ok = int((sig["status"] == "ok").sum() // 24)
-        render_and_push(f"Paper signal for {tday} ({n_ok} regions)")
+        render_and_push(f"Paper signal for {tday} ({n_ok} regions, health {hl['level']})")
     finally:
         os.remove(LOCK)
+    if CI and hl.get("level") == "fail":
+        print(f"数据体检失败：{hl}")
+        return 2
+    if CI and not have_signal(tday) and nem_hm >= "13:20":
+        print(f"{tday} 的信号还没出全（{n_ok}/{len(L.SITES)} 个区），这是窗口内最后一次尝试。")
+        return 2
     return 0
+
+
+def _maintenance(target: pd.Timestamp, msg: str) -> None:
+    refresh_data()
+    import store
+    con = store.connect()
+    write_summary(con)
+    try:
+        import futures as FU
+        res = FU.build(con, calib=True)
+        with open(FU.OUT, "w") as f:
+            json.dump(res, f, ensure_ascii=False, indent=1, default=str)
+    except Exception as e:                     # noqa: BLE001
+        print(f"  期货公允价值更新失败：{e}")
+    health(con, target)
+    con.close()
+    render_and_push(msg)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="前推纸面交易")
     ap.add_argument("--cron", action="store_true", help="定时任务入口：只在 13:05–13:29（NEM）之间干活")
+    ap.add_argument("--maintenance", action="store_true",
+                    help="补数据、结算、更新期货公允价值和页面并推送（在窗口内会改为正常出信号）")
     ap.add_argument("--signal", action="store_true", help="现在就给明天（或 --day）出信号")
     ap.add_argument("--day", default=None, help="目标 NEM 日 YYYY-MM-DD，默认明天")
     ap.add_argument("--force", action="store_true", help="不在窗口内也出（会标成 late，不计入成绩）")
@@ -405,6 +522,12 @@ def main(argv=None) -> int:
 
     if a.cron:
         return cron()
+    if a.maintenance:
+        target = (now_utc() + NEM).normalize() + pd.Timedelta(days=1)
+        if in_window() and not have_signal(str(target.date())):
+            return cron()
+        _maintenance(target, "Maintenance: refresh, settle, fair value, page")
+        return 0
     import store
     if a.refresh and not a.signal:
         refresh_data()            # 只补数据：预调度、当日电价、最近几天的日归档、ECMWF 预报

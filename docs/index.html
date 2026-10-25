@@ -51,6 +51,7 @@ a{color:var(--s1)}
 .hero .big small{font-size:18px;font-weight:600;color:var(--ink2);margin-left:6px}
 .hero .say{font-size:16px;margin:0}
 .hero2{grid-template-columns:1fr}
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--ink2)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
 @media (max-width:640px){.tile .tv{font-size:24px}.panel .fr{grid-template-columns:48px 1fr}.panel .fr .fv{grid-column:2}}
 .tile{padding:4px 0}
@@ -225,7 +226,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
     <a href="https://github.com/Eric-S108/nem-weather-desk">代码</a></nav>
 </div>
 <div class="asof">样本外 2026-04-28 → 2026-10-12（168 天）· 每天 13:30（NEM）定次日 24 小时计划 ·
-  按现货价结算、已扣交易成本 · 生成于 2026-10-24 13:57 UTC</div>
+  按现货价结算、已扣交易成本 · 生成于 2026-10-25 05:24 UTC</div>
+
 
 
 <section class="hero hero2">
@@ -366,25 +368,31 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 
 <h2>明日现货展望</h2>
 <p class="lead2">AEMO 预调度取最新一版（前一天的预调度系统性偏高，均价要打折看）；"我们的预测"是纸面交易每天 13:30 前出的价格 + AEMO 模型（没有就显示 —）。
-"本月历史尖峰日"= 历史上同一个月里，日内最高小时均价超过 $300 的天数占比，用来看 cap 和晚峰合约的尾部风险。</p>
+"我们的尖峰概率"= 明天价格超过 $300 的概率里最高的那个小时（点预测 + 过去 90 天同一小时的样本外误差），
+历史检验见第二页"概率预测"。"本月历史尖峰日"= 历史上同一个月里，日内最高小时均价超过 $300 的天数占比。
+<b>注意：</b>历史检验里，NSW1、VIC1、SA1 我们的尖峰概率还不如"历史同小时频率"准（尖峰太少，误差分布估不稳），这些区先看最后一列的历史频率。</p>
 <div class="card"><div class="scroll"><table class="act"><thead><tr><th>区</th><th>日期</th><th class="num">AEMO 预调度均价</th>
-<th class="num">我们的预测均价</th><th class="num">预调度 &gt; $300 的小时</th><th class="num">本月历史尖峰日</th></tr></thead>
+<th class="num">我们的预测均价</th><th class="num">预调度 &gt; $300 的小时</th><th class="num">我们的尖峰概率</th><th class="num">本月历史尖峰日</th></tr></thead>
 <tbody><tr><td class="rg">NSW1</td><td data-l="日期">2026-10-26</td>
 <td class="num" data-l="AEMO 预调度均价">$127<span class="hint">最高 $400</span></td>
 <td class="num" data-l="我们的预测均价">—</td>
 <td class="num" data-l="预调度 > $300 的小时">3</td>
+<td class="num" data-l="我们的尖峰概率（最高的小时）">—</td>
 <td class="num" data-l="本月历史尖峰日">11%<span class="hint">85 天里</span></td></tr><tr><td class="rg">VIC1</td><td data-l="日期">2026-10-26</td>
 <td class="num" data-l="AEMO 预调度均价">$86<span class="hint">最高 $388</span></td>
 <td class="num" data-l="我们的预测均价">—</td>
 <td class="num" data-l="预调度 > $300 的小时">3</td>
+<td class="num" data-l="我们的尖峰概率（最高的小时）">—</td>
 <td class="num" data-l="本月历史尖峰日">1%<span class="hint">85 天里</span></td></tr><tr><td class="rg">QLD1</td><td data-l="日期">2026-10-26</td>
 <td class="num" data-l="AEMO 预调度均价">$161<span class="hint">最高 $407</span></td>
 <td class="num" data-l="我们的预测均价">—</td>
 <td class="num" data-l="预调度 > $300 的小时">6</td>
+<td class="num" data-l="我们的尖峰概率（最高的小时）">—</td>
 <td class="num" data-l="本月历史尖峰日">7%<span class="hint">85 天里</span></td></tr><tr><td class="rg">SA1</td><td data-l="日期">2026-10-26</td>
 <td class="num" data-l="AEMO 预调度均价">$250<span class="hint">最高 $3,290</span></td>
 <td class="num" data-l="我们的预测均价">—</td>
 <td class="num" data-l="预调度 > $300 的小时">6</td>
+<td class="num" data-l="我们的尖峰概率（最高的小时）">—</td>
 <td class="num" data-l="本月历史尖峰日">7%<span class="hint">85 天里</span></td></tr></tbody></table></div></div>
 
 <h2>天气指标（未来几天）</h2>
@@ -392,18 +400,18 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 <b>描述性的，不是预测</b>：前面的检验已经说明，加上天气并没有让能下单的东西显著多赚。把它当成"市场可能在交易什么"的背景信息。</p>
 <div class="card"><div class="scroll"><table class="act"><thead><tr><th>区</th><th>区间</th><th class="num">100 米风速</th>
 <th class="num">气温</th><th class="num">历史上对应的日均价偏离</th></tr></thead><tbody><tr><td class="rg">NSW1</td><td data-l="区间">10-25 – 11-01</td>
-<td class="num" data-l="100 米风速">21.9 km/h<span class="hint">常态 20.9 · 正常（+0.2σ）</span></td>
-<td class="num" data-l="气温">19.0 °C<span class="hint">常态 19.5 · 正常（-0.1σ）</span></td>
-<td class="num" data-l="历史上对应的日均价偏离">−$1.7<span class="hint">风每少 1 km/h +$2.5</span></td></tr><tr><td class="rg">VIC1</td><td data-l="区间">10-25 – 11-01</td>
-<td class="num" data-l="100 米风速">19.9 km/h<span class="hint">常态 22.6 · 正常（-0.4σ）</span></td>
+<td class="num" data-l="100 米风速">21.8 km/h<span class="hint">常态 20.9 · 正常（+0.1σ）</span></td>
+<td class="num" data-l="气温">19.1 °C<span class="hint">常态 19.5 · 正常（-0.1σ）</span></td>
+<td class="num" data-l="历史上对应的日均价偏离">−$1.6<span class="hint">风每少 1 km/h +$2.5</span></td></tr><tr><td class="rg">VIC1</td><td data-l="区间">10-25 – 11-01</td>
+<td class="num" data-l="100 米风速">20.1 km/h<span class="hint">常态 22.6 · 正常（-0.4σ）</span></td>
 <td class="num" data-l="气温">17.0 °C<span class="hint">常态 18.2 · 正常（-0.3σ）</span></td>
-<td class="num" data-l="历史上对应的日均价偏离">+$18.0<span class="hint">风每少 1 km/h +$5.7</span></td></tr><tr><td class="rg">QLD1</td><td data-l="区间">10-25 – 11-01</td>
-<td class="num" data-l="100 米风速">16.8 km/h<span class="hint">常态 20.2 · 偏弱（-0.7σ）</span></td>
-<td class="num" data-l="气温">20.6 °C<span class="hint">常态 23.0 · 偏冷（-0.8σ）</span></td>
-<td class="num" data-l="历史上对应的日均价偏离">+$19.4<span class="hint">风每少 1 km/h +$1.2</span></td></tr><tr><td class="rg">SA1</td><td data-l="区间">10-25 – 11-01</td>
-<td class="num" data-l="100 米风速">18.2 km/h<span class="hint">常态 22.1 · 偏弱（-0.6σ）</span></td>
-<td class="num" data-l="气温">18.6 °C<span class="hint">常态 20.7 · 偏冷（-0.6σ）</span></td>
-<td class="num" data-l="历史上对应的日均价偏离">+$37.0<span class="hint">风每少 1 km/h +$6.3</span></td></tr></tbody></table></div></div>
+<td class="num" data-l="历史上对应的日均价偏离">+$16.8<span class="hint">风每少 1 km/h +$5.7</span></td></tr><tr><td class="rg">QLD1</td><td data-l="区间">10-25 – 11-01</td>
+<td class="num" data-l="100 米风速">16.6 km/h<span class="hint">常态 20.2 · 偏弱（-0.7σ）</span></td>
+<td class="num" data-l="气温">20.7 °C<span class="hint">常态 23.0 · 偏冷（-0.8σ）</span></td>
+<td class="num" data-l="历史上对应的日均价偏离">+$19.0<span class="hint">风每少 1 km/h +$1.2</span></td></tr><tr><td class="rg">SA1</td><td data-l="区间">10-25 – 11-01</td>
+<td class="num" data-l="100 米风速">18.0 km/h<span class="hint">常态 22.1 · 偏弱（-0.6σ）</span></td>
+<td class="num" data-l="气温">18.7 °C<span class="hint">常态 20.7 · 偏冷（-0.6σ）</span></td>
+<td class="num" data-l="历史上对应的日均价偏离">+$37.6<span class="hint">风每少 1 km/h +$6.3</span></td></tr></tbody></table></div></div>
 
 <h2>风险</h2>
 <div class="how"><div><b>数据新鲜度</b>：现货价最后一个小时 2026-10-25 12:00（NEM）。超过两天没更新就别用公允价值。</div><div><b>区间可信度</b>：放宽后的 90% 区间在样本外盖住了 90%–96% 的实际结算价（月度基荷，各区）。低于 90% 说明还偏窄。</div><div><b>没有历史期货价</b>：公允价值的准确度检验过，但“市场价偏离公允价值就交易”这个规则<b>没有在历史期货价上回测过</b>。</div><div><b>结构性变化</b>：抽样池只看最近 90 天；新机组投运、长时间检修、气价跳变、极端天气都可能让未来和最近不一样。</div><div><b>尾部</b>：NEM 有市场价格上限（每 5 分钟一万多澳元/MWh）。卖出 cap、做空晚峰在尖峰日的亏损可以远超“单日 95% 亏损”。</div><div><b>流动性</b>：月度和峰荷合约成交稀，bid/ask 价差可能吃掉全部优势。</div></div>
@@ -824,10 +832,10 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 </div>
 <div class="card"><div class="scroll"><table class="act sens">
 <thead><tr><th>储能：最好的预测每天净赚</th><th class='num'>衰减 $0</th><th class='num'>衰减 $5</th><th class='num'>衰减 $15</th><th class='num'>衰减 $30</th><th class='num'>衰减 $50</th></tr></thead>
-<tbody><tr><td class='tier'>NSW1</td><td class='num'>+$89<br><small>AEMO 预调度直接用</small></td><td class='num'>+$80<br><small>AEMO 预调度直接用</small></td><td class='num'>+$63<br><small>AEMO 预调度直接用</small></td><td class='num'>+$38<br><small>AEMO 预调度直接用</small></td><td class='num'>+$5<br><small>AEMO 预调度直接用</small></td></tr><tr><td class='tier'>QLD1</td><td class='num'>+$121<br><small>价格模型</small></td><td class='num'>+$112<br><small>价格模型</small></td><td class='num'>+$95<br><small>价格模型</small></td><td class='num'>+$70<br><small>价格模型</small></td><td class='num'>+$37<br><small>价格 + AEMO + 天气</small></td></tr><tr><td class='tier'>VIC1</td><td class='num'>+$100<br><small>AEMO 预调度直接用</small></td><td class='num'>+$92<br><small>AEMO 预调度直接用</small></td><td class='num'>+$75<br><small>AEMO 预调度直接用</small></td><td class='num'>+$49<br><small>AEMO 预调度直接用</small></td><td class='num'>+$19<br><small>AEMO 预调度直接用</small></td></tr><tr><td class='tier'>SA1</td><td class='num'>+$123<br><small>AEMO 预调度直接用</small></td><td class='num'>+$114<br><small>AEMO 预调度直接用</small></td><td class='num'>+$97<br><small>AEMO 预调度直接用</small></td><td class='num'>+$72<br><small>AEMO 预调度直接用</small></td><td class='num'>+$41<br><small>AEMO 预调度直接用</small></td></tr><tr><td class='tier'>TAS1</td><td class='num'>+$54<br><small>价格 + AEMO</small></td><td class='num'>+$48<br><small>价格模型</small></td><td class='num'>+$38<br><small>价格模型</small></td><td class='num'>+$21<br><small>价格模型</small></td><td class='num'>+$3<br><small>价格模型</small></td></tr></tbody></table></div></div>
+<tbody><tr><td class='tier'>NSW1</td><td class='num'>+$89<br><small>AEMO 预调度直接用</small></td><td class='num'>+$80<br><small>AEMO 预调度直接用</small></td><td class='num'>+$63<br><small>AEMO 预调度直接用</small></td><td class='num'>+$38<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$10<br><small>价格 + AEMO（AEMO 日内形状）</small></td></tr><tr><td class='tier'>QLD1</td><td class='num'>+$121<br><small>价格模型</small></td><td class='num'>+$112<br><small>价格模型</small></td><td class='num'>+$95<br><small>价格模型</small></td><td class='num'>+$70<br><small>价格模型</small></td><td class='num'>+$37<br><small>价格 + AEMO + 天气</small></td></tr><tr><td class='tier'>VIC1</td><td class='num'>+$117<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$109<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$92<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$67<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$33<br><small>价格 + AEMO（AEMO 日内形状）</small></td></tr><tr><td class='tier'>SA1</td><td class='num'>+$126<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$118<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$101<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$75<br><small>价格 + AEMO（AEMO 日内形状）</small></td><td class='num'>+$43<br><small>价格 + AEMO（AEMO 日内形状）</small></td></tr><tr><td class='tier'>TAS1</td><td class='num'>+$54<br><small>价格 + AEMO</small></td><td class='num'>+$48<br><small>价格模型</small></td><td class='num'>+$38<br><small>价格模型</small></td><td class='num'>+$21<br><small>价格模型</small></td><td class='num'>+$3<br><small>价格模型</small></td></tr></tbody></table></div></div>
 <div class="card"><div class="scroll"><table class="act sens">
 <thead><tr><th>调峰机组：最好的预测每天净赚</th><th class='num'>边际成本 $100</th><th class='num'>边际成本 $130</th><th class='num'>边际成本 $180</th></tr></thead>
-<tbody><tr><td class='tier'>NSW1</td><td class='num'>+$87<br><small>天气 −$2.9</small></td><td class='num'>+$15<br><small>天气 +$0.8</small></td><td class='num'>−$1<br><small>天气 +$1.8</small></td></tr><tr><td class='tier'>QLD1</td><td class='num'>+$32<br><small>天气 −$6.1</small></td><td class='num'>+$1<br><small>天气 −$1.6</small></td><td class='num'>+$0<br><small>天气 ±$0.0</small></td></tr><tr><td class='tier'>VIC1</td><td class='num'>+$101<br><small>天气 +$5.0</small></td><td class='num'>+$39<br><small>天气 −$3.2</small></td><td class='num'>−$10<br><small>天气 +$1.7</small></td></tr><tr><td class='tier'>SA1</td><td class='num'>+$413<br><small>天气 +$8.1</small></td><td class='num'>+$222<br><small>天气 +$9.8</small></td><td class='num'>+$47<br><small>天气 −$4.3</small></td></tr><tr><td class='tier'>TAS1</td><td class='num'>+$36<br><small>天气 +$5.2</small></td><td class='num'>−$5<br><small>天气 −$1.2</small></td><td class='num'>±$0<br><small>天气 ±$0.0</small></td></tr></tbody></table></div></div>
+<tbody><tr><td class='tier'>NSW1</td><td class='num'>+$87<br><small>天气 −$2.9</small></td><td class='num'>+$15<br><small>天气 +$0.8</small></td><td class='num'>−$1<br><small>天气 +$1.8</small></td></tr><tr><td class='tier'>QLD1</td><td class='num'>+$32<br><small>天气 −$6.1</small></td><td class='num'>+$1<br><small>天气 −$1.6</small></td><td class='num'>+$0<br><small>天气 ±$0.0</small></td></tr><tr><td class='tier'>VIC1</td><td class='num'>+$101<br><small>天气 +$5.0</small></td><td class='num'>+$41<br><small>天气 −$3.2</small></td><td class='num'>−$10<br><small>天气 +$1.7</small></td></tr><tr><td class='tier'>SA1</td><td class='num'>+$413<br><small>天气 +$8.1</small></td><td class='num'>+$222<br><small>天气 +$9.8</small></td><td class='num'>+$48<br><small>天气 −$4.3</small></td></tr><tr><td class='tier'>TAS1</td><td class='num'>+$36<br><small>天气 +$5.2</small></td><td class='num'>−$5<br><small>天气 −$1.2</small></td><td class='num'>±$0<br><small>天气 ±$0.0</small></td></tr></tbody></table></div></div>
 
 
 <h2>信号检验：赌 AEMO 预调度的偏差（不能直接下单）</h2>

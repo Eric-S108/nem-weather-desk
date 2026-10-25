@@ -938,7 +938,7 @@ def test_load_backtest_min_lead_is_one_sided():
 # ---------------------------------------------------------------------------
 
 def _pd_file(run_nem: str, n_periods=72, regions=("NSW1", "QLD1", "SA1", "TAS1", "VIC1"),
-             with_c=True, seqno="2026082815"):
+             with_c=True, seqno="2026082815", with_sol=False):
     """造一份和 PUBLIC_PREDISPATCHIS 同构的文件：C 行 + 两张表 + 干预行。"""
     run = pd.Timestamp(run_nem)
     pub = run + pd.Timedelta(minutes=1, seconds=6)
@@ -959,6 +959,14 @@ def _pd_file(run_nem: str, n_periods=72, regions=("NSW1", "QLD1", "SA1", "TAS1",
             if j == 0:                             # 干预运行：必须丢掉
                 lines.append(f'D,PREDISPATCH,REGION_PRICES,1,{seqno},1,{reg},{k+1},1,99999,0,'
                              f'"{pub:%Y/%m/%d %H:%M:%S}","{end:%Y/%m/%d %H:%M:%S}"')
+    if with_sol:
+        lines.append("I,PREDISPATCH,REGION_SOLUTION,1,PREDISPATCHSEQNO,RUNNO,REGIONID,PERIODID,"
+                     "INTERVENTION,TOTALDEMAND,AVAILABLEGENERATION,NETINTERCHANGE,SS_WIND_UIGF,DATETIME")
+        for k in range(n_periods):
+            end = run + pd.Timedelta(minutes=30 * (k + 1))
+            for j, reg in enumerate(regions):
+                lines.append(f'D,PREDISPATCH,REGION_SOLUTION,1,{seqno},1,{reg},{k+1},0,{5000 + k},{8000 + k},'
+                             f'{-100 - j},{1000 + j},"{end:%Y/%m/%d %H:%M:%S}"')
     lines.append("C,END OF REPORT,999")
     name = f"PUBLIC_PREDISPATCHIS_{run:%Y%m%d%H%M}_{pub:%Y%m%d%H%M%S}.CSV"
     return name, "\n".join(lines)
@@ -1669,3 +1677,111 @@ def test_futures_widening_and_signal_rules():
     assert per_mw == 60 * 24 and mw == 10
     assert S.period_from_label("Q426")["start"] == pd.Timestamp("2026-10-01")
     assert S.period_from_label("Nov 26")["end"] == pd.Timestamp("2026-11-30")
+
+
+def test_health_flags_missing_prices(tmp_path, monkeypatch):
+    """体检：没有电价的区判为 fail，每日任务据此以失败退出、GitHub 发邮件。"""
+    import paper as P
+    monkeypatch.setattr(P, "PAPER_DIR", str(tmp_path))
+    monkeypatch.setattr(P, "HEALTH", str(tmp_path / "health.json"))
+    c = store.connect()
+    hl = P.health(c, pd.Timestamp("2026-06-03"))
+    c.close()
+    assert hl["level"] == "fail" and (tmp_path / "health.json").exists()
+    assert all(v["level"] == "fail" for v in hl["regions"].values())
+
+
+def test_prob_uses_only_past_residuals():
+    """概率预测：某一天的分布只用它之前的样本外残差 —— 改掉之后的实际价，之前的分布一点不变。"""
+    import prob as PB
+    rng = np.random.default_rng(3)
+    t = pd.date_range("2026-01-01 14:00", periods=120 * 24, freq="h")
+    p = 80 + rng.normal(scale=10, size=len(t))
+    y = p + rng.normal(scale=30, size=len(t))
+    y[rng.random(len(t)) < 0.03] += 600                      # 少量尖峰
+    d1 = PB.rolling_dist(y, p, t.to_numpy())
+    cut = 100 * 24
+    y2 = y.copy(); y2[cut:] = 9999.0
+    d2 = PB.rolling_dist(y2, p, t.to_numpy())
+    first = slice(0, cut)
+    assert np.allclose(np.nan_to_num(d1["p_spike"][first]), np.nan_to_num(d2["p_spike"][first]))
+    ok = np.isfinite(d1["q"][0.1])
+    cov = ((y >= d1["q"][0.1]) & (y <= d1["q"][0.9]))[ok].mean()
+    assert 0.7 < cov < 0.9
+    tm = PB.tomorrow(np.array([100.0, 500.0]), np.array([1, 18]),
+                     {1: list(np.linspace(-50, 50, 41)), 18: list(np.linspace(-50, 50, 41))})
+    assert tm["p_spike"] == [0.0, 1.0] and tm["q10"][0] < tm["q90"][0]
+
+
+def test_portfolio_allocation_respects_es_limit():
+    """组合限额：分配后的组合 ES95 不超过上限；两个高度相关的区不能各自按满额做。"""
+    import signals as S
+    rng = np.random.default_rng(1)
+    idx = pd.date_range("2025-01-01", periods=400, freq="D")
+    common = rng.normal(scale=40, size=(400, 1))
+    mk = lambda: pd.DataFrame(80 + common + rng.normal(scale=5, size=(400, 24)), index=idx, columns=range(24))  # noqa: E731
+    mats = {"NSW1": mk(), "QLD1": mk()}
+    legs = [{"region": "NSW1", "product": "base", "side": 1, "mw": 10, "price": 80, "score": 2},
+            {"region": "QLD1", "product": "base", "side": 1, "mw": 10, "price": 80, "score": 1}]
+    one = S.portfolio_risk(mats, [legs[0]])["es95"]
+    limit = one * 1.2                                         # 只够一个区满额再多一点
+    alloc = S.allocate(mats, [], legs, limit)
+    assert alloc[0] == 10 and alloc[1] < 10                   # 分数高的先拿额度
+    r = S.portfolio_risk(mats, [dict(l_, mw=a) for l_, a in zip(legs, alloc) if a > 0])
+    assert r["es95"] <= limit + 1
+
+
+
+def test_predispatch_parses_supply_demand_fundamentals():
+    """预调度里的需求、可用发电、联络线、风电可用出力也解析出来（同一个发布时刻、同一时效带）；
+    文件里没有的列（这里没有 SS_SOLAR_UIGF）就不产出。"""
+    import aemo
+    name, text = _pd_file("2026-08-28 12:00", n_periods=8, with_sol=True)
+    f = aemo.parse_predispatch(text, name, lead_band=(-1e9, 1e9))
+    vs = set(f["variable"])
+    assert {"rrp", "demand", "avail_gen", "net_interchange", "wind_uigf"} <= vs and "solar_uigf" not in vs
+    dem = f[(f["variable"] == "demand") & (f["site_id"] == "VIC1")].sort_values("interval_time")
+    assert dem["value"].iloc[0] == 5000.5                     # 两个半小时 5000、5001 的均值
+    assert f.groupby("variable")["known_at"].nunique().max() == 1
+
+
+def test_futures_backtest_detects_risk_premium():
+    """回测：市场价 = 最终结算价 + $8 的溢价时，回测要把溢价量出来（≈ 8），
+    而且站位日的公允价值不能用到站位日之后的现货（改掉之后的价格，站位日公允价值不变）。"""
+    import futures as F
+    import futures_bt as B
+    mat = _price_mat(days=330, seed=5)
+    rows = []
+    for m in ("Jun 26", "Jul 26", "Aug 26", "Sep 26"):
+        per = __import__("signals").period_from_label(m)
+        fin = F.fair_value(mat, per, per["end"] + pd.Timedelta(days=1), "base", n_sims=5)["mean"]
+        for d in pd.date_range(per["start"] - pd.Timedelta(days=20), per["end"] - pd.Timedelta(days=2), freq="7D"):
+            rows.append({"date": d, "region": "VIC1", "contract": m, "product": "base", "settle": fin + 8.0})
+    hist = pd.DataFrame(rows)
+    risk = {"fee_per_mwh": 0.05, "min_prob": 0.7, "min_edge": 1.0}
+    bt = B.backtest({"VIC1": mat}, hist, risk, every=1, n_sims=300)
+    sm = B.summarize(bt)
+    assert sm["n"] == len(hist)
+    allp = np.average([p["mean"] for p in sm["premium"]], weights=[p["n"] for p in sm["premium"]])
+    assert abs(allp - 8.0) < 1e-6
+    # 不偷看：站位日之后的价格改掉，站位日的公允价值不变
+    d0 = pd.Timestamp(hist["date"].iloc[3])
+    per = __import__("signals").period_from_label(hist["contract"].iloc[3])
+    m2 = mat.copy(); m2.loc[m2.index > d0] = 999.0
+    a = F.fair_value(mat, per, d0, "base", n_sims=200)["mean"]
+    b = F.fair_value(m2, per, d0, "base", n_sims=200)["mean"]
+    assert a == b
+
+
+def test_hybrid_keeps_our_values_and_aemo_ranking():
+    """混合预测：每天的数值集合和我们的模型一样，排序和 AEMO 预调度一样。"""
+    import ladder as LD
+    t = pd.date_range("2026-03-01 14:00", periods=48, freq="h")
+    rng = np.random.default_rng(2)
+    a = rng.normal(100, 50, size=48)
+    lv = rng.normal(80, 20, size=48)
+    te = pd.DataFrame({"t": t, "aemo": a})
+    h = LD.hybrid_predict(None, te, lv)
+    for k in (slice(0, 24), slice(24, 48)):
+        assert np.allclose(np.sort(h[k]), np.sort(lv[k]))
+        assert (np.argsort(h[k], kind="stable") == np.argsort(a[k], kind="stable")).all()

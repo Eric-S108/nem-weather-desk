@@ -36,6 +36,8 @@ MODEL_NAME = {
     "B3 选特征": "价格 + AEMO + 挑过的天气",
     "完美预知": "完美预知",
     "不做": "这个区不做",
+    "B2 混合": "价格 + AEMO（AEMO 日内形状）",
+    "B2 +供需": "价格 + AEMO + 供需",
 }
 MODEL_HINT = {
     "B0 naive": "直接照抄上周同一天、同一小时的价格",
@@ -45,6 +47,8 @@ MODEL_HINT = {
     "AEMO 直用": "不建模型，直接按官方预测排",
     "B3 选特征": "天气变量只在训练段里挑",
     "不做": "最好的预测扣完成本也不显著赚钱",
+    "B2 混合": "日均水平用我们的模型，日内高低照 AEMO 预调度",
+    "B2 +供需": "再加预调度里的需求、可用发电、风光可用出力",
 }
 SERIES = ["B1 自回归", "B2 +官方", "B3 +天气"]           # 分类色 1–3
 STATUS = {                                               # (类名, 图标, 文字)
@@ -350,6 +354,31 @@ def cumulative(items: list[dict], decide_at: str = "13:30", mw: float = 1, mwh: 
 </figure>"""
 
 
+# ------------------------------------------------------------------ 系统状态
+def status_strip(data: dict) -> str:
+    hl = data.get("health")
+    pp = data.get("paper") or {}
+    if not hl:
+        return ""
+    lv = hl.get("level", "warn")
+    st = {"ok": ("good", "✓", "数据正常"), "warn": ("warning", "!", "数据有提醒"),
+          "fail": ("critical", "✕", "数据有问题")}[lv]
+    chipx = f'<span class="chip {st[0]}"><span aria-hidden="true">{st[1]}</span>{st[2]}</span>'
+    lags = [v.get("price_lag_h") for v in hl.get("regions", {}).values() if v.get("price_lag_h") is not None]
+    bits = [f"体检 {_esc(hl.get('checked_at', ''))} UTC" + ("（云上每日任务）" if hl.get("ci") else "")]
+    if lags:
+        bits.append(f"现货价最新落后 {min(lags):.0f}–{max(lags):.0f} 小时")
+    lt = pp.get("latest") or {}
+    if lt:
+        bits.append(f"最新信号 {_esc(lt.get('target_day'))}" + ("（late）" if lt.get("late") else ""))
+    bits += [_esc(n) for n in hl.get("notes", [])]
+    bad = [f"{k}: 预调度 {v['predispatch_hours']} h / 天气 {v['weather_hours']} h"
+           for k, v in hl.get("regions", {}).items() if v.get("level") != "ok"]
+    if bad:
+        bits.append("明天输入不全 —— " + "；".join(_esc(b) for b in bad))
+    return f'<div class="status">{chipx}<span>{" · ".join(bits)}</span></div>'
+
+
 # ------------------------------------------------------------------ 顶部
 def hero_tiles(fut: dict | None, verdict_big: str, verdict_say: str) -> str:
     tiles = []
@@ -447,7 +476,18 @@ def _nice_ceil(v: float) -> float:
     return float(np.ceil(v / st) * st)
 
 
-def spot_block(fut: dict | None) -> str:
+def _spike_note(regs: dict) -> str:
+    """尖峰概率的历史检验结果：不比"历史同小时频率"好的区，照实提醒。"""
+    worse = [k for k, r in regs.items()
+             if (r.get("prob") or {}).get("status") == "ok"
+             and r["prob"]["ours"]["brier"] > r["prob"]["brier_clim"] * 1.05]
+    if not worse:
+        return ""
+    return (f"<b>注意：</b>历史检验里，{'、'.join(worse)} 我们的尖峰概率还不如\"历史同小时频率\"准"
+            f"（尖峰太少，误差分布估不稳），这些区先看最后一列的历史频率。")
+
+
+def spot_block(fut: dict | None, regs: dict | None = None) -> str:
     if not fut:
         return ""
     trs = []
@@ -457,24 +497,29 @@ def spot_block(fut: dict | None) -> str:
             continue
         if sp.get("stale"):
             trs.append(f"""<tr><td class="rg">{_esc(reg)}</td><td data-l="日期">{_esc(sp['day'])}</td>
-<td colspan="3" class="why">预调度只更新到 {_esc(sp.get('pd_last') or '—')}（NEM），还没覆盖明天——每日任务跑过之后才有。</td>
+<td colspan="4" class="why">预调度只更新到 {_esc(sp.get('pd_last') or '—')}（NEM），还没覆盖明天——每日任务跑过之后才有。</td>
 <td class="num" data-l="本月历史尖峰日">{'—' if sp.get('spike_freq') is None else f"{sp['spike_freq']:.0%}"}</td></tr>""")
             continue
         ours = ("—" if sp.get("ours_avg") is None else
                 f"{_money(sp['ours_avg'])}<span class='hint'>最高 {_money(sp.get('ours_max'))}</span>")
+        spk = ("—" if sp.get("p_spike_max") is None else
+               f"{sp['p_spike_max']:.0%}<span class='hint'>{sp.get('spike_hours', 0)} 个小时 &gt; 20%</span>")
         trs.append(f"""<tr><td class="rg">{_esc(reg)}</td><td data-l="日期">{_esc(sp['day'])}</td>
 <td class="num" data-l="AEMO 预调度均价">{_money(sp['aemo_avg'])}<span class="hint">最高 {_money(sp['aemo_max'])}</span></td>
 <td class="num" data-l="我们的预测均价">{ours}</td>
 <td class="num" data-l="预调度 > $300 的小时">{sp['aemo_hours_over_300']}</td>
+<td class="num" data-l="我们的尖峰概率（最高的小时）">{spk}</td>
 <td class="num" data-l="本月历史尖峰日">{'—' if sp.get('spike_freq') is None else f"{sp['spike_freq']:.0%}"}<span class="hint">{sp.get('spike_days', '')} 天里</span></td></tr>""")
     if not trs:
         return ""
     return f"""
 <h2>明日现货展望</h2>
 <p class="lead2">AEMO 预调度取最新一版（前一天的预调度系统性偏高，均价要打折看）；"我们的预测"是纸面交易每天 13:30 前出的价格 + AEMO 模型（没有就显示 —）。
-"本月历史尖峰日"= 历史上同一个月里，日内最高小时均价超过 $300 的天数占比，用来看 cap 和晚峰合约的尾部风险。</p>
+"我们的尖峰概率"= 明天价格超过 $300 的概率里最高的那个小时（点预测 + 过去 90 天同一小时的样本外误差），
+历史检验见第二页"概率预测"。"本月历史尖峰日"= 历史上同一个月里，日内最高小时均价超过 $300 的天数占比。
+{_spike_note(regs or {})}</p>
 <div class="card"><div class="scroll"><table class="act"><thead><tr><th>区</th><th>日期</th><th class="num">AEMO 预调度均价</th>
-<th class="num">我们的预测均价</th><th class="num">预调度 &gt; $300 的小时</th><th class="num">本月历史尖峰日</th></tr></thead>
+<th class="num">我们的预测均价</th><th class="num">预调度 &gt; $300 的小时</th><th class="num">我们的尖峰概率</th><th class="num">本月历史尖峰日</th></tr></thead>
 <tbody>{''.join(trs)}</tbody></table></div></div>"""
 
 
@@ -916,6 +961,7 @@ a{color:var(--s1)}
 .hero .big small{font-size:18px;font-weight:600;color:var(--ink2);margin-left:6px}
 .hero .say{font-size:16px;margin:0}
 .hero2{grid-template-columns:1fr}
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--ink2)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
 @media (max-width:640px){.tile .tv{font-size:24px}.panel .fr{grid-template-columns:48px 1fr}.panel .fr .fv{grid-column:2}}
 .tile{padding:4px 0}
@@ -1184,11 +1230,12 @@ def render_trader(data: dict) -> str:
 <div class="asof">样本外 {first} → {last}（{days} 天）· 每天 {decide_at}（NEM）定次日 24 小时计划 ·
   按现货价结算、已扣交易成本 · 生成于 {gen} UTC</div>
 {fixture}
+{status_strip(data)}
 
 {hero_tiles(data.get("futures"), verdict_big, verdict_say)}
 
 {futures_block(data.get("futures"))}
-{spot_block(data.get("futures"))}
+{spot_block(data.get("futures"), regs)}
 {weather_block(data.get("futures"))}
 {risk_block(data.get("futures"), data)}
 

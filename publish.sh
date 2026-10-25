@@ -63,6 +63,17 @@ enable_pages() {
   || true
 }
 
+sync_remote() {
+  # 云上的每日任务每天也会往仓库推（信号、结算、数据）。先把它们合进来再推；
+  # 生成的页面文件冲突时保留你本机这一版（下一次每日任务会重新生成）。
+  if git ls-remote --exit-code origin main >/dev/null 2>&1; then
+    git pull -q --rebase -X theirs origin main || {
+      echo "合并远端改动失败，先运行 git status 看看冲突的文件"
+      exit 1
+    }
+  fi
+}
+
 push_failed() {
   echo
   echo "推送失败。多半是终端里没有可用的 GitHub 登录。只需要做一次："
@@ -84,6 +95,7 @@ if [ "${HAVE_GH}" = "1" ]; then
   if ! git remote get-url origin >/dev/null 2>&1; then
     git remote add origin "https://github.com/${OWNER}/${REPO}.git"
   fi
+  sync_remote
   git push -u origin main || push_failed
   enable_pages
   echo
@@ -93,6 +105,7 @@ if [ "${HAVE_GH}" = "1" ]; then
 fi
 
 if git remote get-url origin >/dev/null 2>&1; then
+  sync_remote
   git push -u origin main || push_failed
   echo
   echo "已推送。如果还没开过 Pages，打开 https://github.com/${OWNER}/${REPO}/settings/pages"

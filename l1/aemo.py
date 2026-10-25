@@ -433,11 +433,28 @@ def publish_time(text: str, name: str = "") -> pd.Timestamp | None:
     return max(cands) if cands else None
 
 
+PREDISP_SOL = ("PREDISPATCH", "REGION_SOLUTION")
+# 预调度里的供需基本面：AEMO 自己对明天的需求、可用发电、联络线净送出、风光可用出力的预测。
+# 列名 → 入库的 variable 名。较老的文件可能没有 SS_*_UIGF 两列，缺了就跳过。
+PREDISP_FUND = {"TOTALDEMAND": "demand", "AVAILABLEGENERATION": "avail_gen",
+                "NETINTERCHANGE": "net_interchange",
+                "SS_WIND_UIGF": "wind_uigf", "SS_SOLAR_UIGF": "solar_uigf"}
+
+
 def _only_region_prices(text: str) -> str:
-    """预调度文件里有十几张表（约束、联络线、机组……），我们只要分区电价。
+    """预调度文件里有十几张表（约束、联络线、机组……），我们只要分区电价和分区供需。
     先按行筛掉其余的再解析，单个文件快一个数量级。"""
-    key = "," + ",".join(PREDISP_TABLE) + ","
-    return "\n".join(l for l in text.splitlines() if l.startswith("C,") or key in l)
+    keys = ("," + ",".join(PREDISP_TABLE) + ",", "," + ",".join(PREDISP_SOL) + ",")
+    return "\n".join(l for l in text.splitlines() if l.startswith("C,") or any(k in l for k in keys))
+
+
+def _hourly(d: pd.DataFrame, col: str) -> pd.DataFrame:
+    x = d.copy()
+    x["value"] = pd.to_numeric(x[col], errors="coerce")
+    x["interval_time"] = settle_to_utc_hour(x["DATETIME"])
+    x = x.dropna(subset=["value", "interval_time"])
+    g = x.groupby(["REGIONID", "interval_time"])["value"].agg(["mean", "count"]).reset_index()
+    return g[g["count"] >= 2]
 
 
 def parse_predispatch(text: str, name: str = "",
@@ -456,14 +473,16 @@ def parse_predispatch(text: str, name: str = "",
     df = tabs.get(PREDISP_TABLE)
     if df is None or "RRP" not in df.columns or "DATETIME" not in df.columns:
         return pd.DataFrame()
-    d = df[df["REGIONID"].isin(REGIONS)].copy()
-    if "INTERVENTION" in d.columns:
-        d = d[d["INTERVENTION"].astype(str).str.strip().isin(["0", "0.0", ""])]
+
+    def clean(t: pd.DataFrame) -> pd.DataFrame:
+        t = t[t["REGIONID"].isin(REGIONS)].copy()
+        if "INTERVENTION" in t.columns:
+            t = t[t["INTERVENTION"].astype(str).str.strip().isin(["0", "0.0", ""])]
+        return t
+
+    d = clean(df)
     if d.empty:
         return pd.DataFrame()
-    d["value"] = pd.to_numeric(d["RRP"], errors="coerce")
-    d["interval_time"] = settle_to_utc_hour(d["DATETIME"])
-    d = d.dropna(subset=["value", "interval_time"])
 
     ka = publish_time(text, name)
     method = "exact"
@@ -472,17 +491,24 @@ def parse_predispatch(text: str, name: str = "",
         ka = _nem_to_utc(end.min())
         method = "approx"
 
-    g = (d.groupby(["REGIONID", "interval_time"])["value"]
-           .agg(["mean", "count"]).reset_index())
-    g = g[g["count"] >= 2]
-    g["known_at"] = ka
-    lead = (g["interval_time"] - g["known_at"]).dt.total_seconds() / 3600.0
-    g = g[(lead >= lo) & (lead <= hi)]
-    return pd.DataFrame({"site_id": g["REGIONID"].to_numpy(),
-                         "interval_time": g["interval_time"].to_numpy(),
-                         "known_at": g["known_at"].to_numpy(),
-                         "value": g["mean"].to_numpy(),
-                         "method": method})
+    parts = [(_hourly(d, "RRP"), "rrp")]
+    sol = tabs.get(PREDISP_SOL)
+    if sol is not None and "DATETIME" in sol.columns:
+        sol = clean(sol)
+        for col, var in PREDISP_FUND.items():
+            if col in sol.columns and len(sol):
+                parts.append((_hourly(sol, col), var))
+    out = []
+    for g, var in parts:
+        g = g.copy()
+        g["known_at"] = ka
+        lead = (g["interval_time"] - g["known_at"]).dt.total_seconds() / 3600.0
+        g = g[(lead >= lo) & (lead <= hi)]
+        out.append(pd.DataFrame({"site_id": g["REGIONID"].to_numpy(), "variable": var,
+                                 "interval_time": g["interval_time"].to_numpy(),
+                                 "known_at": g["known_at"].to_numpy(),
+                                 "value": g["mean"].to_numpy(), "method": method}))
+    return pd.concat(out, ignore_index=True)
 
 
 def _predispatch_frame(parts: list[pd.DataFrame], source: str) -> pd.DataFrame:
@@ -490,8 +516,9 @@ def _predispatch_frame(parts: list[pd.DataFrame], source: str) -> pd.DataFrame:
     if not parts:
         return pd.DataFrame()
     f = pd.concat(parts, ignore_index=True)
+    var = f["variable"] if "variable" in f.columns else "rrp"
     return pd.DataFrame({"site_id": f["site_id"], "model": PREDISP_MODEL,
-                         "variable": "rrp", "interval_time": f["interval_time"],
+                         "variable": var, "interval_time": f["interval_time"],
                          "known_at": f["known_at"], "value": f["value"],
                          "known_at_method": f["method"], "source": source,
                          "ingested_at": store.utcnow()})
@@ -526,7 +553,10 @@ def _done_path() -> str:
     from config import DATA_DIR
     d = os.path.join(DATA_DIR, "_state")
     os.makedirs(d, exist_ok=True)
-    return os.path.join(d, "predispatch_archive_done.txt")
+    # v2：从 2026-10-25 起解析器多出供需基本面（需求、可用发电、联络线、风光可用出力）。
+    # 换一个完成记录文件，重跑同一条归档命令就会把这 13 个月再过一遍，把基本面补上；
+    # 电价行已经在库里，按主键去重，不会重复写。
+    return os.path.join(d, "predispatch_archive_done_v2.txt")
 
 
 def ingest_predispatch_archive(start: str, end: str, lead_band=None) -> tuple[int, int]:

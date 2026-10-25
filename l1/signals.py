@@ -159,6 +159,90 @@ def positions_risk(con, risk: dict, fut: dict | None) -> pd.DataFrame | None:
     return pd.DataFrame(rows)
 
 
+# ------------------------------------------------------------------ 组合风险
+def leg_daily_pnl(mat: pd.DataFrame, product: str, side: int, mw: float, price: float,
+                  days: pd.DatetimeIndex) -> pd.Series:
+    """一条腿在历史每个交易日的盈亏：side × MW × 当日产品小时数 × (当日产品均价 − 开仓价)。
+    用**同一批历史日期**算每条腿，组合加总时各区之间的相关性就自然带进来了。"""
+    hrs = np.arange(24)
+    sub = mat.reindex(days)
+    out = []
+    for d, row in sub.iterrows():
+        msk = F.hour_mask(product, hrs, np.full(24, d.weekday()))
+        v = row.to_numpy(float)
+        if not np.isfinite(v).all() or msk.sum() == 0:
+            out.append(0.0 if msk.sum() == 0 else np.nan)
+            continue
+        out.append(side * mw * msk.sum() * (float(F.payoff(product, v[msk]).mean()) - price))
+    return pd.Series(out, index=days)
+
+
+def portfolio_risk(mats: dict, legs: list[dict], lookback: int = 365) -> dict | None:
+    """组合在历史上每个交易日会亏多少：VaR95、ES95（最差 5% 日子的平均亏损）、历史最差一天（压力重放）。"""
+    if not legs:
+        return None
+    ends = [mats[l_["region"]].dropna().index.max() for l_ in legs]
+    end = min(ends)
+    days = pd.date_range(end - pd.Timedelta(days=lookback - 1), end, freq="D")
+    tot = pd.Series(0.0, index=days)
+    for l_ in legs:
+        tot = tot + leg_daily_pnl(mats[l_["region"]], l_["product"], l_["side"], l_["mw"], l_["price"], days)
+    tot = tot.dropna()
+    if len(tot) < 60:
+        return None
+    q = float(np.quantile(tot, 0.05))
+    full_days = mats[legs[0]["region"]].dropna().index
+    for l_ in legs[1:]:
+        full_days = full_days.intersection(mats[l_["region"]].dropna().index)
+    allp = pd.Series(0.0, index=full_days)
+    for l_ in legs:
+        allp = allp + leg_daily_pnl(mats[l_["region"]], l_["product"], l_["side"], l_["mw"], l_["price"], full_days)
+    worst = allp.idxmin()
+    return {"days": int(len(tot)), "var95": round(-q, 0), "es95": round(-float(tot[tot <= q].mean()), 0),
+            "worst": round(float(allp.min()), 0), "worst_day": str(worst.date()),
+            "sum_naive": None}
+
+
+def allocate(mats: dict, pos_legs: list[dict], new_legs: list[dict], limit: float,
+             lookback: int = 365) -> list[int]:
+    """组合限额下分配新信号的 MW：按"期望盈亏 ÷ 单日风险"从高到低一笔一笔加，
+    每加一笔检查"现有持仓 + 已加的"组合 ES95，超了就把这一笔减到刚好不超。
+    每条腿先算 1 MW 的历史逐日盈亏，之后只是线性缩放，算得很快。"""
+    if not new_legs:
+        return []
+    ends = [mats[l_["region"]].dropna().index.max() for l_ in pos_legs + new_legs]
+    end = min(ends)
+    days = pd.date_range(end - pd.Timedelta(days=lookback - 1), end, freq="D")
+    unit = lambda l_: leg_daily_pnl(mats[l_["region"]], l_["product"], l_["side"], 1.0, l_["price"], days)  # noqa: E731
+    base = pd.Series(0.0, index=days)
+    for l_ in pos_legs:
+        base = base + unit(l_) * l_["mw"]
+
+    def es(x: pd.Series) -> float:
+        x = x.dropna()
+        if len(x) < 60:
+            return 0.0
+        q = np.quantile(x, 0.05)
+        return -float(x[x <= q].mean())
+
+    order = sorted(range(len(new_legs)), key=lambda i: -new_legs[i].get("score", 0.0))
+    mw = [0] * len(new_legs)
+    cur = base.copy()
+    for i in order:
+        u = unit(new_legs[i])
+        want = int(new_legs[i]["mw"])
+        lo, hi = 0, want
+        while lo < hi:                       # 最大的整数 MW，使 ES95 ≤ 上限
+            mid = (lo + hi + 1) // 2
+            if es(cur + u * mid) <= limit:
+                lo = mid
+            else:
+                hi = mid - 1
+        mw[i] = lo
+        cur = cur + u * lo
+    return mw
+
+
 def template(con) -> int:
     os.makedirs(PRIV, exist_ok=True)
     rows = []
@@ -193,11 +277,41 @@ def _ensure_gitignore():
             f.write(("\n" if cur and not cur.endswith("\n") else "") + line + "\n")
 
 
+def _mw(r) -> int:
+    v = r.get("mw_scaled")
+    return int(v) if v is not None and np.isfinite(v) else int(r.get("mw", 0) or 0)
+
+
 def _pct(v) -> str:
     return "—" if v is None or not np.isfinite(v) else f"{v:.0%}"
 
 
-def render(sig: pd.DataFrame, pos: pd.DataFrame | None, risk: dict, asof: str) -> str:
+def _port_html(port: dict | None, m) -> str:
+    if not port:
+        return ""
+    rows = []
+    for k, lab in (("pos", "只有现有持仓"), ("all", "现有持仓 + 建议的新信号")):
+        r = port.get(k)
+        if not r:
+            continue
+        rows.append(f"<tr><td>{lab}</td><td class='num'>{m(r['var95'])}</td><td class='num'>{m(r['es95'])}</td>"
+                    f"<td class='num'>{m(r['worst'], 0, True)}<span class='hint'>{r['worst_day']}</span></td>"
+                    f"<td class='num'>{r['days']} 天</td></tr>")
+    if not rows:
+        return ""
+    note = ("" if not port.get("cut") else
+            f"<b>组合限额生效：{port['cut']}/{port['n_new']} 笔新信号被减量或清零</b>"
+            f"（按期望盈亏 ÷ 单日风险从高到低分配额度；信号表里的 MW 是分配后的）。")
+    return f"""<h2>组合风险</h2>
+<p class="lead2">用同一批历史交易日算每条腿的盈亏再加总，各区之间的相关性（NSW 和 QLD、VIC 和 SA 常常一起涨跌）自然带进来，
+不是简单相加。ES95 = 最差 5% 日子的平均亏损，要求不超过单日上限 {m(port['limit'])}。{note}
+"历史最差一天"= 把这个组合放回有数据以来每一天，亏得最多的那天（压力重放）。</p>
+<div class="card"><div class="scroll"><table class="act"><thead><tr><th>组合</th><th class="num">VaR95（单日）</th>
+<th class="num">ES95（单日）</th><th class="num">历史最差一天</th><th class="num">样本</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div></div>"""
+
+
+def render(sig: pd.DataFrame, pos: pd.DataFrame | None, risk: dict, asof: str, port: dict | None = None) -> str:
     import trader as T
     esc = html.escape
     pn = {k: v[0] for k, v in F.PRODUCTS.items()}
@@ -212,7 +326,7 @@ def render(sig: pd.DataFrame, pos: pd.DataFrame | None, risk: dict, asof: str) -
                 f'{"▲" if r["side"] > 0 else "▼"}</span>{esc(r["action"])}</span>')
         trs.append(f"""<tr><td class="rg">{esc(r['region'])}</td><td>{esc(r['contract'])} {esc(pn.get(r['product'], r['product']))}</td>
 <td>{chip}</td>
-<td class="num"><span class="big2">{int(r.get('mw', 0))} MW</span><span class="hint">上限 {int(r.get('mw_max', 0))} MW</span></td>
+<td class="num"><span class="big2">{_mw(r)} MW</span><span class="hint">单笔上限 {int(r.get('mw_max', 0))} MW</span></td>
 <td class="num">{m(r['price'], 2)}<span class="hint">公允 {m(r['fair'], 2)}</span></td>
 <td class="num">{m(r['edge'], 2, True)}<span class="hint">胜率 {r['prob']:.0%}</span></td>
 <td class="num">{m(r.get('exp_pnl'), 0, True)}<span class="hint">5% 最差 {m(r.get('p5_pnl'), 0, True)}</span></td>
@@ -252,6 +366,7 @@ def render(sig: pd.DataFrame, pos: pd.DataFrame | None, risk: dict, asof: str) -
 <th class="num">成交价</th><th class="num">优势</th><th class="num">期望盈亏</th><th class="num">单日 95% 亏损</th><th>风险</th></tr></thead>
 <tbody>{''.join(trs) or '<tr><td colspan="9" class="why">没有达到门槛的合约。</td></tr>'}</tbody></table></div></div>
 {ptab}
+{_port_html(port, m)}
 <h2>全部合约</h2>
 <div class="card"><div class="scroll"><table class="act"><thead><tr><th>区</th><th>合约</th><th>产品</th><th class="num">bid</th><th class="num">ask</th>
 <th class="num">公允</th><th class="num">90% 区间</th><th class="num">胜率</th><th>动作</th></tr></thead><tbody>{''.join(allr)}</tbody></table></div></div>
@@ -293,14 +408,34 @@ def main(argv=None) -> int:
     # 新信号只能用剩下的单日风险额度（现有持仓先占用）
     risk_left = dict(risk, daily_loss_limit=max(0.0, risk["daily_loss_limit"] - used))
     sig = evaluate(con, px, risk_left, fut)
+    # 组合层面：用同一批历史日期算各腿盈亏再加总（带上各区之间的相关性），新信号整体缩到 ES95 ≤ 上限
+    mats = {}
+    for reg in set(list(sig["region"]) + ([] if pos is None or not len(pos) else list(pos["region"]))):
+        mats[reg] = F.day_matrix(F.load_prices(con, reg))
+    pos_legs = [] if pos is None or not len(pos) else [
+        {"region": r["region"], "product": r["product"], "side": 1 if r["side"] == "多" else -1,
+         "mw": float(r["mw"]), "price": float(r["entry"])} for _, r in pos.iterrows()]
+    act = sig[(sig["action"] != "观望") & (sig.get("mw", 0) > 0)] if len(sig) else sig
+    new_legs = [{"region": r["region"], "product": r["product"], "side": int(r["side"]),
+                 "mw": float(r["mw"]), "price": float(r["price"])} for _, r in act.iterrows()]
+    for l_, (_, r) in zip(new_legs, act.iterrows()):
+        rd = float(r.get("risk_day") or 0) or 1.0
+        l_["score"] = float(r.get("exp_pnl") or 0) / rd
+    alloc = allocate(mats, pos_legs, new_legs, risk["daily_loss_limit"])
+    if new_legs:
+        sig.loc[act.index, "mw_scaled"] = alloc
+    cut = sum(1 for l_, a_ in zip(new_legs, alloc) if a_ < l_["mw"])
+    port = {"pos": portfolio_risk(mats, pos_legs),
+            "all": portfolio_risk(mats, pos_legs + [dict(l_, mw=a_) for l_, a_ in zip(new_legs, alloc) if a_ > 0]),
+            "cut": cut, "n_new": len(new_legs), "limit": risk["daily_loss_limit"]}
     asof = str(F.day_matrix(F.load_prices(con, F.REGIONS[0])).dropna().index.max().date())
     con.close()
     os.makedirs(PRIV, exist_ok=True)
     with open(OUT, "w") as f:
-        f.write(render(sig, pos, risk, asof))
+        f.write(render(sig, pos, risk, asof, port))
     for _, r in sig.iterrows():
         if r["action"] != "观望":
-            print(f"  {r['action']} {r['region']} {r['contract']} {r['product']} {int(r.get('mw', 0))} MW @ {r['price']:.2f}"
+            print(f"  {r['action']} {r['region']} {r['contract']} {r['product']} {_mw(r)} MW @ {r['price']:.2f}"
                   f"（公允 {r['fair']:.2f}，胜率 {r['prob']:.0%}，期望 {r.get('exp_pnl', 0):+,.0f}，5% 最差 {r.get('p5_pnl', 0):+,.0f}）")
     print(f"→ {OUT}（只在本机）")
     return 0
