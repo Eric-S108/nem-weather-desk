@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-31 09:51",
+ "generated_at": "2026-11-01 10:22",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -27,142 +27,23 @@
  },
  "regions": {
   "NSW1": {
-   "asof": "2026-10-30",
-   "last_hour": "2026-10-31 18:00:00",
+   "asof": "2026-10-31",
+   "last_hour": "2026-11-01 19:00:00",
    "contracts": [
     {
      "tag": "当月",
-     "label": "Oct 26",
-     "kind": "month",
-     "start": "2026-10-01",
-     "end": "2026-10-31",
-     "products": {
-      "base": {
-       "mean": 128.07,
-       "p5": 125.68,
-       "p25": 126.72,
-       "p50": 127.64,
-       "p75": 128.48,
-       "p95": 130.38,
-       "settled_share": 0.968,
-       "settled_avg": 129.29,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": 46.65,
-       "day_p95": 132.8,
-       "widen": [
-        1.45,
-        1.66
-       ],
-       "risk_long": 1954.1,
-       "risk_short": 113.5
-      },
-      "peak": {
-       "mean": 141.15,
-       "p5": 141.15,
-       "p25": 141.15,
-       "p50": 141.15,
-       "p75": 141.15,
-       "p95": 141.15,
-       "settled_share": 1.0,
-       "settled_avg": 141.15,
-       "hours_total": 330,
-       "hours_left": 0,
-       "days_left": 1,
-       "day_hours": 15.0,
-       "day_p05": 36.01,
-       "day_p95": 115.14,
-       "widen": [
-        1.32,
-        1.77
-       ],
-       "risk_long": 1577.1,
-       "risk_short": 0.0
-      },
-      "morning": {
-       "mean": 107.15,
-       "p5": 103.79,
-       "p25": 105.75,
-       "p50": 106.71,
-       "p75": 107.48,
-       "p95": 110.28,
-       "settled_share": 0.968,
-       "settled_avg": 108.07,
-       "hours_total": 93,
-       "hours_left": 3,
-       "days_left": 1,
-       "day_hours": 3.0,
-       "day_p05": 21.3,
-       "day_p95": 131.27,
-       "widen": [
-        1.32,
-        1.77
-       ],
-       "risk_long": 257.6,
-       "risk_short": 72.4
-      },
-      "evening": {
-       "mean": 126.38,
-       "p5": 124.06,
-       "p25": 125.31,
-       "p50": 126.21,
-       "p75": 126.95,
-       "p95": 129.85,
-       "settled_share": 0.968,
-       "settled_avg": 127.02,
-       "hours_total": 155,
-       "hours_left": 5,
-       "days_left": 1,
-       "day_hours": 5.0,
-       "day_p05": 69.04,
-       "day_p95": 162.94,
-       "widen": [
-        1.32,
-        1.77
-       ],
-       "risk_long": 286.7,
-       "risk_short": 182.8
-      },
-      "cap300": {
-       "mean": 19.14,
-       "p5": 18.72,
-       "p25": 18.82,
-       "p50": 18.9,
-       "p75": 18.82,
-       "p95": 18.72,
-       "settled_share": 0.968,
-       "settled_avg": 19.53,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": 0.0,
-       "day_p95": 0.0,
-       "widen": [
-        1.32,
-        1.77
-       ],
-       "risk_long": 459.4,
-       "risk_short": 0.0
-      }
-     }
-    },
-    {
-     "tag": "下月",
      "label": "Nov 26",
      "kind": "month",
      "start": "2026-11-01",
      "end": "2026-11-30",
      "products": {
       "base": {
-       "mean": 90.48,
-       "p5": 58.04,
-       "p25": 73.24,
-       "p50": 85.48,
-       "p75": 105.5,
-       "p95": 146.69,
+       "mean": 90.92,
+       "p5": 58.03,
+       "p25": 73.16,
+       "p50": 85.87,
+       "p75": 107.05,
+       "p95": 146.73,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
@@ -172,19 +53,19 @@
        "day_p05": 46.65,
        "day_p95": 132.8,
        "widen": [
-        1.45,
-        1.66
+        1.48,
+        1.68
        ],
-       "risk_long": 1051.9,
-       "risk_short": 1015.7
+       "risk_long": 1062.5,
+       "risk_short": 1005.1
       },
       "peak": {
-       "mean": 84.88,
-       "p5": 40.82,
-       "p25": 63.51,
-       "p50": 75.79,
-       "p75": 90.64,
-       "p95": 170.92,
+       "mean": 85.19,
+       "p5": 39.68,
+       "p25": 62.86,
+       "p50": 75.91,
+       "p75": 91.94,
+       "p95": 172.3,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 315,
@@ -194,19 +75,19 @@
        "day_p05": 36.01,
        "day_p95": 115.14,
        "widen": [
-        1.32,
-        1.77
+        1.35,
+        1.83
        ],
-       "risk_long": 733.0,
-       "risk_short": 453.9
+       "risk_long": 737.7,
+       "risk_short": 449.3
       },
       "morning": {
-       "mean": 78.47,
-       "p5": 40.2,
-       "p25": 62.22,
-       "p50": 74.5,
-       "p75": 92.16,
-       "p95": 136.99,
+       "mean": 78.44,
+       "p5": 39.39,
+       "p25": 61.77,
+       "p50": 74.16,
+       "p75": 92.53,
+       "p95": 137.79,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 90,
@@ -216,19 +97,19 @@
        "day_p05": 21.3,
        "day_p95": 131.27,
        "widen": [
-        1.32,
-        1.77
+        1.35,
+        1.83
        ],
-       "risk_long": 171.5,
-       "risk_short": 158.4
+       "risk_long": 171.4,
+       "risk_short": 158.5
       },
       "evening": {
-       "mean": 107.15,
-       "p5": 84.76,
-       "p25": 99.23,
-       "p50": 106.32,
-       "p75": 113.97,
-       "p95": 134.66,
+       "mean": 107.2,
+       "p5": 84.47,
+       "p25": 98.9,
+       "p50": 106.27,
+       "p75": 114.07,
+       "p95": 136.06,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 150,
@@ -238,19 +119,19 @@
        "day_p05": 69.04,
        "day_p95": 162.94,
        "widen": [
-        1.32,
-        1.77
+        1.35,
+        1.83
        ],
-       "risk_long": 190.6,
-       "risk_short": 278.9
+       "risk_long": 190.8,
+       "risk_short": 278.7
       },
       "cap300": {
-       "mean": 6.54,
+       "mean": 6.74,
        "p5": 0.0,
        "p25": 0.0,
-       "p50": 0.15,
-       "p75": 19.62,
-       "p95": 35.0,
+       "p50": 0.42,
+       "p75": 19.85,
+       "p95": 40.27,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
@@ -260,10 +141,129 @@
        "day_p05": 0.0,
        "day_p95": 0.0,
        "widen": [
-        1.32,
-        1.77
+        1.35,
+        1.83
        ],
-       "risk_long": 157.0,
+       "risk_long": 161.8,
+       "risk_short": 0.0
+      }
+     }
+    },
+    {
+     "tag": "下月",
+     "label": "Dec 26",
+     "kind": "month",
+     "start": "2026-12-01",
+     "end": "2026-12-31",
+     "products": {
+      "base": {
+       "mean": 91.04,
+       "p5": 58.97,
+       "p25": 73.71,
+       "p50": 86.39,
+       "p75": 105.8,
+       "p95": 145.09,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": 46.65,
+       "day_p95": 132.8,
+       "widen": [
+        1.48,
+        1.68
+       ],
+       "risk_long": 1065.4,
+       "risk_short": 1002.2
+      },
+      "peak": {
+       "mean": 85.37,
+       "p5": 41.49,
+       "p25": 63.36,
+       "p50": 76.54,
+       "p75": 94.52,
+       "p95": 165.47,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 345,
+       "hours_left": 345,
+       "days_left": 31,
+       "day_hours": 15.0,
+       "day_p05": 36.01,
+       "day_p95": 115.14,
+       "widen": [
+        1.35,
+        1.83
+       ],
+       "risk_long": 740.4,
+       "risk_short": 446.5
+      },
+      "morning": {
+       "mean": 78.68,
+       "p5": 40.47,
+       "p25": 62.13,
+       "p50": 74.4,
+       "p75": 92.61,
+       "p95": 136.67,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 93,
+       "hours_left": 93,
+       "days_left": 31,
+       "day_hours": 3.0,
+       "day_p05": 21.3,
+       "day_p95": 131.27,
+       "widen": [
+        1.35,
+        1.83
+       ],
+       "risk_long": 172.1,
+       "risk_short": 157.8
+      },
+      "evening": {
+       "mean": 107.28,
+       "p5": 84.97,
+       "p25": 99.22,
+       "p50": 106.39,
+       "p75": 113.8,
+       "p95": 135.35,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 155,
+       "hours_left": 155,
+       "days_left": 31,
+       "day_hours": 5.0,
+       "day_p05": 69.04,
+       "day_p95": 162.94,
+       "widen": [
+        1.35,
+        1.83
+       ],
+       "risk_long": 191.2,
+       "risk_short": 278.3
+      },
+      "cap300": {
+       "mean": 6.77,
+       "p5": 0.0,
+       "p25": 0.0,
+       "p50": 0.52,
+       "p75": 19.12,
+       "p95": 52.47,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": 0.0,
+       "day_p95": 0.0,
+       "widen": [
+        1.35,
+        1.83
+       ],
+       "risk_long": 162.5,
        "risk_short": 0.0
       }
      }
@@ -276,17 +276,17 @@
      "end": "2026-12-31",
      "products": {
       "base": {
-       "mean": 103.12,
-       "p5": 42.6,
-       "p25": 90.02,
-       "p50": 102.2,
-       "p75": 113.31,
-       "p95": 185.12,
-       "settled_share": 0.326,
-       "settled_avg": 129.29,
+       "mean": 103.29,
+       "p5": 43.01,
+       "p25": 90.22,
+       "p50": 102.16,
+       "p75": 112.99,
+       "p95": 186.7,
+       "settled_share": 0.337,
+       "settled_avg": 127.83,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": 46.65,
        "day_p95": 132.8,
@@ -294,21 +294,21 @@
         2.25,
         5.87
        ],
-       "risk_long": 1355.3,
-       "risk_short": 712.3
+       "risk_long": 1359.4,
+       "risk_short": 708.2
       },
       "peak": {
-       "mean": 103.41,
-       "p5": 9.99,
-       "p25": 84.68,
-       "p50": 99.67,
-       "p75": 119.48,
-       "p95": 265.33,
+       "mean": 103.62,
+       "p5": 9.0,
+       "p25": 84.7,
+       "p50": 99.62,
+       "p75": 119.76,
+       "p95": 270.26,
        "settled_share": 0.333,
        "settled_avg": 141.15,
        "hours_total": 990,
        "hours_left": 660,
-       "days_left": 62,
+       "days_left": 61,
        "day_hours": 15.0,
        "day_p05": 36.01,
        "day_p95": 115.14,
@@ -316,21 +316,21 @@
         2.16,
         7.04
        ],
-       "risk_long": 1011.0,
-       "risk_short": 176.0
+       "risk_long": 1014.2,
+       "risk_short": 172.8
       },
       "morning": {
-       "mean": 88.06,
-       "p5": 9.7,
-       "p25": 75.29,
-       "p50": 87.24,
-       "p75": 98.58,
-       "p95": 188.87,
-       "settled_share": 0.326,
-       "settled_avg": 108.07,
+       "mean": 88.0,
+       "p5": 10.28,
+       "p25": 74.89,
+       "p50": 87.05,
+       "p75": 98.32,
+       "p95": 191.7,
+       "settled_share": 0.337,
+       "settled_avg": 106.63,
        "hours_total": 276,
-       "hours_left": 186,
-       "days_left": 62,
+       "hours_left": 183,
+       "days_left": 61,
        "day_hours": 3.0,
        "day_p05": 21.3,
        "day_p95": 131.27,
@@ -338,21 +338,21 @@
         2.16,
         7.04
        ],
-       "risk_long": 200.3,
-       "risk_short": 129.6
+       "risk_long": 200.1,
+       "risk_short": 129.8
       },
       "evening": {
-       "mean": 113.61,
-       "p5": 70.45,
-       "p25": 107.86,
-       "p50": 113.44,
-       "p75": 118.97,
-       "p95": 161.97,
-       "settled_share": 0.326,
-       "settled_avg": 127.02,
+       "mean": 113.52,
+       "p5": 70.65,
+       "p25": 107.6,
+       "p50": 113.25,
+       "p75": 118.79,
+       "p95": 161.74,
+       "settled_share": 0.337,
+       "settled_avg": 125.93,
        "hours_total": 460,
-       "hours_left": 310,
-       "days_left": 62,
+       "hours_left": 305,
+       "days_left": 61,
        "day_hours": 5.0,
        "day_p05": 69.04,
        "day_p95": 162.94,
@@ -360,21 +360,21 @@
         2.16,
         7.04
        ],
-       "risk_long": 222.8,
-       "risk_short": 246.6
+       "risk_long": 222.4,
+       "risk_short": 247.1
       },
       "cap300": {
-       "mean": 10.75,
+       "mean": 10.77,
        "p5": 0.0,
-       "p25": 1.66,
-       "p50": 11.7,
-       "p75": 15.05,
-       "p95": 68.13,
-       "settled_share": 0.326,
-       "settled_avg": 19.53,
+       "p25": 1.63,
+       "p50": 11.73,
+       "p75": 15.03,
+       "p95": 68.22,
+       "settled_share": 0.337,
+       "settled_avg": 18.9,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": 0.0,
        "day_p95": 0.0,
@@ -382,7 +382,7 @@
         2.16,
         7.04
        ],
-       "risk_long": 258.0,
+       "risk_long": 258.5,
        "risk_short": 0.0
       }
      }
@@ -395,12 +395,12 @@
      "end": "2027-03-31",
      "products": {
       "base": {
-       "mean": 90.37,
-       "p5": 10.71,
+       "mean": 90.7,
+       "p5": 12.28,
        "p25": 74.57,
-       "p50": 89.2,
-       "p75": 103.67,
-       "p95": 192.04,
+       "p50": 89.75,
+       "p75": 103.79,
+       "p95": 193.54,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 2160,
@@ -413,16 +413,16 @@
         2.25,
         5.87
        ],
-       "risk_long": 1049.3,
-       "risk_short": 1018.3
+       "risk_long": 1057.2,
+       "risk_short": 1010.4
       },
       "peak": {
-       "mean": 84.73,
-       "p5": -43.89,
-       "p25": 59.35,
-       "p50": 82.74,
-       "p75": 102.42,
-       "p95": 278.4,
+       "mean": 85.08,
+       "p5": -44.32,
+       "p25": 59.22,
+       "p50": 82.95,
+       "p75": 102.58,
+       "p95": 277.55,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 960,
@@ -435,16 +435,16 @@
         2.16,
         7.04
        ],
-       "risk_long": 730.8,
-       "risk_short": 456.1
+       "risk_long": 736.0,
+       "risk_short": 450.9
       },
       "morning": {
-       "mean": 78.32,
-       "p5": -20.24,
-       "p25": 63.11,
-       "p50": 77.22,
-       "p75": 91.47,
-       "p95": 200.39,
+       "mean": 78.29,
+       "p5": -20.9,
+       "p25": 62.91,
+       "p50": 77.4,
+       "p75": 91.31,
+       "p95": 202.62,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 270,
@@ -457,16 +457,16 @@
         2.16,
         7.04
        ],
-       "risk_long": 171.1,
+       "risk_long": 171.0,
        "risk_short": 158.9
       },
       "evening": {
-       "mean": 107.09,
-       "p5": 52.6,
-       "p25": 99.7,
-       "p50": 106.87,
-       "p75": 114.0,
-       "p95": 166.09,
+       "mean": 107.13,
+       "p5": 52.99,
+       "p25": 99.66,
+       "p50": 106.86,
+       "p75": 114.15,
+       "p95": 167.6,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 450,
@@ -479,16 +479,16 @@
         2.16,
         7.04
        ],
-       "risk_long": 190.2,
-       "risk_short": 279.2
+       "risk_long": 190.4,
+       "risk_short": 279.1
       },
       "cap300": {
-       "mean": 6.46,
+       "mean": 6.56,
        "p5": 0.0,
        "p25": 0.0,
        "p50": 6.3,
-       "p75": 16.18,
-       "p95": 84.46,
+       "p75": 16.06,
+       "p95": 84.77,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 2160,
@@ -501,7 +501,7 @@
         2.16,
         7.04
        ],
-       "risk_long": 155.0,
+       "risk_long": 157.4,
        "risk_short": 0.0
       }
      }
@@ -509,92 +509,92 @@
    ],
    "calibration": {
     "month_base": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.329,
-     "cov90": 0.678,
-     "k50": 1.45,
-     "k90": 1.66,
-     "oos_n": 133,
-     "oos_cov50": 0.466,
-     "oos_cov90": 0.94,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.324,
+     "cov90": 0.676,
+     "k50": 1.48,
+     "k90": 1.68,
+     "oos_n": 138,
+     "oos_cov50": 0.457,
+     "oos_cov90": 0.928,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.414,
-       "cov90": 0.897,
-       "mae": 4.21,
+       "n": 30,
+       "cov50": 0.433,
+       "cov90": 0.9,
+       "mae": 4.08,
        "mae_naive": 4.37
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.414,
-       "cov90": 0.621,
-       "mae": 15.27,
-       "mae_naive": 15.13
+       "n": 30,
+       "cov50": 0.4,
+       "cov90": 0.633,
+       "mae": 14.85,
+       "mae_naive": 15.11
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.241,
-       "cov90": 0.621,
-       "mae": 22.05,
-       "mae_naive": 24.34
+       "n": 30,
+       "cov50": 0.233,
+       "cov90": 0.633,
+       "mae": 21.49,
+       "mae_naive": 24.83
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.286,
-       "cov90": 0.625,
-       "mae": 37.94,
-       "mae_naive": 39.02
+       "n": 58,
+       "cov50": 0.276,
+       "cov90": 0.603,
+       "mae": 38.37,
+       "mae_naive": 38.64
       }
      ]
     },
     "month_peak": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.343,
-     "cov90": 0.692,
-     "k50": 1.32,
-     "k90": 1.77,
-     "oos_n": 133,
-     "oos_cov50": 0.451,
-     "oos_cov90": 0.91,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.338,
+     "cov90": 0.689,
+     "k50": 1.35,
+     "k90": 1.83,
+     "oos_n": 138,
+     "oos_cov50": 0.442,
+     "oos_cov90": 0.899,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.448,
-       "cov90": 0.862,
-       "mae": 5.25,
+       "n": 30,
+       "cov50": 0.467,
+       "cov90": 0.867,
+       "mae": 5.11,
        "mae_naive": 6.79
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.517,
-       "cov90": 0.655,
-       "mae": 24.27,
-       "mae_naive": 26.06
+       "n": 30,
+       "cov50": 0.5,
+       "cov90": 0.667,
+       "mae": 23.5,
+       "mae_naive": 25.99
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.345,
-       "cov90": 0.552,
-       "mae": 33.04,
-       "mae_naive": 43.01
+       "n": 30,
+       "cov50": 0.333,
+       "cov90": 0.567,
+       "mae": 32.16,
+       "mae_naive": 43.52
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.196,
-       "cov90": 0.696,
-       "mae": 62.96,
-       "mae_naive": 70.81
+       "n": 58,
+       "cov50": 0.19,
+       "cov90": 0.672,
+       "mae": 63.23,
+       "mae_naive": 70.0
       }
      ]
     },
@@ -691,170 +691,51 @@
    },
    "weather": {
     "days": 8,
-    "from": "2026-10-31",
-    "to": "2026-11-07",
+    "from": "2026-11-01",
+    "to": "2026-11-08",
     "wind": {
-     "fc": 19.78,
-     "norm": 20.58,
-     "z": -0.14
+     "fc": 19.12,
+     "norm": 20.54,
+     "z": -0.24
     },
     "temp": {
-     "fc": 20.4,
-     "norm": 20.1,
-     "z": 0.08
+     "fc": 19.5,
+     "norm": 20.2,
+     "z": -0.24
     },
-    "sens_wind": -2.53,
-    "sens_temp": 1.91,
-    "implied": 2.59,
-    "sens_days": 958
+    "sens_wind": -2.56,
+    "sens_temp": 1.94,
+    "implied": 4.99,
+    "sens_days": 959
    },
    "spot": {
-    "day": "2026-11-01",
+    "day": "2026-11-02",
     "spike_freq": 0.3,
     "spike_days": 60,
-    "aemo_avg": 62.1,
-    "aemo_max": 117.0,
+    "aemo_avg": 136.8,
+    "aemo_max": 292.8,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-10-31 19:32"
+    "pd_known_at": "2026-11-01 20:01"
    }
   },
   "VIC1": {
-   "asof": "2026-10-30",
-   "last_hour": "2026-10-31 18:00:00",
+   "asof": "2026-10-31",
+   "last_hour": "2026-11-01 19:00:00",
    "contracts": [
     {
      "tag": "当月",
-     "label": "Oct 26",
-     "kind": "month",
-     "start": "2026-10-01",
-     "end": "2026-10-31",
-     "products": {
-      "base": {
-       "mean": 53.85,
-       "p5": 49.75,
-       "p25": 52.56,
-       "p50": 53.82,
-       "p75": 55.0,
-       "p95": 58.09,
-       "settled_share": 0.968,
-       "settled_avg": 53.96,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": -5.5,
-       "day_p95": 109.34,
-       "widen": [
-        1.5,
-        2.23
-       ],
-       "risk_long": 1424.4,
-       "risk_short": 1331.8
-      },
-      "peak": {
-       "mean": 47.32,
-       "p5": 47.32,
-       "p25": 47.32,
-       "p50": 47.32,
-       "p75": 47.32,
-       "p95": 47.32,
-       "settled_share": 1.0,
-       "settled_avg": 47.32,
-       "hours_total": 330,
-       "hours_left": 0,
-       "days_left": 1,
-       "day_hours": 15.0,
-       "day_p05": -6.41,
-       "day_p95": 101.93,
-       "widen": [
-        1.91,
-        2.34
-       ],
-       "risk_long": 806.0,
-       "risk_short": 819.2
-      },
-      "morning": {
-       "mean": 42.89,
-       "p5": 38.12,
-       "p25": 40.35,
-       "p50": 42.73,
-       "p75": 44.82,
-       "p95": 49.98,
-       "settled_share": 0.968,
-       "settled_avg": 42.73,
-       "hours_total": 93,
-       "hours_left": 3,
-       "days_left": 1,
-       "day_hours": 3.0,
-       "day_p05": -14.05,
-       "day_p95": 136.53,
-       "widen": [
-        1.91,
-        2.34
-       ],
-       "risk_long": 170.8,
-       "risk_short": 280.9
-      },
-      "evening": {
-       "mean": 78.04,
-       "p5": 72.63,
-       "p25": 76.66,
-       "p50": 78.2,
-       "p75": 80.03,
-       "p95": 82.23,
-       "settled_share": 0.968,
-       "settled_avg": 78.1,
-       "hours_total": 155,
-       "hours_left": 5,
-       "days_left": 1,
-       "day_hours": 5.0,
-       "day_p05": 6.71,
-       "day_p95": 129.52,
-       "widen": [
-        1.91,
-        2.34
-       ],
-       "risk_long": 356.7,
-       "risk_short": 257.4
-      },
-      "cap300": {
-       "mean": 0.02,
-       "p5": 0.02,
-       "p25": 0.02,
-       "p50": 0.02,
-       "p75": 0.02,
-       "p95": 0.02,
-       "settled_share": 0.968,
-       "settled_avg": 0.02,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": 0.0,
-       "day_p95": 0.0,
-       "widen": [
-        1.91,
-        2.34
-       ],
-       "risk_long": 0.5,
-       "risk_short": 0.0
-      }
-     }
-    },
-    {
-     "tag": "下月",
      "label": "Nov 26",
      "kind": "month",
      "start": "2026-11-01",
      "end": "2026-11-30",
      "products": {
       "base": {
-       "mean": 51.0,
-       "p5": 20.56,
-       "p25": 42.54,
-       "p50": 51.07,
-       "p75": 59.45,
-       "p95": 80.82,
+       "mean": 51.08,
+       "p5": 21.32,
+       "p25": 42.72,
+       "p50": 51.11,
+       "p75": 59.14,
+       "p95": 81.46,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
@@ -864,19 +745,19 @@
        "day_p05": -5.5,
        "day_p95": 109.34,
        "widen": [
-        1.5,
-        2.23
+        1.49,
+        2.19
        ],
-       "risk_long": 1356.0,
-       "risk_short": 1400.2
+       "risk_long": 1357.9,
+       "risk_short": 1398.2
       },
       "peak": {
-       "mean": 43.23,
-       "p5": 5.56,
-       "p25": 30.68,
-       "p50": 43.41,
-       "p75": 55.53,
-       "p95": 80.79,
+       "mean": 42.99,
+       "p5": 6.72,
+       "p25": 30.64,
+       "p50": 42.89,
+       "p75": 55.21,
+       "p95": 80.11,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 315,
@@ -886,19 +767,19 @@
        "day_p05": -6.41,
        "day_p95": 101.93,
        "widen": [
-        1.91,
-        2.34
+        1.86,
+        2.29
        ],
-       "risk_long": 744.6,
-       "risk_short": 880.5
+       "risk_long": 741.0,
+       "risk_short": 884.1
       },
       "morning": {
-       "mean": 47.67,
-       "p5": 10.07,
-       "p25": 34.72,
-       "p50": 47.65,
-       "p75": 60.24,
-       "p95": 85.77,
+       "mean": 47.65,
+       "p5": 10.85,
+       "p25": 34.95,
+       "p50": 47.33,
+       "p75": 59.85,
+       "p95": 86.44,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 90,
@@ -908,19 +789,19 @@
        "day_p05": -14.05,
        "day_p95": 136.53,
        "widen": [
-        1.91,
-        2.34
+        1.86,
+        2.29
        ],
-       "risk_long": 185.2,
+       "risk_long": 185.1,
        "risk_short": 266.6
       },
       "evening": {
-       "mean": 77.39,
-       "p5": 40.32,
-       "p25": 64.8,
-       "p50": 77.39,
-       "p75": 89.58,
-       "p95": 114.01,
+       "mean": 77.18,
+       "p5": 41.66,
+       "p25": 65.44,
+       "p50": 77.03,
+       "p75": 88.94,
+       "p95": 113.82,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 150,
@@ -930,11 +811,11 @@
        "day_p05": 6.71,
        "day_p95": 129.52,
        "widen": [
-        1.91,
-        2.34
+        1.86,
+        2.29
        ],
-       "risk_long": 353.4,
-       "risk_short": 260.7
+       "risk_long": 352.4,
+       "risk_short": 261.7
       },
       "cap300": {
        "mean": 0.01,
@@ -952,8 +833,127 @@
        "day_p05": 0.0,
        "day_p95": 0.0,
        "widen": [
-        1.91,
-        2.34
+        1.86,
+        2.29
+       ],
+       "risk_long": 0.2,
+       "risk_short": 0.0
+      }
+     }
+    },
+    {
+     "tag": "下月",
+     "label": "Dec 26",
+     "kind": "month",
+     "start": "2026-12-01",
+     "end": "2026-12-31",
+     "products": {
+      "base": {
+       "mean": 51.11,
+       "p5": 22.9,
+       "p25": 42.8,
+       "p50": 51.03,
+       "p75": 59.16,
+       "p95": 80.52,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": -5.5,
+       "day_p95": 109.34,
+       "widen": [
+        1.49,
+        2.19
+       ],
+       "risk_long": 1358.6,
+       "risk_short": 1397.5
+      },
+      "peak": {
+       "mean": 43.2,
+       "p5": 7.59,
+       "p25": 30.85,
+       "p50": 43.2,
+       "p75": 55.05,
+       "p95": 79.29,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 345,
+       "hours_left": 345,
+       "days_left": 31,
+       "day_hours": 15.0,
+       "day_p05": -6.41,
+       "day_p95": 101.93,
+       "widen": [
+        1.86,
+        2.29
+       ],
+       "risk_long": 744.1,
+       "risk_short": 881.0
+      },
+      "morning": {
+       "mean": 47.68,
+       "p5": 11.52,
+       "p25": 35.12,
+       "p50": 47.54,
+       "p75": 60.05,
+       "p95": 84.25,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 93,
+       "hours_left": 93,
+       "days_left": 31,
+       "day_hours": 3.0,
+       "day_p05": -14.05,
+       "day_p95": 136.53,
+       "widen": [
+        1.86,
+        2.29
+       ],
+       "risk_long": 185.2,
+       "risk_short": 266.5
+      },
+      "evening": {
+       "mean": 77.24,
+       "p5": 43.19,
+       "p25": 65.41,
+       "p50": 77.14,
+       "p75": 88.23,
+       "p95": 112.78,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 155,
+       "hours_left": 155,
+       "days_left": 31,
+       "day_hours": 5.0,
+       "day_p05": 6.71,
+       "day_p95": 129.52,
+       "widen": [
+        1.86,
+        2.29
+       ],
+       "risk_long": 352.6,
+       "risk_short": 261.4
+      },
+      "cap300": {
+       "mean": 0.01,
+       "p5": 0.0,
+       "p25": 0.0,
+       "p50": 0.0,
+       "p75": 0.03,
+       "p95": 0.03,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": 0.0,
+       "day_p95": 0.0,
+       "widen": [
+        1.86,
+        2.29
        ],
        "risk_long": 0.2,
        "risk_short": 0.0
@@ -968,17 +968,17 @@
      "end": "2026-12-31",
      "products": {
       "base": {
-       "mean": 51.96,
-       "p5": -1.35,
-       "p25": 43.29,
-       "p50": 52.05,
-       "p75": 60.47,
-       "p95": 103.02,
-       "settled_share": 0.326,
-       "settled_avg": 53.96,
+       "mean": 51.76,
+       "p5": -1.64,
+       "p25": 43.28,
+       "p50": 51.73,
+       "p75": 60.27,
+       "p95": 104.16,
+       "settled_share": 0.337,
+       "settled_avg": 52.95,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": -5.5,
        "day_p95": 109.34,
@@ -986,21 +986,21 @@
         3.26,
         8.33
        ],
-       "risk_long": 1379.0,
-       "risk_short": 1377.1
+       "risk_long": 1374.2,
+       "risk_short": 1381.9
       },
       "peak": {
-       "mean": 44.51,
-       "p5": -31.13,
-       "p25": 32.83,
-       "p50": 44.55,
-       "p75": 55.82,
-       "p95": 121.47,
+       "mean": 44.45,
+       "p5": -29.66,
+       "p25": 32.73,
+       "p50": 44.46,
+       "p75": 55.91,
+       "p95": 120.6,
        "settled_share": 0.333,
        "settled_avg": 47.32,
        "hours_total": 990,
        "hours_left": 660,
-       "days_left": 62,
+       "days_left": 61,
        "day_hours": 15.0,
        "day_p05": -6.41,
        "day_p95": 101.93,
@@ -1008,21 +1008,21 @@
         3.72,
         10.18
        ],
-       "risk_long": 763.8,
-       "risk_short": 861.3
+       "risk_long": 762.9,
+       "risk_short": 862.2
       },
       "morning": {
-       "mean": 46.03,
-       "p5": -31.75,
-       "p25": 34.01,
-       "p50": 46.06,
-       "p75": 58.01,
-       "p95": 124.11,
-       "settled_share": 0.326,
-       "settled_avg": 42.73,
+       "mean": 45.63,
+       "p5": -31.74,
+       "p25": 33.8,
+       "p50": 45.6,
+       "p75": 57.46,
+       "p95": 124.32,
+       "settled_share": 0.337,
+       "settled_avg": 41.51,
        "hours_total": 276,
-       "hours_left": 186,
-       "days_left": 62,
+       "hours_left": 183,
+       "days_left": 61,
        "day_hours": 3.0,
        "day_p05": -14.05,
        "day_p95": 136.53,
@@ -1030,21 +1030,21 @@
         3.72,
         10.18
        ],
-       "risk_long": 180.2,
-       "risk_short": 271.5
+       "risk_long": 179.0,
+       "risk_short": 272.7
       },
       "evening": {
-       "mean": 77.61,
-       "p5": 0.45,
-       "p25": 66.41,
-       "p50": 77.68,
-       "p75": 88.81,
-       "p95": 151.52,
-       "settled_share": 0.326,
-       "settled_avg": 78.1,
+       "mean": 77.2,
+       "p5": 2.68,
+       "p25": 66.04,
+       "p50": 77.14,
+       "p75": 88.43,
+       "p95": 151.31,
+       "settled_share": 0.337,
+       "settled_avg": 76.98,
        "hours_total": 460,
-       "hours_left": 310,
-       "days_left": 62,
+       "hours_left": 305,
+       "days_left": 61,
        "day_hours": 5.0,
        "day_p05": 6.71,
        "day_p95": 129.52,
@@ -1052,8 +1052,8 @@
         3.72,
         10.18
        ],
-       "risk_long": 354.5,
-       "risk_short": 259.6
+       "risk_long": 352.5,
+       "risk_short": 261.6
       },
       "cap300": {
        "mean": 0.01,
@@ -1062,11 +1062,11 @@
        "p50": 0.01,
        "p75": 0.01,
        "p95": 0.11,
-       "settled_share": 0.326,
+       "settled_share": 0.337,
        "settled_avg": 0.02,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": 0.0,
        "day_p95": 0.0,
@@ -1087,12 +1087,12 @@
      "end": "2027-03-31",
      "products": {
       "base": {
-       "mean": 51.01,
-       "p5": -14.71,
-       "p25": 40.38,
-       "p50": 51.01,
-       "p75": 61.41,
-       "p95": 115.07,
+       "mean": 51.19,
+       "p5": -14.62,
+       "p25": 40.5,
+       "p50": 51.27,
+       "p75": 61.72,
+       "p95": 119.5,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 2160,
@@ -1105,16 +1105,16 @@
         3.26,
         8.33
        ],
-       "risk_long": 1356.2,
-       "risk_short": 1399.9
+       "risk_long": 1360.6,
+       "risk_short": 1395.6
       },
       "peak": {
-       "mean": 43.22,
-       "p5": -51.45,
-       "p25": 29.53,
-       "p50": 43.2,
-       "p75": 57.36,
-       "p95": 136.67,
+       "mean": 43.1,
+       "p5": -53.71,
+       "p25": 28.93,
+       "p50": 43.0,
+       "p75": 57.31,
+       "p95": 136.86,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 960,
@@ -1127,16 +1127,16 @@
         3.72,
         10.18
        ],
-       "risk_long": 744.4,
-       "risk_short": 880.7
+       "risk_long": 742.7,
+       "risk_short": 882.5
       },
       "morning": {
-       "mean": 47.66,
-       "p5": -48.54,
-       "p25": 33.11,
-       "p50": 47.7,
-       "p75": 62.06,
-       "p95": 143.96,
+       "mean": 47.77,
+       "p5": -47.82,
+       "p25": 32.93,
+       "p50": 47.71,
+       "p75": 62.17,
+       "p95": 146.82,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 270,
@@ -1149,16 +1149,16 @@
         3.72,
         10.18
        ],
-       "risk_long": 185.1,
-       "risk_short": 266.6
+       "risk_long": 185.5,
+       "risk_short": 266.3
       },
       "evening": {
-       "mean": 77.43,
-       "p5": -14.19,
-       "p25": 63.15,
-       "p50": 77.46,
-       "p75": 91.16,
-       "p95": 171.19,
+       "mean": 77.36,
+       "p5": -16.7,
+       "p25": 62.89,
+       "p50": 77.43,
+       "p75": 91.35,
+       "p95": 172.34,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 450,
@@ -1171,8 +1171,8 @@
         3.72,
         10.18
        ],
-       "risk_long": 353.6,
-       "risk_short": 260.5
+       "risk_long": 353.2,
+       "risk_short": 260.8
       },
       "cap300": {
        "mean": 0.01,
@@ -1201,92 +1201,92 @@
    ],
    "calibration": {
     "month_base": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.308,
-     "cov90": 0.615,
-     "k50": 1.5,
-     "k90": 2.23,
-     "oos_n": 133,
-     "oos_cov50": 0.602,
-     "oos_cov90": 0.94,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.318,
+     "cov90": 0.622,
+     "k50": 1.49,
+     "k90": 2.19,
+     "oos_n": 138,
+     "oos_cov50": 0.609,
+     "oos_cov90": 0.942,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.414,
-       "cov90": 0.828,
-       "mae": 4.06,
-       "mae_naive": 4.05
+       "n": 30,
+       "cov50": 0.433,
+       "cov90": 0.833,
+       "mae": 3.93,
+       "mae_naive": 3.92
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.448,
-       "cov90": 0.69,
-       "mae": 14.03,
-       "mae_naive": 11.26
+       "n": 30,
+       "cov50": 0.433,
+       "cov90": 0.667,
+       "mae": 13.81,
+       "mae_naive": 11.18
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.241,
-       "cov90": 0.517,
-       "mae": 22.16,
-       "mae_naive": 16.76
+       "n": 30,
+       "cov50": 0.267,
+       "cov90": 0.533,
+       "mae": 21.55,
+       "mae_naive": 16.39
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.214,
-       "cov90": 0.518,
-       "mae": 35.25,
-       "mae_naive": 35.38
+       "n": 58,
+       "cov50": 0.224,
+       "cov90": 0.534,
+       "mae": 34.21,
+       "mae_naive": 34.92
       }
      ]
     },
     "month_peak": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.266,
-     "cov90": 0.559,
-     "k50": 1.91,
-     "k90": 2.34,
-     "oos_n": 133,
-     "oos_cov50": 0.571,
-     "oos_cov90": 0.925,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.277,
+     "cov90": 0.574,
+     "k50": 1.86,
+     "k90": 2.29,
+     "oos_n": 138,
+     "oos_cov50": 0.587,
+     "oos_cov90": 0.928,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.345,
-       "cov90": 0.897,
-       "mae": 4.96,
-       "mae_naive": 4.84
+       "n": 30,
+       "cov50": 0.367,
+       "cov90": 0.9,
+       "mae": 4.81,
+       "mae_naive": 4.69
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.379,
-       "cov90": 0.621,
-       "mae": 19.79,
-       "mae_naive": 16.33
+       "n": 30,
+       "cov50": 0.367,
+       "cov90": 0.633,
+       "mae": 19.31,
+       "mae_naive": 15.97
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.276,
-       "cov90": 0.517,
-       "mae": 31.24,
-       "mae_naive": 23.08
+       "n": 30,
+       "cov50": 0.3,
+       "cov90": 0.533,
+       "mae": 30.29,
+       "mae_naive": 22.44
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.161,
-       "cov90": 0.375,
-       "mae": 55.81,
-       "mae_naive": 56.16
+       "n": 58,
+       "cov50": 0.172,
+       "cov90": 0.397,
+       "mae": 54.19,
+       "mae_naive": 55.11
       }
      ]
     },
@@ -1383,192 +1383,73 @@
    },
    "weather": {
     "days": 8,
-    "from": "2026-10-31",
-    "to": "2026-11-07",
+    "from": "2026-11-01",
+    "to": "2026-11-08",
     "wind": {
-     "fc": 22.88,
-     "norm": 22.1,
-     "z": 0.14
+     "fc": 20.46,
+     "norm": 21.98,
+     "z": -0.23
     },
     "temp": {
-     "fc": 17.6,
-     "norm": 18.3,
-     "z": -0.18
+     "fc": 16.8,
+     "norm": 18.4,
+     "z": -0.43
     },
     "sens_wind": -5.7,
-    "sens_temp": 2.23,
-    "implied": -2.88,
-    "sens_days": 958
+    "sens_temp": 2.22,
+    "implied": 12.21,
+    "sens_days": 959
    },
    "spot": {
-    "day": "2026-11-01",
+    "day": "2026-11-02",
     "spike_freq": 0.0,
     "spike_days": 60,
-    "aemo_avg": 55.8,
-    "aemo_max": 111.8,
+    "aemo_avg": 131.9,
+    "aemo_max": 284.2,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-10-31 19:32"
+    "pd_known_at": "2026-11-01 20:01"
    }
   },
   "QLD1": {
-   "asof": "2026-10-30",
-   "last_hour": "2026-10-31 18:00:00",
+   "asof": "2026-10-31",
+   "last_hour": "2026-11-01 19:00:00",
    "contracts": [
     {
      "tag": "当月",
-     "label": "Oct 26",
-     "kind": "month",
-     "start": "2026-10-01",
-     "end": "2026-10-31",
-     "products": {
-      "base": {
-       "mean": 93.84,
-       "p5": 92.05,
-       "p25": 92.62,
-       "p50": 93.57,
-       "p75": 94.91,
-       "p95": 96.44,
-       "settled_share": 0.968,
-       "settled_avg": 94.59,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": 40.49,
-       "day_p95": 117.07,
-       "widen": [
-        1.82,
-        1.72
-       ],
-       "risk_long": 1280.4,
-       "risk_short": 557.5
-      },
-      "peak": {
-       "mean": 90.57,
-       "p5": 90.57,
-       "p25": 90.57,
-       "p50": 90.57,
-       "p75": 90.57,
-       "p95": 90.57,
-       "settled_share": 1.0,
-       "settled_avg": 90.57,
-       "hours_total": 330,
-       "hours_left": 0,
-       "days_left": 1,
-       "day_hours": 15.0,
-       "day_p05": 30.72,
-       "day_p95": 110.59,
-       "widen": [
-        1.92,
-        2.01
-       ],
-       "risk_long": 897.7,
-       "risk_short": 300.3
-      },
-      "morning": {
-       "mean": 66.13,
-       "p5": 63.38,
-       "p25": 64.52,
-       "p50": 65.93,
-       "p75": 67.19,
-       "p95": 70.25,
-       "settled_share": 0.968,
-       "settled_avg": 66.54,
-       "hours_total": 93,
-       "hours_left": 3,
-       "days_left": 1,
-       "day_hours": 3.0,
-       "day_p05": 10.02,
-       "day_p95": 113.34,
-       "widen": [
-        1.92,
-        2.01
-       ],
-       "risk_long": 168.3,
-       "risk_short": 141.6
-      },
-      "evening": {
-       "mean": 119.81,
-       "p5": 117.64,
-       "p25": 118.47,
-       "p50": 119.63,
-       "p75": 120.62,
-       "p95": 123.47,
-       "settled_share": 0.968,
-       "settled_avg": 120.45,
-       "hours_total": 155,
-       "hours_left": 5,
-       "days_left": 1,
-       "day_hours": 5.0,
-       "day_p05": 67.8,
-       "day_p95": 151.63,
-       "widen": [
-        1.92,
-        2.01
-       ],
-       "risk_long": 260.1,
-       "risk_short": 159.1
-      },
-      "cap300": {
-       "mean": 0.31,
-       "p5": 0.31,
-       "p25": 0.31,
-       "p50": 0.31,
-       "p75": 0.31,
-       "p95": 0.31,
-       "settled_share": 0.968,
-       "settled_avg": 0.32,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": 0.0,
-       "day_p95": 0.0,
-       "widen": [
-        1.92,
-        2.01
-       ],
-       "risk_long": 7.4,
-       "risk_short": 0.0
-      }
-     }
-    },
-    {
-     "tag": "下月",
      "label": "Nov 26",
      "kind": "month",
      "start": "2026-11-01",
      "end": "2026-11-30",
      "products": {
       "base": {
-       "mean": 71.07,
-       "p5": 50.55,
-       "p25": 61.1,
-       "p50": 70.59,
-       "p75": 80.02,
-       "p95": 94.74,
+       "mean": 71.26,
+       "p5": 50.2,
+       "p25": 61.07,
+       "p50": 70.84,
+       "p75": 79.87,
+       "p95": 95.51,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
        "hours_left": 720,
        "days_left": 30,
        "day_hours": 24.0,
-       "day_p05": 40.49,
+       "day_p05": 42.03,
        "day_p95": 117.07,
        "widen": [
-        1.82,
-        1.72
+        1.86,
+        1.77
        ],
-       "risk_long": 733.9,
-       "risk_short": 1104.0
+       "risk_long": 701.5,
+       "risk_short": 1099.4
       },
       "peak": {
-       "mean": 59.33,
-       "p5": 32.15,
-       "p25": 47.35,
-       "p50": 58.68,
-       "p75": 69.51,
-       "p95": 92.39,
+       "mean": 59.43,
+       "p5": 30.98,
+       "p25": 46.89,
+       "p50": 58.88,
+       "p75": 69.94,
+       "p95": 93.58,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 315,
@@ -1578,19 +1459,19 @@
        "day_p05": 30.72,
        "day_p95": 110.59,
        "widen": [
-        1.92,
-        2.01
+        1.95,
+        2.12
        ],
-       "risk_long": 429.1,
-       "risk_short": 768.9
+       "risk_long": 430.7,
+       "risk_short": 767.4
       },
       "morning": {
-       "mean": 53.06,
-       "p5": 26.33,
-       "p25": 41.41,
-       "p50": 52.64,
-       "p75": 64.16,
-       "p95": 83.09,
+       "mean": 52.95,
+       "p5": 24.46,
+       "p25": 41.07,
+       "p50": 52.63,
+       "p75": 63.28,
+       "p95": 84.54,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 90,
@@ -1600,32 +1481,32 @@
        "day_p05": 10.02,
        "day_p95": 113.34,
        "widen": [
-        1.92,
-        2.01
+        1.95,
+        2.12
        ],
-       "risk_long": 129.1,
-       "risk_short": 180.8
+       "risk_long": 128.8,
+       "risk_short": 181.2
       },
       "evening": {
        "mean": 100.55,
-       "p5": 77.7,
-       "p25": 90.24,
-       "p50": 99.84,
-       "p75": 109.31,
-       "p95": 127.62,
+       "p5": 77.21,
+       "p25": 90.14,
+       "p50": 99.96,
+       "p75": 109.38,
+       "p95": 129.21,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 150,
        "hours_left": 150,
        "days_left": 30,
        "day_hours": 5.0,
-       "day_p05": 67.8,
+       "day_p05": 68.71,
        "day_p95": 151.63,
        "widen": [
-        1.92,
-        2.01
+        1.95,
+        2.12
        ],
-       "risk_long": 163.8,
+       "risk_long": 159.2,
        "risk_short": 255.4
       },
       "cap300": {
@@ -1634,7 +1515,7 @@
        "p25": 0.0,
        "p50": 0.13,
        "p75": 0.46,
-       "p95": 1.01,
+       "p95": 1.06,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
@@ -1644,10 +1525,129 @@
        "day_p05": 0.0,
        "day_p95": 0.0,
        "widen": [
-        1.92,
-        2.01
+        1.95,
+        2.12
        ],
        "risk_long": 3.6,
+       "risk_short": 0.0
+      }
+     }
+    },
+    {
+     "tag": "下月",
+     "label": "Dec 26",
+     "kind": "month",
+     "start": "2026-12-01",
+     "end": "2026-12-31",
+     "products": {
+      "base": {
+       "mean": 71.33,
+       "p5": 50.66,
+       "p25": 61.56,
+       "p50": 70.88,
+       "p75": 79.98,
+       "p95": 94.25,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": 42.03,
+       "day_p95": 117.07,
+       "widen": [
+        1.86,
+        1.77
+       ],
+       "risk_long": 703.2,
+       "risk_short": 1097.8
+      },
+      "peak": {
+       "mean": 59.57,
+       "p5": 31.95,
+       "p25": 47.5,
+       "p50": 58.95,
+       "p75": 70.12,
+       "p95": 91.26,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 345,
+       "hours_left": 345,
+       "days_left": 31,
+       "day_hours": 15.0,
+       "day_p05": 30.72,
+       "day_p95": 110.59,
+       "widen": [
+        1.95,
+        2.12
+       ],
+       "risk_long": 432.8,
+       "risk_short": 765.3
+      },
+      "morning": {
+       "mean": 53.05,
+       "p5": 25.19,
+       "p25": 41.55,
+       "p50": 52.66,
+       "p75": 63.62,
+       "p95": 83.43,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 93,
+       "hours_left": 93,
+       "days_left": 31,
+       "day_hours": 3.0,
+       "day_p05": 10.02,
+       "day_p95": 113.34,
+       "widen": [
+        1.95,
+        2.12
+       ],
+       "risk_long": 129.1,
+       "risk_short": 180.9
+      },
+      "evening": {
+       "mean": 100.63,
+       "p5": 77.71,
+       "p25": 90.43,
+       "p50": 100.07,
+       "p75": 109.21,
+       "p95": 128.78,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 155,
+       "hours_left": 155,
+       "days_left": 31,
+       "day_hours": 5.0,
+       "day_p05": 68.71,
+       "day_p95": 151.63,
+       "widen": [
+        1.95,
+        2.12
+       ],
+       "risk_long": 159.6,
+       "risk_short": 255.0
+      },
+      "cap300": {
+       "mean": 0.16,
+       "p5": 0.0,
+       "p25": 0.0,
+       "p50": 0.13,
+       "p75": 0.43,
+       "p95": 1.03,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": 0.0,
+       "day_p95": 0.0,
+       "widen": [
+        1.95,
+        2.12
+       ],
+       "risk_long": 3.8,
        "risk_short": 0.0
       }
      }
@@ -1660,39 +1660,39 @@
      "end": "2026-12-31",
      "products": {
       "base": {
-       "mean": 78.77,
-       "p5": 51.51,
-       "p25": 71.52,
-       "p50": 78.62,
-       "p75": 85.67,
-       "p95": 108.34,
-       "settled_share": 0.326,
-       "settled_avg": 94.59,
+       "mean": 78.99,
+       "p5": 51.77,
+       "p25": 71.91,
+       "p50": 78.87,
+       "p75": 85.81,
+       "p95": 107.65,
+       "settled_share": 0.337,
+       "settled_avg": 94.09,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
-       "day_p05": 40.49,
+       "day_p05": 42.03,
        "day_p95": 117.07,
        "widen": [
         2.9,
         4.8
        ],
-       "risk_long": 918.7,
-       "risk_short": 919.2
+       "risk_long": 887.0,
+       "risk_short": 913.9
       },
       "peak": {
-       "mean": 69.74,
-       "p5": 40.53,
-       "p25": 61.04,
-       "p50": 69.5,
-       "p75": 77.66,
-       "p95": 103.64,
+       "mean": 69.81,
+       "p5": 40.37,
+       "p25": 61.11,
+       "p50": 69.61,
+       "p75": 77.94,
+       "p95": 102.42,
        "settled_share": 0.333,
        "settled_avg": 90.57,
        "hours_total": 990,
        "hours_left": 660,
-       "days_left": 62,
+       "days_left": 61,
        "day_hours": 15.0,
        "day_p05": 30.72,
        "day_p95": 110.59,
@@ -1700,21 +1700,21 @@
         2.99,
         4.6
        ],
-       "risk_long": 585.3,
-       "risk_short": 612.8
+       "risk_long": 586.4,
+       "risk_short": 611.7
       },
       "morning": {
-       "mean": 57.49,
-       "p5": 26.9,
-       "p25": 49.0,
-       "p50": 57.32,
-       "p75": 65.59,
-       "p95": 89.46,
-       "settled_share": 0.326,
-       "settled_avg": 66.54,
+       "mean": 57.51,
+       "p5": 28.48,
+       "p25": 49.2,
+       "p50": 57.38,
+       "p75": 65.61,
+       "p95": 88.61,
+       "settled_share": 0.337,
+       "settled_avg": 66.4,
        "hours_total": 276,
-       "hours_left": 186,
-       "days_left": 62,
+       "hours_left": 183,
+       "days_left": 61,
        "day_hours": 3.0,
        "day_p05": 10.02,
        "day_p95": 113.34,
@@ -1722,30 +1722,30 @@
         2.99,
         4.6
        ],
-       "risk_long": 142.4,
-       "risk_short": 167.6
+       "risk_long": 142.5,
+       "risk_short": 167.5
       },
       "evening": {
-       "mean": 107.05,
-       "p5": 81.8,
-       "p25": 99.75,
-       "p50": 106.89,
-       "p75": 113.75,
-       "p95": 134.65,
-       "settled_share": 0.326,
-       "settled_avg": 120.45,
+       "mean": 106.95,
+       "p5": 82.57,
+       "p25": 99.8,
+       "p50": 106.74,
+       "p75": 113.77,
+       "p95": 134.18,
+       "settled_share": 0.337,
+       "settled_avg": 119.43,
        "hours_total": 460,
-       "hours_left": 310,
-       "days_left": 62,
+       "hours_left": 305,
+       "days_left": 61,
        "day_hours": 5.0,
-       "day_p05": 67.8,
+       "day_p05": 68.71,
        "day_p95": 151.63,
        "widen": [
         2.99,
         4.6
        ],
-       "risk_long": 196.2,
-       "risk_short": 222.9
+       "risk_long": 191.2,
+       "risk_short": 223.4
       },
       "cap300": {
        "mean": 0.21,
@@ -1754,11 +1754,11 @@
        "p50": 0.21,
        "p75": 0.33,
        "p95": 1.04,
-       "settled_share": 0.326,
-       "settled_avg": 0.32,
+       "settled_share": 0.337,
+       "settled_avg": 0.31,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": 0.0,
        "day_p95": 0.0,
@@ -1779,34 +1779,34 @@
      "end": "2027-03-31",
      "products": {
       "base": {
-       "mean": 71.1,
-       "p5": 36.64,
-       "p25": 62.11,
-       "p50": 70.96,
-       "p75": 79.6,
-       "p95": 106.81,
+       "mean": 71.29,
+       "p5": 37.26,
+       "p25": 62.24,
+       "p50": 71.13,
+       "p75": 79.9,
+       "p95": 107.72,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 2160,
        "hours_left": 2160,
        "days_left": 90,
        "day_hours": 24.0,
-       "day_p05": 40.49,
+       "day_p05": 42.03,
        "day_p95": 117.07,
        "widen": [
         2.9,
         4.8
        ],
-       "risk_long": 734.6,
-       "risk_short": 1103.3
+       "risk_long": 702.2,
+       "risk_short": 1098.7
       },
       "peak": {
-       "mean": 59.37,
-       "p5": 21.42,
-       "p25": 48.25,
-       "p50": 59.05,
-       "p75": 69.63,
-       "p95": 101.32,
+       "mean": 59.44,
+       "p5": 22.0,
+       "p25": 48.41,
+       "p50": 59.21,
+       "p75": 69.49,
+       "p95": 100.84,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 960,
@@ -1819,16 +1819,16 @@
         2.99,
         4.6
        ],
-       "risk_long": 429.8,
-       "risk_short": 768.3
+       "risk_long": 430.8,
+       "risk_short": 767.3
       },
       "morning": {
-       "mean": 53.13,
-       "p5": 17.3,
-       "p25": 42.58,
-       "p50": 52.9,
-       "p75": 63.03,
-       "p95": 92.92,
+       "mean": 53.02,
+       "p5": 16.36,
+       "p25": 42.94,
+       "p50": 52.79,
+       "p75": 62.77,
+       "p95": 92.4,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 270,
@@ -1841,30 +1841,30 @@
         2.99,
         4.6
        ],
-       "risk_long": 129.3,
-       "risk_short": 180.6
+       "risk_long": 129.0,
+       "risk_short": 181.0
       },
       "evening": {
-       "mean": 100.53,
-       "p5": 69.76,
-       "p25": 91.56,
-       "p50": 100.24,
-       "p75": 108.9,
-       "p95": 133.88,
+       "mean": 100.54,
+       "p5": 69.31,
+       "p25": 91.36,
+       "p50": 100.32,
+       "p75": 109.03,
+       "p95": 134.99,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 450,
        "hours_left": 450,
        "days_left": 90,
        "day_hours": 5.0,
-       "day_p05": 67.8,
+       "day_p05": 68.71,
        "day_p95": 151.63,
        "widen": [
         2.99,
         4.6
        ],
-       "risk_long": 163.7,
-       "risk_short": 255.5
+       "risk_long": 159.2,
+       "risk_short": 255.4
       },
       "cap300": {
        "mean": 0.15,
@@ -1893,92 +1893,92 @@
    ],
    "calibration": {
     "month_base": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.308,
-     "cov90": 0.622,
-     "k50": 1.82,
-     "k90": 1.72,
-     "oos_n": 133,
-     "oos_cov50": 0.617,
-     "oos_cov90": 0.962,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.304,
+     "cov90": 0.608,
+     "k50": 1.86,
+     "k90": 1.77,
+     "oos_n": 138,
+     "oos_cov50": 0.601,
+     "oos_cov90": 0.942,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.483,
-       "cov90": 0.793,
-       "mae": 3.03,
-       "mae_naive": 2.78
+       "n": 30,
+       "cov50": 0.5,
+       "cov90": 0.8,
+       "mae": 2.94,
+       "mae_naive": 2.76
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.241,
-       "cov90": 0.621,
-       "mae": 8.4,
-       "mae_naive": 9.66
+       "n": 30,
+       "cov50": 0.233,
+       "cov90": 0.6,
+       "mae": 8.39,
+       "mae_naive": 9.36
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.241,
-       "cov90": 0.621,
-       "mae": 12.65,
-       "mae_naive": 15.51
+       "n": 30,
+       "cov50": 0.233,
+       "cov90": 0.6,
+       "mae": 12.7,
+       "mae_naive": 15.13
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.286,
-       "cov90": 0.536,
-       "mae": 22.4,
-       "mae_naive": 25.83
+       "n": 58,
+       "cov50": 0.276,
+       "cov90": 0.517,
+       "mae": 22.73,
+       "mae_naive": 25.68
       }
      ]
     },
     "month_peak": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.287,
-     "cov90": 0.594,
-     "k50": 1.92,
-     "k90": 2.01,
-     "oos_n": 133,
-     "oos_cov50": 0.586,
-     "oos_cov90": 0.94,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.284,
+     "cov90": 0.581,
+     "k50": 1.95,
+     "k90": 2.12,
+     "oos_n": 138,
+     "oos_cov50": 0.572,
+     "oos_cov90": 0.92,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.483,
-       "cov90": 0.862,
-       "mae": 3.74,
-       "mae_naive": 3.55
+       "n": 30,
+       "cov50": 0.5,
+       "cov90": 0.867,
+       "mae": 3.63,
+       "mae_naive": 3.56
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.276,
-       "cov90": 0.586,
-       "mae": 12.08,
-       "mae_naive": 15.92
+       "n": 30,
+       "cov50": 0.267,
+       "cov90": 0.567,
+       "mae": 12.02,
+       "mae_naive": 15.42
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.276,
-       "cov90": 0.586,
-       "mae": 19.05,
-       "mae_naive": 27.43
+       "n": 30,
+       "cov50": 0.267,
+       "cov90": 0.567,
+       "mae": 19.11,
+       "mae_naive": 26.53
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.196,
-       "cov90": 0.464,
-       "mae": 34.98,
-       "mae_naive": 48.34
+       "n": 58,
+       "cov50": 0.19,
+       "cov90": 0.448,
+       "mae": 35.12,
+       "mae_naive": 47.57
       }
      ]
     },
@@ -2075,170 +2075,51 @@
    },
    "weather": {
     "days": 8,
-    "from": "2026-10-31",
-    "to": "2026-11-07",
+    "from": "2026-11-01",
+    "to": "2026-11-08",
     "wind": {
-     "fc": 17.48,
-     "norm": 19.78,
-     "z": -0.46
+     "fc": 17.54,
+     "norm": 19.67,
+     "z": -0.42
     },
     "temp": {
-     "fc": 22.2,
+     "fc": 22.3,
      "norm": 23.0,
-     "z": -0.3
+     "z": -0.26
     },
     "sens_wind": -1.16,
-    "sens_temp": 6.34,
-    "implied": 7.75,
-    "sens_days": 958
+    "sens_temp": 6.37,
+    "implied": 6.94,
+    "sens_days": 959
    },
    "spot": {
-    "day": "2026-11-01",
+    "day": "2026-11-02",
     "spike_freq": 0.267,
     "spike_days": 60,
-    "aemo_avg": 51.5,
-    "aemo_max": 99.3,
+    "aemo_avg": 106.5,
+    "aemo_max": 293.1,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-10-31 19:32"
+    "pd_known_at": "2026-11-01 20:01"
    }
   },
   "SA1": {
-   "asof": "2026-10-30",
-   "last_hour": "2026-10-31 18:00:00",
+   "asof": "2026-10-31",
+   "last_hour": "2026-11-01 19:00:00",
    "contracts": [
     {
      "tag": "当月",
-     "label": "Oct 26",
-     "kind": "month",
-     "start": "2026-10-01",
-     "end": "2026-10-31",
-     "products": {
-      "base": {
-       "mean": 51.7,
-       "p5": 44.98,
-       "p25": 50.36,
-       "p50": 51.78,
-       "p75": 52.83,
-       "p95": 58.77,
-       "settled_share": 0.968,
-       "settled_avg": 51.65,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": -10.48,
-       "day_p95": 120.09,
-       "widen": [
-        1.47,
-        3.26
-       ],
-       "risk_long": 1492.3,
-       "risk_short": 1641.4
-      },
-      "peak": {
-       "mean": 36.24,
-       "p5": 36.24,
-       "p25": 36.24,
-       "p50": 36.24,
-       "p75": 36.24,
-       "p95": 36.24,
-       "settled_share": 1.0,
-       "settled_avg": 36.24,
-       "hours_total": 330,
-       "hours_left": 0,
-       "days_left": 1,
-       "day_hours": 15.0,
-       "day_p05": -5.71,
-       "day_p95": 129.18,
-       "widen": [
-        1.5,
-        3.5
-       ],
-       "risk_long": 629.2,
-       "risk_short": 1394.1
-      },
-      "morning": {
-       "mean": 39.81,
-       "p5": 31.86,
-       "p25": 37.96,
-       "p50": 39.89,
-       "p75": 41.05,
-       "p95": 52.06,
-       "settled_share": 0.968,
-       "settled_avg": 39.41,
-       "hours_total": 93,
-       "hours_left": 3,
-       "days_left": 1,
-       "day_hours": 3.0,
-       "day_p05": -17.66,
-       "day_p95": 159.9,
-       "widen": [
-        1.5,
-        3.5
-       ],
-       "risk_long": 172.4,
-       "risk_short": 360.3
-      },
-      "evening": {
-       "mean": 76.68,
-       "p5": 68.38,
-       "p25": 75.42,
-       "p50": 76.82,
-       "p75": 77.93,
-       "p95": 83.61,
-       "settled_share": 0.968,
-       "settled_avg": 76.58,
-       "hours_total": 155,
-       "hours_left": 5,
-       "days_left": 1,
-       "day_hours": 5.0,
-       "day_p05": 10.38,
-       "day_p95": 140.78,
-       "widen": [
-        1.5,
-        3.5
-       ],
-       "risk_long": 331.5,
-       "risk_short": 320.5
-      },
-      "cap300": {
-       "mean": 0.16,
-       "p5": 0.16,
-       "p25": 0.16,
-       "p50": 0.16,
-       "p75": 0.16,
-       "p95": 0.16,
-       "settled_share": 0.968,
-       "settled_avg": 0.17,
-       "hours_total": 744,
-       "hours_left": 24,
-       "days_left": 1,
-       "day_hours": 24.0,
-       "day_p05": 0.0,
-       "day_p95": 0.0,
-       "widen": [
-        1.5,
-        3.5
-       ],
-       "risk_long": 3.8,
-       "risk_short": 0.0
-      }
-     }
-    },
-    {
-     "tag": "下月",
      "label": "Nov 26",
      "kind": "month",
      "start": "2026-11-01",
      "end": "2026-11-30",
      "products": {
       "base": {
-       "mean": 54.34,
-       "p5": 2.86,
-       "p25": 44.71,
-       "p50": 54.27,
-       "p75": 64.09,
-       "p95": 107.12,
+       "mean": 53.86,
+       "p5": 2.7,
+       "p25": 44.2,
+       "p50": 53.56,
+       "p75": 63.11,
+       "p95": 106.8,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
@@ -2249,18 +2130,18 @@
        "day_p95": 120.09,
        "widen": [
         1.47,
-        3.26
+        3.24
        ],
-       "risk_long": 1555.7,
-       "risk_short": 1578.0
+       "risk_long": 1544.2,
+       "risk_short": 1589.5
       },
       "peak": {
-       "mean": 42.6,
-       "p5": -29.88,
-       "p25": 29.5,
-       "p50": 42.47,
-       "p75": 55.45,
-       "p95": 117.6,
+       "mean": 41.66,
+       "p5": -27.39,
+       "p25": 28.73,
+       "p50": 41.22,
+       "p75": 54.29,
+       "p95": 114.45,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 315,
@@ -2271,18 +2152,18 @@
        "day_p95": 129.18,
        "widen": [
         1.5,
-        3.5
+        3.37
        ],
-       "risk_long": 724.7,
-       "risk_short": 1298.7
+       "risk_long": 710.5,
+       "risk_short": 1312.8
       },
       "morning": {
-       "mean": 52.63,
-       "p5": -9.67,
-       "p25": 41.12,
-       "p50": 52.54,
-       "p75": 63.62,
-       "p95": 119.06,
+       "mean": 51.88,
+       "p5": -9.08,
+       "p25": 40.3,
+       "p50": 51.55,
+       "p75": 63.58,
+       "p95": 115.71,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 90,
@@ -2293,18 +2174,18 @@
        "day_p95": 159.9,
        "widen": [
         1.5,
-        3.5
+        3.37
        ],
-       "risk_long": 210.9,
-       "risk_short": 321.8
+       "risk_long": 208.6,
+       "risk_short": 324.1
       },
       "evening": {
-       "mean": 80.7,
-       "p5": 26.56,
-       "p25": 70.65,
-       "p50": 80.63,
-       "p75": 90.8,
-       "p95": 137.02,
+       "mean": 80.09,
+       "p5": 27.75,
+       "p25": 70.44,
+       "p50": 79.91,
+       "p75": 89.61,
+       "p95": 134.38,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 150,
@@ -2315,10 +2196,10 @@
        "day_p95": 140.78,
        "widen": [
         1.5,
-        3.5
+        3.37
        ],
-       "risk_long": 351.6,
-       "risk_short": 300.4
+       "risk_long": 348.6,
+       "risk_short": 303.4
       },
       "cap300": {
        "mean": 0.06,
@@ -2326,7 +2207,7 @@
        "p25": 0.0,
        "p50": 0.0,
        "p75": 0.23,
-       "p95": 0.45,
+       "p95": 0.43,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 720,
@@ -2337,7 +2218,126 @@
        "day_p95": 0.0,
        "widen": [
         1.5,
-        3.5
+        3.37
+       ],
+       "risk_long": 1.4,
+       "risk_short": 0.0
+      }
+     }
+    },
+    {
+     "tag": "下月",
+     "label": "Dec 26",
+     "kind": "month",
+     "start": "2026-12-01",
+     "end": "2026-12-31",
+     "products": {
+      "base": {
+       "mean": 53.91,
+       "p5": 4.24,
+       "p25": 44.21,
+       "p50": 53.68,
+       "p75": 63.08,
+       "p95": 107.05,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": -10.48,
+       "day_p95": 120.09,
+       "widen": [
+        1.47,
+        3.24
+       ],
+       "risk_long": 1545.4,
+       "risk_short": 1588.3
+      },
+      "peak": {
+       "mean": 41.82,
+       "p5": -25.31,
+       "p25": 29.18,
+       "p50": 41.53,
+       "p75": 54.14,
+       "p95": 113.8,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 345,
+       "hours_left": 345,
+       "days_left": 31,
+       "day_hours": 15.0,
+       "day_p05": -5.71,
+       "day_p95": 129.18,
+       "widen": [
+        1.5,
+        3.37
+       ],
+       "risk_long": 713.0,
+       "risk_short": 1310.4
+      },
+      "morning": {
+       "mean": 52.01,
+       "p5": -8.08,
+       "p25": 40.82,
+       "p50": 51.87,
+       "p75": 62.78,
+       "p95": 114.93,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 93,
+       "hours_left": 93,
+       "days_left": 31,
+       "day_hours": 3.0,
+       "day_p05": -17.66,
+       "day_p95": 159.9,
+       "widen": [
+        1.5,
+        3.37
+       ],
+       "risk_long": 209.0,
+       "risk_short": 323.7
+      },
+      "evening": {
+       "mean": 80.14,
+       "p5": 30.03,
+       "p25": 70.47,
+       "p50": 79.88,
+       "p75": 89.47,
+       "p95": 133.86,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 155,
+       "hours_left": 155,
+       "days_left": 31,
+       "day_hours": 5.0,
+       "day_p05": 10.38,
+       "day_p95": 140.78,
+       "widen": [
+        1.5,
+        3.37
+       ],
+       "risk_long": 348.8,
+       "risk_short": 303.2
+      },
+      "cap300": {
+       "mean": 0.06,
+       "p5": 0.0,
+       "p25": 0.0,
+       "p50": 0.0,
+       "p75": 0.21,
+       "p95": 0.4,
+       "settled_share": 0.0,
+       "settled_avg": null,
+       "hours_total": 744,
+       "hours_left": 744,
+       "days_left": 31,
+       "day_hours": 24.0,
+       "day_p05": 0.0,
+       "day_p95": 0.0,
+       "widen": [
+        1.5,
+        3.37
        ],
        "risk_long": 1.4,
        "risk_short": 0.0
@@ -2352,17 +2352,17 @@
      "end": "2026-12-31",
      "products": {
       "base": {
-       "mean": 53.48,
-       "p5": 13.23,
-       "p25": 45.18,
-       "p50": 53.43,
-       "p75": 61.81,
-       "p95": 93.89,
-       "settled_share": 0.326,
-       "settled_avg": 51.65,
+       "mean": 52.52,
+       "p5": 13.07,
+       "p25": 43.78,
+       "p50": 52.41,
+       "p75": 60.87,
+       "p95": 94.36,
+       "settled_share": 0.337,
+       "settled_avg": 49.7,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": -10.48,
        "day_p95": 120.09,
@@ -2370,21 +2370,21 @@
         2.73,
         5.31
        ],
-       "risk_long": 1535.0,
-       "risk_short": 1598.6
+       "risk_long": 1512.0,
+       "risk_short": 1621.7
       },
       "peak": {
-       "mean": 40.38,
-       "p5": -11.92,
-       "p25": 29.63,
-       "p50": 40.41,
-       "p75": 51.05,
-       "p95": 92.9,
+       "mean": 39.82,
+       "p5": -12.11,
+       "p25": 28.49,
+       "p50": 39.79,
+       "p75": 50.57,
+       "p95": 94.76,
        "settled_share": 0.333,
        "settled_avg": 36.24,
        "hours_total": 990,
        "hours_left": 660,
-       "days_left": 62,
+       "days_left": 61,
        "day_hours": 15.0,
        "day_p05": -5.71,
        "day_p95": 129.18,
@@ -2392,21 +2392,21 @@
         2.61,
         5.37
        ],
-       "risk_long": 691.4,
-       "risk_short": 1332.0
+       "risk_long": 683.0,
+       "risk_short": 1340.4
       },
       "morning": {
-       "mean": 48.28,
-       "p5": 2.8,
-       "p25": 38.99,
-       "p50": 48.18,
-       "p75": 57.39,
-       "p95": 95.97,
-       "settled_share": 0.326,
-       "settled_avg": 39.41,
+       "mean": 47.38,
+       "p5": 0.82,
+       "p25": 38.04,
+       "p50": 47.27,
+       "p75": 56.36,
+       "p95": 95.44,
+       "settled_share": 0.337,
+       "settled_avg": 38.38,
        "hours_total": 276,
-       "hours_left": 186,
-       "days_left": 62,
+       "hours_left": 183,
+       "days_left": 61,
        "day_hours": 3.0,
        "day_p05": -17.66,
        "day_p95": 159.9,
@@ -2414,21 +2414,21 @@
         2.61,
         5.37
        ],
-       "risk_long": 197.8,
-       "risk_short": 334.9
+       "risk_long": 195.1,
+       "risk_short": 337.6
       },
       "evening": {
-       "mean": 79.36,
-       "p5": 39.35,
-       "p25": 71.4,
-       "p50": 79.36,
-       "p75": 87.29,
-       "p95": 118.99,
-       "settled_share": 0.326,
-       "settled_avg": 76.58,
+       "mean": 78.33,
+       "p5": 39.08,
+       "p25": 70.42,
+       "p50": 78.14,
+       "p75": 86.11,
+       "p95": 119.14,
+       "settled_share": 0.337,
+       "settled_avg": 74.73,
        "hours_total": 460,
-       "hours_left": 310,
-       "days_left": 62,
+       "hours_left": 305,
+       "days_left": 61,
        "day_hours": 5.0,
        "day_p05": 10.38,
        "day_p95": 140.78,
@@ -2436,8 +2436,8 @@
         2.61,
         5.37
        ],
-       "risk_long": 344.9,
-       "risk_short": 307.1
+       "risk_long": 339.8,
+       "risk_short": 312.2
       },
       "cap300": {
        "mean": 0.09,
@@ -2446,11 +2446,11 @@
        "p50": 0.11,
        "p75": 0.14,
        "p95": 0.47,
-       "settled_share": 0.326,
-       "settled_avg": 0.17,
+       "settled_share": 0.337,
+       "settled_avg": 0.16,
        "hours_total": 2208,
-       "hours_left": 1488,
-       "days_left": 62,
+       "hours_left": 1464,
+       "days_left": 61,
        "day_hours": 24.0,
        "day_p05": 0.0,
        "day_p95": 0.0,
@@ -2471,12 +2471,12 @@
      "end": "2027-03-31",
      "products": {
       "base": {
-       "mean": 54.38,
-       "p5": 5.21,
-       "p25": 44.06,
-       "p50": 54.32,
-       "p75": 64.62,
-       "p95": 103.82,
+       "mean": 54.02,
+       "p5": 5.27,
+       "p25": 43.51,
+       "p50": 53.93,
+       "p75": 64.64,
+       "p95": 104.2,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 2160,
@@ -2489,16 +2489,16 @@
         2.73,
         5.31
        ],
-       "risk_long": 1556.6,
-       "risk_short": 1577.0
+       "risk_long": 1548.0,
+       "risk_short": 1585.7
       },
       "peak": {
-       "mean": 42.6,
-       "p5": -21.03,
-       "p25": 29.39,
-       "p50": 42.55,
-       "p75": 55.34,
-       "p95": 108.01,
+       "mean": 41.79,
+       "p5": -23.72,
+       "p25": 28.3,
+       "p50": 41.76,
+       "p75": 54.34,
+       "p95": 107.84,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 960,
@@ -2511,16 +2511,16 @@
         2.61,
         5.37
        ],
-       "risk_long": 724.7,
-       "risk_short": 1298.7
+       "risk_long": 712.5,
+       "risk_short": 1310.9
       },
       "morning": {
-       "mean": 52.55,
-       "p5": -3.14,
-       "p25": 41.3,
-       "p50": 52.45,
-       "p75": 63.64,
-       "p95": 110.38,
+       "mean": 52.01,
+       "p5": -4.75,
+       "p25": 40.37,
+       "p50": 51.93,
+       "p75": 63.21,
+       "p95": 110.65,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 270,
@@ -2533,16 +2533,16 @@
         2.61,
         5.37
        ],
-       "risk_long": 210.6,
-       "risk_short": 322.1
+       "risk_long": 209.0,
+       "risk_short": 323.7
       },
       "evening": {
-       "mean": 80.75,
-       "p5": 31.61,
-       "p25": 70.65,
-       "p50": 80.84,
-       "p75": 90.62,
-       "p95": 130.69,
+       "mean": 80.22,
+       "p5": 30.76,
+       "p25": 69.99,
+       "p50": 80.16,
+       "p75": 90.19,
+       "p95": 130.91,
        "settled_share": 0.0,
        "settled_avg": null,
        "hours_total": 450,
@@ -2555,8 +2555,8 @@
         2.61,
         5.37
        ],
-       "risk_long": 351.9,
-       "risk_short": 300.1
+       "risk_long": 349.2,
+       "risk_short": 302.8
       },
       "cap300": {
        "mean": 0.06,
@@ -2585,92 +2585,92 @@
    ],
    "calibration": {
     "month_base": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.364,
-     "cov90": 0.608,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.358,
+     "cov90": 0.615,
      "k50": 1.47,
-     "k90": 3.26,
-     "oos_n": 133,
-     "oos_cov50": 0.602,
-     "oos_cov90": 0.895,
+     "k90": 3.24,
+     "oos_n": 138,
+     "oos_cov50": 0.601,
+     "oos_cov90": 0.899,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.448,
-       "cov90": 0.862,
-       "mae": 6.23,
-       "mae_naive": 5.55
+       "n": 30,
+       "cov50": 0.433,
+       "cov90": 0.867,
+       "mae": 6.12,
+       "mae_naive": 5.46
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.379,
-       "cov90": 0.655,
-       "mae": 22.29,
-       "mae_naive": 21.15
+       "n": 30,
+       "cov50": 0.4,
+       "cov90": 0.667,
+       "mae": 21.55,
+       "mae_naive": 20.6
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.379,
-       "cov90": 0.517,
-       "mae": 32.02,
-       "mae_naive": 30.03
+       "n": 30,
+       "cov50": 0.367,
+       "cov90": 0.533,
+       "mae": 31.23,
+       "mae_naive": 29.06
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.304,
+       "n": 58,
+       "cov50": 0.293,
        "cov90": 0.5,
-       "mae": 48.83,
-       "mae_naive": 53.08
+       "mae": 47.84,
+       "mae_naive": 52.27
       }
      ]
     },
     "month_peak": {
-     "n": 143,
-     "periods": 29,
-     "cov50": 0.343,
-     "cov90": 0.629,
+     "n": 148,
+     "periods": 30,
+     "cov50": 0.338,
+     "cov90": 0.628,
      "k50": 1.5,
-     "k90": 3.5,
-     "oos_n": 133,
-     "oos_cov50": 0.579,
-     "oos_cov90": 0.88,
+     "k90": 3.37,
+     "oos_n": 138,
+     "oos_cov50": 0.572,
+     "oos_cov90": 0.884,
      "by_left": [
       {
        "bucket": "剩 ≤25%",
-       "n": 29,
-       "cov50": 0.552,
-       "cov90": 0.931,
-       "mae": 8.6,
-       "mae_naive": 8.3
+       "n": 30,
+       "cov50": 0.533,
+       "cov90": 0.933,
+       "mae": 8.42,
+       "mae_naive": 8.12
       },
       {
        "bucket": "剩 25–50%",
-       "n": 29,
-       "cov50": 0.414,
-       "cov90": 0.655,
-       "mae": 34.69,
-       "mae_naive": 31.93
+       "n": 30,
+       "cov50": 0.433,
+       "cov90": 0.667,
+       "mae": 33.68,
+       "mae_naive": 30.88
       },
       {
        "bucket": "剩 50–75%",
-       "n": 29,
-       "cov50": 0.345,
-       "cov90": 0.517,
-       "mae": 47.46,
-       "mae_naive": 42.04
+       "n": 30,
+       "cov50": 0.333,
+       "cov90": 0.533,
+       "mae": 46.22,
+       "mae_naive": 40.66
       },
       {
        "bucket": "剩 75–100%",
-       "n": 56,
-       "cov50": 0.196,
-       "cov90": 0.518,
-       "mae": 73.47,
-       "mae_naive": 85.39
+       "n": 58,
+       "cov50": 0.19,
+       "cov90": 0.5,
+       "mae": 71.85,
+       "mae_naive": 83.23
       }
      ]
     },
@@ -2767,31 +2767,31 @@
    },
    "weather": {
     "days": 8,
-    "from": "2026-10-31",
-    "to": "2026-11-07",
+    "from": "2026-11-01",
+    "to": "2026-11-08",
     "wind": {
-     "fc": 22.19,
-     "norm": 22.12,
-     "z": 0.02
+     "fc": 24.87,
+     "norm": 22.26,
+     "z": 0.4
     },
     "temp": {
      "fc": 20.7,
-     "norm": 20.7,
-     "z": 0.02
+     "norm": 20.8,
+     "z": -0.01
     },
     "sens_wind": -6.22,
-    "sens_temp": 6.05,
-    "implied": -0.44,
-    "sens_days": 958
+    "sens_temp": 6.04,
+    "implied": -15.64,
+    "sens_days": 959
    },
    "spot": {
-    "day": "2026-11-01",
+    "day": "2026-11-02",
     "spike_freq": 0.017,
     "spike_days": 60,
-    "aemo_avg": 59.9,
-    "aemo_max": 138.0,
+    "aemo_avg": 97.5,
+    "aemo_max": 273.9,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-10-31 19:32"
+    "pd_known_at": "2026-11-01 20:01"
    }
   }
  }
