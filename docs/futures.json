@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-05 10:40",
+ "generated_at": "2026-11-05 10:59",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -28,7 +28,7 @@
  "regions": {
   "NSW1": {
    "asof": "2026-11-04",
-   "last_hour": "2026-11-05 19:00:00",
+   "last_hour": "2026-11-05 20:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -703,9 +703,9 @@
      "norm": 20.6,
      "z": -0.53
     },
-    "sens_wind": -2.55,
-    "sens_temp": 1.93,
-    "implied": 0.32,
+    "sens_wind": -2.58,
+    "sens_temp": 1.8,
+    "implied": 0.06,
     "sens_days": 963
    },
    "spot": {
@@ -720,7 +720,7 @@
   },
   "VIC1": {
    "asof": "2026-11-04",
-   "last_hour": "2026-11-05 19:00:00",
+   "last_hour": "2026-11-05 20:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -1397,7 +1397,7 @@
     },
     "sens_wind": -5.69,
     "sens_temp": 2.16,
-    "implied": -3.49,
+    "implied": -3.48,
     "sens_days": 963
    },
    "spot": {
@@ -1412,7 +1412,7 @@
   },
   "QLD1": {
    "asof": "2026-11-04",
-   "last_hour": "2026-11-05 19:00:00",
+   "last_hour": "2026-11-05 20:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -2089,7 +2089,7 @@
     },
     "sens_wind": -1.17,
     "sens_temp": 6.45,
-    "implied": 7.64,
+    "implied": 7.63,
     "sens_days": 963
    },
    "spot": {
@@ -2104,7 +2104,7 @@
   },
   "SA1": {
    "asof": "2026-11-04",
-   "last_hour": "2026-11-05 19:00:00",
+   "last_hour": "2026-11-05 20:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -2780,7 +2780,7 @@
      "z": -0.43
     },
     "sens_wind": -6.22,
-    "sens_temp": 6.0,
+    "sens_temp": 6.01,
     "implied": -14.91,
     "sens_days": 963
    },
