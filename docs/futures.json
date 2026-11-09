@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-09 11:35",
+ "generated_at": "2026-11-09 11:51",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -28,7 +28,7 @@
  "regions": {
   "NSW1": {
    "asof": "2026-11-08",
-   "last_hour": "2026-11-09 20:00:00",
+   "last_hour": "2026-11-09 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -704,23 +704,23 @@
      "z": 0.43
     },
     "sens_wind": -2.49,
-    "sens_temp": 1.63,
-    "implied": 7.41,
+    "sens_temp": 1.78,
+    "implied": 7.62,
     "sens_days": 967
    },
    "spot": {
     "day": "2026-11-10",
     "spike_freq": 0.265,
     "spike_days": 68,
-    "aemo_avg": 75.7,
-    "aemo_max": 224.7,
+    "aemo_avg": 71.3,
+    "aemo_max": 198.5,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-09 21:02"
+    "pd_known_at": "2026-11-09 21:32"
    }
   },
   "VIC1": {
    "asof": "2026-11-08",
-   "last_hour": "2026-11-09 20:00:00",
+   "last_hour": "2026-11-09 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -1404,15 +1404,15 @@
     "day": "2026-11-10",
     "spike_freq": 0.0,
     "spike_days": 68,
-    "aemo_avg": 71.1,
-    "aemo_max": 221.7,
+    "aemo_avg": 65.9,
+    "aemo_max": 204.5,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-09 21:02"
+    "pd_known_at": "2026-11-09 21:32"
    }
   },
   "QLD1": {
    "asof": "2026-11-08",
-   "last_hour": "2026-11-09 20:00:00",
+   "last_hour": "2026-11-09 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -2096,15 +2096,15 @@
     "day": "2026-11-10",
     "spike_freq": 0.235,
     "spike_days": 68,
-    "aemo_avg": 71.0,
-    "aemo_max": 222.9,
+    "aemo_avg": 67.0,
+    "aemo_max": 198.6,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-09 21:02"
+    "pd_known_at": "2026-11-09 21:32"
    }
   },
   "SA1": {
    "asof": "2026-11-08",
-   "last_hour": "2026-11-09 20:00:00",
+   "last_hour": "2026-11-09 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -2788,10 +2788,10 @@
     "day": "2026-11-10",
     "spike_freq": 0.015,
     "spike_days": 68,
-    "aemo_avg": 62.7,
-    "aemo_max": 219.7,
+    "aemo_avg": 51.1,
+    "aemo_max": 138.0,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-09 21:02"
+    "pd_known_at": "2026-11-09 21:32"
    }
   }
  }
