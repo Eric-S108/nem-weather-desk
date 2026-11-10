@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-10 10:59",
+ "generated_at": "2026-11-10 11:15",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -694,28 +694,28 @@
     "from": "2026-11-10",
     "to": "2026-11-17",
     "wind": {
-     "fc": 22.46,
+     "fc": 22.39,
      "norm": 20.66,
-     "z": 0.33
+     "z": 0.31
     },
     "temp": {
-     "fc": 23.0,
+     "fc": 22.9,
      "norm": 21.5,
-     "z": 0.47
+     "z": 0.46
     },
-    "sens_wind": -2.48,
-    "sens_temp": 1.44,
-    "implied": -2.29,
+    "sens_wind": -2.44,
+    "sens_temp": 1.48,
+    "implied": -2.16,
     "sens_days": 968
    },
    "spot": {
     "day": "2026-11-11",
     "spike_freq": 0.261,
     "spike_days": 69,
-    "aemo_avg": 98.5,
-    "aemo_max": 178.6,
+    "aemo_avg": 101.6,
+    "aemo_max": 184.5,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-10 20:31"
+    "pd_known_at": "2026-11-10 21:01"
    }
   },
   "VIC1": {
@@ -1386,28 +1386,28 @@
     "from": "2026-11-10",
     "to": "2026-11-17",
     "wind": {
-     "fc": 22.21,
+     "fc": 22.18,
      "norm": 22.05,
-     "z": 0.01
+     "z": 0.0
     },
     "temp": {
-     "fc": 19.5,
+     "fc": 19.4,
      "norm": 19.3,
-     "z": 0.07
+     "z": 0.05
     },
     "sens_wind": -5.68,
     "sens_temp": 2.14,
-    "implied": -0.48,
+    "implied": -0.52,
     "sens_days": 968
    },
    "spot": {
     "day": "2026-11-11",
     "spike_freq": 0.0,
     "spike_days": 69,
-    "aemo_avg": 60.0,
-    "aemo_max": 245.1,
+    "aemo_avg": 67.6,
+    "aemo_max": 293.9,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-10 20:31"
+    "pd_known_at": "2026-11-10 21:01"
    }
   },
   "QLD1": {
@@ -2096,10 +2096,10 @@
     "day": "2026-11-11",
     "spike_freq": 0.232,
     "spike_days": 69,
-    "aemo_avg": 94.6,
-    "aemo_max": 190.4,
+    "aemo_avg": 98.0,
+    "aemo_max": 187.5,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-10 20:31"
+    "pd_known_at": "2026-11-10 21:01"
    }
   },
   "SA1": {
@@ -2788,10 +2788,10 @@
     "day": "2026-11-11",
     "spike_freq": 0.029,
     "spike_days": 69,
-    "aemo_avg": 67.2,
-    "aemo_max": 569.6,
+    "aemo_avg": 266.5,
+    "aemo_max": 4812.0,
     "aemo_hours_over_300": 2,
-    "pd_known_at": "2026-11-10 20:31"
+    "pd_known_at": "2026-11-10 21:01"
    }
   }
  }
