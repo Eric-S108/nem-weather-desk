@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-12 10:53",
+ "generated_at": "2026-11-12 11:10",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -694,28 +694,28 @@
     "from": "2026-11-12",
     "to": "2026-11-19",
     "wind": {
-     "fc": 19.64,
+     "fc": 19.66,
      "norm": 20.77,
      "z": -0.23
     },
     "temp": {
-     "fc": 22.3,
+     "fc": 22.2,
      "norm": 21.8,
-     "z": 0.17
+     "z": 0.14
     },
-    "sens_wind": -2.45,
-    "sens_temp": 1.64,
-    "implied": 3.6,
+    "sens_wind": -2.47,
+    "sens_temp": 1.83,
+    "implied": 3.48,
     "sens_days": 970
    },
    "spot": {
     "day": "2026-11-13",
     "spike_freq": 0.254,
     "spike_days": 71,
-    "aemo_avg": 210.9,
-    "aemo_max": 468.8,
+    "aemo_avg": 214.8,
+    "aemo_max": 587.2,
     "aemo_hours_over_300": 6,
-    "pd_known_at": "2026-11-12 20:31"
+    "pd_known_at": "2026-11-12 21:01"
    }
   },
   "VIC1": {
@@ -1386,28 +1386,28 @@
     "from": "2026-11-12",
     "to": "2026-11-19",
     "wind": {
-     "fc": 19.49,
+     "fc": 19.28,
      "norm": 21.97,
-     "z": -0.39
+     "z": -0.43
     },
     "temp": {
      "fc": 19.6,
      "norm": 19.5,
-     "z": 0.02
+     "z": 0.01
     },
     "sens_wind": -5.68,
     "sens_temp": 2.13,
-    "implied": 14.29,
+    "implied": 15.48,
     "sens_days": 970
    },
    "spot": {
     "day": "2026-11-13",
     "spike_freq": 0.0,
     "spike_days": 71,
-    "aemo_avg": 343.8,
-    "aemo_max": 971.3,
-    "aemo_hours_over_300": 8,
-    "pd_known_at": "2026-11-12 20:31"
+    "aemo_avg": 424.9,
+    "aemo_max": 1443.9,
+    "aemo_hours_over_300": 9,
+    "pd_known_at": "2026-11-12 21:01"
    }
   },
   "QLD1": {
@@ -2078,28 +2078,28 @@
     "from": "2026-11-12",
     "to": "2026-11-19",
     "wind": {
-     "fc": 20.07,
+     "fc": 20.04,
      "norm": 20.02,
      "z": 0.02
     },
     "temp": {
      "fc": 22.0,
      "norm": 23.3,
-     "z": -0.51
+     "z": -0.53
     },
     "sens_wind": -1.13,
     "sens_temp": 6.45,
-    "implied": 8.33,
+    "implied": 8.36,
     "sens_days": 970
    },
    "spot": {
     "day": "2026-11-13",
     "spike_freq": 0.225,
     "spike_days": 71,
-    "aemo_avg": 178.7,
-    "aemo_max": 408.0,
+    "aemo_avg": 181.9,
+    "aemo_max": 502.5,
     "aemo_hours_over_300": 2,
-    "pd_known_at": "2026-11-12 20:31"
+    "pd_known_at": "2026-11-12 21:01"
    }
   },
   "SA1": {
@@ -2770,9 +2770,9 @@
     "from": "2026-11-12",
     "to": "2026-11-19",
     "wind": {
-     "fc": 22.14,
+     "fc": 22.05,
      "norm": 22.18,
-     "z": 0.0
+     "z": -0.01
     },
     "temp": {
      "fc": 19.6,
@@ -2781,17 +2781,17 @@
     },
     "sens_wind": -6.18,
     "sens_temp": 6.04,
-    "implied": 11.72,
+    "implied": 12.28,
     "sens_days": 970
    },
    "spot": {
     "day": "2026-11-13",
     "spike_freq": 0.028,
     "spike_days": 71,
-    "aemo_avg": 458.0,
-    "aemo_max": 1504.4,
-    "aemo_hours_over_300": 11,
-    "pd_known_at": "2026-11-12 20:31"
+    "aemo_avg": 580.3,
+    "aemo_max": 2067.3,
+    "aemo_hours_over_300": 12,
+    "pd_known_at": "2026-11-12 21:01"
    }
   }
  }
