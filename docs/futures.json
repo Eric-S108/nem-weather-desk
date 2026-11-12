@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-12 11:10",
+ "generated_at": "2026-11-12 11:32",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -703,9 +703,9 @@
      "norm": 21.8,
      "z": 0.14
     },
-    "sens_wind": -2.47,
+    "sens_wind": -2.48,
     "sens_temp": 1.83,
-    "implied": 3.48,
+    "implied": 3.49,
     "sens_days": 970
    },
    "spot": {
