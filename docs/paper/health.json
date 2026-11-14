@@ -1,35 +1,35 @@
 {
- "checked_at": "2026-11-13 11:16",
+ "checked_at": "2026-11-14 10:03",
  "ci": true,
- "target_day": "2026-11-14",
+ "target_day": "2026-11-15",
  "regions": {
   "NSW1": {
-   "price_lag_h": 1.3,
-   "predispatch_hours": 22,
+   "price_lag_h": 1.1,
+   "predispatch_hours": 23,
    "weather_hours": 24,
    "level": "warn"
   },
   "QLD1": {
-   "price_lag_h": 1.3,
-   "predispatch_hours": 22,
+   "price_lag_h": 1.1,
+   "predispatch_hours": 23,
    "weather_hours": 24,
    "level": "warn"
   },
   "VIC1": {
-   "price_lag_h": 1.3,
-   "predispatch_hours": 22,
+   "price_lag_h": 1.1,
+   "predispatch_hours": 23,
    "weather_hours": 24,
    "level": "warn"
   },
   "SA1": {
-   "price_lag_h": 1.3,
-   "predispatch_hours": 22,
+   "price_lag_h": 1.1,
+   "predispatch_hours": 23,
    "weather_hours": 24,
    "level": "warn"
   },
   "TAS1": {
-   "price_lag_h": 1.3,
-   "predispatch_hours": 22,
+   "price_lag_h": 1.1,
+   "predispatch_hours": 23,
    "weather_hours": 24,
    "level": "warn"
   }
