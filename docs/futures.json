@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-20 11:16",
+ "generated_at": "2026-11-20 12:30",
  "pool_days": 90,
  "block": 3,
  "n_sims": 4000,
@@ -28,7 +28,7 @@
  "regions": {
   "NSW1": {
    "asof": "2026-11-19",
-   "last_hour": "2026-11-20 20:00:00",
+   "last_hour": "2026-11-20 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -694,33 +694,33 @@
     "from": "2026-11-20",
     "to": "2026-11-27",
     "wind": {
-     "fc": 21.77,
+     "fc": 21.84,
      "norm": 20.16,
-     "z": 0.33
+     "z": 0.35
     },
     "temp": {
-     "fc": 22.3,
+     "fc": 22.2,
      "norm": 22.6,
-     "z": -0.13
+     "z": -0.14
     },
-    "sens_wind": -2.44,
-    "sens_temp": 1.86,
-    "implied": -3.37,
+    "sens_wind": -2.46,
+    "sens_temp": 1.67,
+    "implied": -3.46,
     "sens_days": 978
    },
    "spot": {
     "day": "2026-11-21",
     "spike_freq": 0.228,
     "spike_days": 79,
-    "aemo_avg": 130.1,
+    "aemo_avg": 129.8,
     "aemo_max": 233.1,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-20 21:01"
+    "pd_known_at": "2026-11-20 22:01"
    }
   },
   "VIC1": {
    "asof": "2026-11-19",
-   "last_hour": "2026-11-20 20:00:00",
+   "last_hour": "2026-11-20 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -1386,33 +1386,33 @@
     "from": "2026-11-20",
     "to": "2026-11-27",
     "wind": {
-     "fc": 17.81,
+     "fc": 17.93,
      "norm": 21.23,
-     "z": -0.54
+     "z": -0.52
     },
     "temp": {
      "fc": 21.4,
      "norm": 20.5,
-     "z": 0.24
+     "z": 0.23
     },
     "sens_wind": -5.69,
     "sens_temp": 2.09,
-    "implied": 21.35,
+    "implied": 20.67,
     "sens_days": 978
    },
    "spot": {
     "day": "2026-11-21",
     "spike_freq": 0.013,
     "spike_days": 79,
-    "aemo_avg": 522.4,
-    "aemo_max": 5539.5,
+    "aemo_avg": 648.8,
+    "aemo_max": 7753.7,
     "aemo_hours_over_300": 3,
-    "pd_known_at": "2026-11-20 21:01"
+    "pd_known_at": "2026-11-20 22:01"
    }
   },
   "QLD1": {
    "asof": "2026-11-19",
-   "last_hour": "2026-11-20 20:00:00",
+   "last_hour": "2026-11-20 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -2078,33 +2078,33 @@
     "from": "2026-11-20",
     "to": "2026-11-27",
     "wind": {
-     "fc": 16.33,
+     "fc": 16.27,
      "norm": 18.88,
-     "z": -0.57
+     "z": -0.58
     },
     "temp": {
-     "fc": 22.4,
+     "fc": 22.3,
      "norm": 23.5,
-     "z": -0.45
+     "z": -0.47
     },
     "sens_wind": -1.14,
     "sens_temp": 6.43,
-    "implied": 9.97,
+    "implied": 10.68,
     "sens_days": 978
    },
    "spot": {
     "day": "2026-11-21",
     "spike_freq": 0.203,
     "spike_days": 79,
-    "aemo_avg": 119.6,
+    "aemo_avg": 119.0,
     "aemo_max": 226.2,
     "aemo_hours_over_300": 0,
-    "pd_known_at": "2026-11-20 21:01"
+    "pd_known_at": "2026-11-20 22:01"
    }
   },
   "SA1": {
    "asof": "2026-11-19",
-   "last_hour": "2026-11-20 20:00:00",
+   "last_hour": "2026-11-20 21:00:00",
    "contracts": [
     {
      "tag": "当月",
@@ -2770,28 +2770,28 @@
     "from": "2026-11-20",
     "to": "2026-11-27",
     "wind": {
-     "fc": 20.09,
+     "fc": 20.32,
      "norm": 21.33,
-     "z": -0.23
+     "z": -0.19
     },
     "temp": {
      "fc": 24.3,
      "norm": 22.3,
-     "z": 0.52
+     "z": 0.51
     },
     "sens_wind": -6.19,
     "sens_temp": 5.98,
-    "implied": 19.65,
+    "implied": 18.22,
     "sens_days": 978
    },
    "spot": {
     "day": "2026-11-21",
     "spike_freq": 0.038,
     "spike_days": 79,
-    "aemo_avg": 783.9,
-    "aemo_max": 8811.9,
+    "aemo_avg": 973.9,
+    "aemo_max": 12100.0,
     "aemo_hours_over_300": 3,
-    "pd_known_at": "2026-11-20 21:01"
+    "pd_known_at": "2026-11-20 22:01"
    }
   }
  }
