@@ -818,7 +818,8 @@ def paper_section(pp: dict | None, rb: dict | None) -> str:
                 cells_p.append(f"<td>{b3:,.0f}</td>")
                 cells_d.append(f'<td class="dir {"up" if up else "dn"}{" flip" if flip else ""}">'
                                f'{"多" if up else "空"}{"*" if flip else ""}</td>')
-            late = "（晚于决策时刻生成，不计成绩）" if lt.get("late") else ""
+            late = ("（目标日开始后才生成，不计成绩）" if lt.get("late") else
+                    "（13:30 之后补算，但只用 13:30 前已公布的信息，在目标日开始前提交）" if lt.get("mode") == "asof" else "")
             strip += f"""
 <div class="fig"><figcaption><h3>{_esc(k)} · {lt['target_day']} 的信号</h3>
 <p>生成于 {_esc(lt.get('generated_at_utc'))} UTC{late}。每小时：AEMO 预调度价、我们的预测（价格 + AEMO + 天气）、方向。

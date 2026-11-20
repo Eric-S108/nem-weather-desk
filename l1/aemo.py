@@ -529,13 +529,30 @@ def _write_predispatch(parts: list[pd.DataFrame], source: str) -> int:
     return store.append("forecast", f, store.new_run_id()) if len(f) else 0
 
 
-def ingest_predispatch_current(hours: int, lead_band=None) -> tuple[int, int]:
-    """Reports/Current 里最近 hours 小时的预调度（每 30 分钟一个文件，约保留 2 天）。
-    只够做增量；历史要用 --predispatch-archive。"""
+def _run_time_nem(url: str) -> pd.Timestamp | None:
+    """PUBLIC_PREDISPATCHIS_202610251300_20261025120106.zip → 这次运行的时刻（NEM）= 第一个 12 位时间戳。"""
+    st = _TS_RE.findall(url.split("/")[-1])
+    if not st:
+        return None
+    t = pd.to_datetime(st[0][:12], format="%Y%m%d%H%M", errors="coerce")
+    return None if pd.isna(t) else t
+
+
+def ingest_predispatch_current(hours: int, lead_band=None,
+                               runs_between: tuple[pd.Timestamp, pd.Timestamp] | None = None) -> tuple[int, int]:
+    """Reports/Current 里的预调度（每 30 分钟一个文件，约保留两周）。
+
+    默认取最近 hours 小时的运行。runs_between=(起, 止)（NEM 时间）时改取运行时刻落在这个区间里的文件——
+    每日任务被 GitHub 推迟到晚上才跑时，靠它拿回决策时刻（13:30）前后的那几次运行。
+    历史要用 --predispatch-archive。"""
     urls = list_zips(CUR_PREDISP)
     if not urls:
         raise AemoError(f"目录里没找到 zip：{CUR_PREDISP}")
-    take = urls[-max(1, hours * 2):]
+    if runs_between is not None:
+        a, b = runs_between
+        take = [u for u in urls if (rt := _run_time_nem(u)) is not None and a <= rt <= b]
+    else:
+        take = urls[-max(1, hours * 2):]
     print(f"  {CUR_PREDISP}\n  共 {len(urls)} 个文件，取最近 {len(take)} 个")
     parts = []
     for u in take:

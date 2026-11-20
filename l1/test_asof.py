@@ -1785,3 +1785,20 @@ def test_hybrid_keeps_our_values_and_aemo_ranking():
     for k in (slice(0, 24), slice(24, 48)):
         assert np.allclose(np.sort(h[k]), np.sort(lv[k]))
         assert (np.argsort(h[k], kind="stable") == np.argsort(a[k], kind="stable")).all()
+
+
+def test_late_trigger_still_produces_asof_signal_classification():
+    """GitHub 的定时触发晚了几个小时：只要在目标日开始前算出，就是 asof（计成绩），
+    目标日开始后才算出的是 late（不计）。天气取决策时刻前已发布的 ECMWF 运行。"""
+    import paper as P
+    import aemo
+    tgt = pd.Timestamp("2026-11-21")
+    tau = P.tau_for(tgt)                                       # 2026-11-20 03:30 UTC
+    assert tau == pd.Timestamp("2026-11-20 03:30")
+    assert P.signal_mode(pd.Timestamp("2026-11-20 03:10"), tgt) == ("live", False)
+    assert P.signal_mode(pd.Timestamp("2026-11-20 11:16"), tgt) == ("asof", False)
+    assert P.signal_mode(pd.Timestamp("2026-11-20 14:05"), tgt) == ("asof", True)
+    runs = P._weather_runs_before(tau)
+    assert runs[0] == pd.Timestamp("2026-11-19 18:00") and runs[1] == pd.Timestamp("2026-11-19 12:00")
+    u = "https://x/PUBLIC_PREDISPATCHIS_202611201300_20261120120106.zip"
+    assert aemo._run_time_nem(u) == pd.Timestamp("2026-11-20 13:00")

@@ -113,6 +113,14 @@ def signal_from_frame(d: pd.DataFrame, target_day, decide_at: str = L.DECIDE_AT_
     return out, "ok"
 
 
+def signal_mode(gen: pd.Timestamp, target_day, decide_at: str = L.DECIDE_AT_NEM) -> tuple[str, bool]:
+    """(mode, late)。live = 决策时刻前算出；asof = 决策时刻后、目标日开始前算出（输入仍按决策时刻 as-of 取）；
+    late = 目标日已经开始才算出，不计成绩。"""
+    tau = tau_for(target_day, decide_at)
+    start = pd.Timestamp(target_day).normalize() - NEM
+    return ("live" if gen <= tau else "asof"), bool(gen >= start)
+
+
 def make_signals(con, target_day, decide_at: str = L.DECIDE_AT_NEM) -> pd.DataFrame:
     gen = now_utc()
     tau = tau_for(target_day, decide_at)
@@ -139,7 +147,10 @@ def make_signals(con, target_day, decide_at: str = L.DECIDE_AT_NEM) -> pd.DataFr
     out = pd.concat(rows, ignore_index=True)
     out["generated_at_utc"] = gen.strftime("%Y-%m-%d %H:%M:%S")
     out["decide_at_utc"] = tau.strftime("%Y-%m-%d %H:%M")
-    out["late"] = bool(gen > tau)
+    # live：在决策时刻之前算出来的；asof：决策时刻之后、目标日开始之前算出来的，
+    # 但所有输入都按 known_at ≤ 决策时刻取（as-of 查询保证），和 13:30 当场算的是同一份信息。
+    # 两种都在结果揭晓前提交到 GitHub，都计入成绩。late：目标日已经开始才算出来的，不计。
+    out["mode"], out["late"] = signal_mode(gen, target_day, decide_at)
     return out
 
 
@@ -274,6 +285,7 @@ def write_summary(con) -> dict:
             summ["latest"] = {"target_day": last,
                               "generated_at_utc": str(cur["generated_at_utc"].iloc[0]),
                               "late": str(cur["late"].iloc[0]).lower() == "true",
+                              "mode": str(cur["mode"].iloc[0]) if "mode" in cur.columns else "live",
                               "regions": {}}
             for r, g in cur.groupby("region"):
                 g = g.sort_values("hour_nem")
@@ -308,15 +320,28 @@ def refresh_data() -> None:
     import ingest
     import aemo
     t0 = time.time()
+    today = (now_utc() + NEM).normalize()
+    tau = tau_for(today + pd.Timedelta(days=1))
+    # 天气：决策时刻之前就已经发布的那一版 ECMWF（按运行时刻 + 发布延迟算 known_at，精确）。
+    # 每日任务哪怕晚上才跑，拿到的也是 13:30 那个交易员手里的预报，不是之后的新预报。
     try:
-        ingest.live(models=list(L.WX_MODELS), past_days=1, forecast_days=10)
+        for run in _weather_runs_before(tau):
+            n = ingest.backfill_single_runs(str(run.date()), str(run.date()), L.WX_MODELS[0], [run.hour])
+            print(f"  ECMWF {run:%Y-%m-%d %HZ} 这一版：{n}")
+    except Exception as e:                                       # noqa: BLE001
+        print(f"  ECMWF 单次运行抓取失败：{e}")
+    try:
+        ingest.live(models=list(L.WX_MODELS), past_days=1, forecast_days=10)   # 最新预报：页面的天气指标用
     except Exception as e:                                       # noqa: BLE001
         print(f"  天气预报抓取失败：{e}")
     try:
-        aemo.ingest_predispatch_current(4, PD_LEAD)
+        # 预调度：决策时刻前 3 小时到决策时刻之间的那几次运行（明天的价格只有中午之后的运行才覆盖全），
+        # 再加最近 2 小时的（页面"明日现货展望"用最新一版）。
+        tau_nem = tau + NEM
+        aemo.ingest_predispatch_current(0, PD_LEAD, runs_between=(tau_nem - pd.Timedelta(hours=3), tau_nem))
+        aemo.ingest_predispatch_current(2, PD_LEAD)
     except Exception as e:                                       # noqa: BLE001
         print(f"  预调度抓取失败：{e}")
-    today = (now_utc() + NEM).normalize()
     try:
         miss = _missing_price_days(7)
         if miss:
@@ -334,6 +359,14 @@ def refresh_data() -> None:
     except Exception as e:                                       # noqa: BLE001
         print(f"  当日电价失败：{e}")
     print(f"  补数据用时 {time.time() - t0:.0f}s")
+
+
+def _weather_runs_before(tau: pd.Timestamp, n: int = 2) -> list[pd.Timestamp]:
+    """决策时刻 τ（UTC）之前已经发布的最近 n 次 ECMWF 运行（00/06/12/18Z，发布延迟按 ingest 的设定）。"""
+    import ingest
+    delay = ingest._delay(L.WX_MODELS[0])
+    t = (tau - delay).floor("6h")
+    return [t - pd.Timedelta(hours=6 * k) for k in range(n)]
 
 
 def _missing_price_days(n: int = 7) -> list[str]:
@@ -385,6 +418,16 @@ def health(con, target: pd.Timestamp) -> dict:
     except Exception:                                            # noqa: BLE001
         gaps = []
     out["gap_days"] = gaps
+    if os.path.exists(SIGNALS):
+        sg = pd.read_csv(SIGNALS, dtype=str)
+        okd = set(sg.loc[sg["status"] == "ok", "target_day"])
+        first = sg["target_day"].min()
+        days = [str(d.date()) for d in pd.date_range(max(pd.Timestamp(first), target - pd.Timedelta(days=14)),
+                                                      target - pd.Timedelta(days=1), freq="D")]
+        miss = [d for d in days if d not in okd]
+        out["missed_days"] = miss
+        if miss:
+            out["notes"].append(f"最近 14 天没出信号的日子 {len(miss)} 个")
     if gaps:
         out["notes"].append(f"最近 7 天电价有缺口：{'、'.join(gaps)}")
     lv = [v["level"] for v in out["regions"].values()]
@@ -431,21 +474,24 @@ def have_signal(target_day: str) -> bool:
 
 
 def cron() -> int:
+    """定时任务入口。
+
+    2026-10-26 到 11-20 的教训：GitHub 的定时触发每天都晚 5–9 小时（排在 03:05 UTC，实际 08:00–12:30 才跑），
+    原来"只在 13:05–13:29 窗口里出信号"的规则让它一天都没出成。现在：
+      · NEM 13:05 之前：预调度 13:00 那一版还没发布，什么都不做；
+      · 13:05 之后、当天结束之前：如果明天的信号还没出，就出。所有输入按 known_at ≤ 13:30 取，
+        晚上算出来的和 13:30 当场算出来的是同一份信息；提交时间在明天开始之前，仍然是前推记录。
+    """
     now = now_utc()
-    target = ((now + NEM).normalize() + pd.Timedelta(days=1))
+    now_nem = now + NEM
+    target = now_nem.normalize() + pd.Timedelta(days=1)
     tday = str(target.date())
-    nem_hm = (now + NEM).strftime("%H:%M")
-    if not in_window(now):
-        if CI and nem_hm > WINDOW[1] and not have_signal(tday):
-            # 云上的定时触发偶尔会晚到。错过窗口就不出信号（出了也是 late），但照样补数据、结算、更新页面，
-            # 并且以失败退出 —— GitHub 会给你发邮件。
-            print(f"{now} 已过 {WINDOW[1]}（NEM），{tday} 的信号没出成。只做结算和页面更新。")
-            _maintenance(target, f"Settle only, missed signal window for {tday}")
-            return 2
+    if now_nem.strftime("%H:%M") < WINDOW[0]:
+        print(f"{now} 还没到 {WINDOW[0]}（NEM），预调度 13:00 那一版还没发布，跳过")
         return 0
     if have_signal(tday):
+        print(f"{tday} 的信号已经有了，跳过")
         return 0
-    # 加锁：一次运行要几分钟，下一个 10 分钟的触发不能叠上来
     try:
         fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         os.write(fd, str(os.getpid()).encode()); os.close(fd)
@@ -473,18 +519,16 @@ def cron() -> int:
             print(f"  期货公允价值更新失败：{e}")
         hl = health(con, target)
         con.close()
-        if CI and now.weekday() == 6:
-            import livestore
-            print(f"  合并数据仓：{livestore.compact(os.environ['WQ_DATA_DIR'])}")
         n_ok = int((sig["status"] == "ok").sum() // 24)
-        render_and_push(f"Paper signal for {tday} ({n_ok} regions, health {hl['level']})")
+        mode = str(sig["mode"].iloc[0]) if "mode" in sig else "?"
+        render_and_push(f"Paper signal for {tday} ({n_ok} regions, {mode}, health {hl['level']})")
     finally:
         os.remove(LOCK)
     if CI and hl.get("level") == "fail":
         print(f"数据体检失败：{hl}")
         return 2
-    if CI and not have_signal(tday) and nem_hm >= "13:20":
-        print(f"{tday} 的信号还没出全（{n_ok}/{len(L.SITES)} 个区），这是窗口内最后一次尝试。")
+    if CI and not have_signal(tday):
+        print(f"{tday} 的信号没出全（{n_ok}/{len(L.SITES)} 个区），原因见 docs/paper/signals.csv 的 status 列。")
         return 2
     return 0
 
@@ -524,8 +568,8 @@ def main(argv=None) -> int:
         return cron()
     if a.maintenance:
         target = (now_utc() + NEM).normalize() + pd.Timedelta(days=1)
-        if in_window() and not have_signal(str(target.date())):
-            return cron()
+        if (now_utc() + NEM).strftime("%H:%M") >= WINDOW[0] and not have_signal(str(target.date())):
+            return cron()                      # 13:05 之后手动点运行：明天的信号还没出就直接出
         _maintenance(target, "Maintenance: refresh, settle, fair value, page")
         return 0
     import store
